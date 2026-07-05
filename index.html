@@ -155,6 +155,13 @@ body.parent-device .mode-pills { visibility:hidden; }
   margin-bottom:10px; box-shadow:var(--sh);
   display:flex; gap:12px; align-items:flex-start;
   border-left:3px solid transparent;
+  -webkit-user-select:none; user-select:none;
+  transition:transform .12s, box-shadow .12s;
+}
+.task-card.pressing {
+  transform:scale(.97);
+  box-shadow:0 1px 4px rgba(0,0,0,.08);
+  background:#F0EDFF;
 }
 .task-card.done { border-left-color:var(--success); }
 .task-card.from-parent { border-left-color:var(--parent); }
@@ -898,13 +905,16 @@ function taskCard(t) {
   if (t.fromParent) tags+='<span class="tag pfrom">👨‍👩‍👧 부모등록</span>';
   if (t.repeat&&t.repeat!=='none') tags+='<span class="tag rep">🔄 반복</span>';
   if (done) tags+='<span class="tag done-t">✅ 완료</span>';
-  return '<div class="task-card'+(done?' done':'')+(t.fromParent?' from-parent':'')+'">'
-    +'<button class="chk'+(done?' checked':'')+'" onclick="toggleTask('+t.id+')">'+(done?'✓':'')+'</button>'
-    +'<div class="task-body" onclick="openModal('+t.id+')" style="cursor:pointer"><div class="task-name">'+t.name+'</div>'
+  return '<div class="task-card'+(done?' done':'')+(t.fromParent?' from-parent':'')+'" '
+    +'onmousedown="startLongPress('+t.id+',event)" ontouchstart="startLongPress('+t.id+',event)" '
+    +'onmouseup="cancelLongPress()" onmouseleave="cancelLongPress()" '
+    +'ontouchend="cancelLongPress()" ontouchmove="cancelLongPress()">'
+    +'<button class="chk'+(done?' checked':'')+'" onclick="toggleTask('+t.id+');event.stopPropagation()">'+(done?'✓':'')+'</button>'
+    +'<div class="task-body"><div class="task-name">'+t.name+'</div>'
     +'<div class="tags">'+tags+'</div>'
     +(t.desc?'<div class="task-desc">'+t.desc+'</div>':'')
     +'</div>'
-    +'<button class="task-del" onclick="deleteTask('+t.id+')">🗑</button>'
+    +'<button class="task-del" onclick="deleteTask('+t.id+');event.stopPropagation()">🗑</button>'
     +'</div>';
 }
 
@@ -1677,6 +1687,29 @@ function showToast(msg) {
   var t=document.getElementById('toast');
   t.textContent=msg; t.classList.add('show');
   setTimeout(function(){ t.classList.remove('show'); },2200);
+}
+
+// ── LONG PRESS ──
+var _lpTimer = null;
+var _lpCard = null;
+
+function startLongPress(taskId, e) {
+  // 버튼 클릭은 무시
+  if (e.target.closest('button')) return;
+  _lpCard = e.currentTarget;
+  if (_lpCard) _lpCard.classList.add('pressing');
+  _lpTimer = setTimeout(function() {
+    if (_lpCard) _lpCard.classList.remove('pressing');
+    // 진동 피드백 (지원 기기)
+    if (navigator.vibrate) navigator.vibrate(40);
+    openModal(taskId);
+  }, 500);
+}
+
+function cancelLongPress() {
+  clearTimeout(_lpTimer);
+  _lpTimer = null;
+  if (_lpCard) { _lpCard.classList.remove('pressing'); _lpCard = null; }
 }
 
 // ── INIT ──
