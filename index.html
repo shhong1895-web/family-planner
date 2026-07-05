@@ -789,13 +789,29 @@ function setDeviceRole(role, skipRegister) {
     }
   } else {
     var did=getDeviceId();
+    var APPROVED_KEY='device_approved_'+did;
+
+    // 이미 승인된 적 있으면 바로 앱 진입
+    if (localStorage.getItem(APPROVED_KEY)==='1') {
+      showApp();
+      // 백그라운드에서 취소 여부만 확인
+      db.collection('devices').doc(did).get().then(function(snap) {
+        if (snap.exists && snap.data().status!=='approved') {
+          localStorage.removeItem(APPROVED_KEY);
+          showApprovalWait(did);
+        }
+      }).catch(function(){});
+      return;
+    }
+
+    // 첫 방문 또는 미승인 상태
     if (!localStorage.getItem(REG_KEY)) {
       fsSet('devices',did,{id:did,role:'child',label:'자녀 기기',status:'pending',isAdmin:false,registeredAt:Date.now()});
       localStorage.setItem(REG_KEY,'1');
     }
-    // Check approval status
     db.collection('devices').doc(did).get().then(function(snap) {
       if (snap.exists && snap.data().status==='approved') {
+        localStorage.setItem(APPROVED_KEY,'1');
         showApp();
       } else {
         showApprovalWait(did);
@@ -813,6 +829,7 @@ function showApprovalWait(did) {
     if (!snap.exists) return;
     var d=snap.data();
     if (d.status==='approved') {
+      localStorage.setItem('device_approved_'+did,'1');
       if (approvalUnsub) { approvalUnsub(); approvalUnsub=null; }
       showApp();
       showToast('✅ 승인됐어요! 환영해요 😊');
@@ -830,8 +847,10 @@ function showApp() {
 function checkApprovalNow() {
   var did=getDeviceId();
   db.collection('devices').doc(did).get().then(function(snap) {
-    if (snap.exists && snap.data().status==='approved') { showApp(); }
-    else { showToast('⏳ 아직 승인 대기 중이에요'); }
+    if (snap.exists && snap.data().status==='approved') {
+      localStorage.setItem('device_approved_'+did,'1');
+      showApp();
+    } else { showToast('⏳ 아직 승인 대기 중이에요'); }
   });
 }
 
