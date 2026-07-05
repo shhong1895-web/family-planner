@@ -456,32 +456,37 @@ body.parent-device .mode-pills { visibility:hidden; }
   padding:4px 0 6px;
 }
 .drum-scroll {
-  height:180px; overflow-y:scroll; scroll-snap-type:y mandatory;
+  height:220px; overflow-y:scroll; scroll-snap-type:y mandatory;
   -webkit-overflow-scrolling:touch; scrollbar-width:none;
-  position:relative; width:100%;
-  border-radius:10px; background:#F8FAFC;
+  width:100%; border-radius:10px; background:#F8FAFC;
+  position:relative;
 }
 .drum-scroll::-webkit-scrollbar { display:none; }
 .drum-item {
   height:44px; display:flex; align-items:center; justify-content:center;
-  font-size:17px; font-weight:500; color:#C0C8D8;
-  scroll-snap-align:center; cursor:pointer; user-select:none;
-  transition:color .15s, font-size .15s, font-weight .15s;
+  font-size:17px; font-weight:500; color:#B0BAC8;
+  scroll-snap-align:center; user-select:none;
+  transition:color .1s, font-size .1s, font-weight .1s;
 }
 .drum-item.selected {
   color:#1E293B; font-size:23px; font-weight:800;
 }
-.drum-scroll::before, .drum-scroll::after {
-  content:''; position:sticky; display:block; left:0; width:100%;
-  height:44px; pointer-events:none; z-index:2;
+.drum-selector {
+  position:relative; width:100%;
+  /* 위아래 페이드 — 정확히 중앙 44px만 선명하게 */
+  -webkit-mask-image:linear-gradient(to bottom,
+    transparent 0px, transparent 44px,
+    #000 88px, #000 132px,
+    transparent 176px, transparent 220px);
+  mask-image:linear-gradient(to bottom,
+    transparent 0px, transparent 44px,
+    #000 88px, #000 132px,
+    transparent 176px, transparent 220px);
 }
-.drum-scroll::before { top:0; background:linear-gradient(to bottom,#F8FAFC 50%,transparent); }
-.drum-scroll::after  { bottom:0; background:linear-gradient(to top,#F8FAFC 50%,transparent); }
-.drum-selector { position:relative; width:100%; }
 .drum-selector::after {
-  content:''; position:absolute; left:2px; right:2px;
-  top:50%; transform:translateY(-50%);
-  height:44px; background:rgba(79,70,229,.07);
+  content:''; position:absolute; left:4px; right:4px;
+  top:88px; height:44px;
+  background:rgba(79,70,229,.09);
   border-radius:8px; pointer-events:none; z-index:1;
 }
 .drum-colon {
@@ -874,7 +879,8 @@ function render() {
     sa.innerHTML=renderDay();
     if(state.mode==='parent'){
       var now3=new Date(); var h3=now3.getHours(), hE3=h3+1<24?h3+1:23;
-      initTimeBtns('qaStart','qaEnd','qa-btnStart','qa-btnEnd',String(h3).padStart(2,'0')+':00',String(hE3).padStart(2,'0')+':00');
+      initTimeBtns('qaStart','qaEnd','qa-btnStart','qa-btnEnd',
+        String(h3).padStart(2,'0')+':00',String(hE3).padStart(2,'0')+':00');
     }
   }
   else if (v==='week') sa.innerHTML=renderWeek();
@@ -968,10 +974,19 @@ function renderDay() {
     html+='<div class="sec-title">할일 추가 (부모 등록)</div>';
     html+='<div class="form-box">'
       +'<input class="f-field" id="qa-name" placeholder="할일 제목">'
-      +'<div class="time-btn-row" style="margin-bottom:10px">'
-      +'<div style="flex:1"><div class="time-btn-label">시작</div><button class="time-btn p" id="qa-btnStart" onclick="openDrumSheet(\'qaStart\',\'qa\')">오전 9:00</button></div>'
-      +'<div class="time-tilde">~</div>'
-      +'<div style="flex:1"><div class="time-btn-label">종료</div><button class="time-btn p" id="qa-btnEnd" onclick="openDrumSheet(\'qaEnd\',\'qa\')">오전 10:00</button></div>'
+      +'<div class="m-allday-row" style="margin:8px 0 4px">'
+      +'<input type="checkbox" id="qa-allday" onchange="toggleAlldayQa()" style="width:18px;height:18px;cursor:pointer">'
+      +'<label for="qa-allday" style="font-size:14px;font-weight:600;color:var(--text)">하루종일 (시간 없음)</label></div>'
+      +'<div class="dt-block" id="qa-timeWrap">'
+        +'<div class="dt-row">'
+          +'<div class="dt-label">시작</div>'
+          +'<button class="dt-time-btn p" id="qa-btnStart" onclick="openDrumSheet(\'qaStart\',\'qa\')" style="margin-left:auto">오전 9:00</button>'
+        +'</div>'
+        +'<div class="dt-divider"></div>'
+        +'<div class="dt-row">'
+          +'<div class="dt-label">종료</div>'
+          +'<button class="dt-time-btn p" id="qa-btnEnd" onclick="openDrumSheet(\'qaEnd\',\'qa\')" style="margin-left:auto">오전 10:00</button>'
+        +'</div>'
       +'</div>'
       +'<select class="f-field" id="qa-cat">'
       +'<option value="학습">📚 학습</option><option value="운동">🏃 운동</option>'
@@ -1222,21 +1237,31 @@ function deleteShared(id) {
   if (e) fsDel('sharedEvents',e.id);
   showToast('🗑 삭제됐어요');
 }
+function toggleAlldayQa() {
+  var checked=document.getElementById('qa-allday').checked;
+  var wrap=document.getElementById('qa-timeWrap');
+  if(wrap) wrap.style.display=checked?'none':'';
+}
 function quickAdd() {
   var nameEl=document.getElementById('qa-name');
-  var timeEl=document.getElementById('qa-time');
   var catEl=document.getElementById('qa-cat');
+  var alldayEl=document.getElementById('qa-allday');
   if (!nameEl) { showToast('⚠️ 오류가 발생했어요'); return; }
   var name=nameEl.value.trim();
   if (!name) { showToast('⚠️ 제목을 입력해주세요'); return; }
+  var allday=alldayEl?alldayEl.checked:false;
+  var timeVal=allday?'':(drumState['qaStart']||'09:00')+'~'+(drumState['qaEnd']||'10:00');
   var task={id:Date.now(),name:name,date:fmt(state.selectedDate),
-    time:(drumState['qaStart']||'09:00')+'~'+(drumState['qaEnd']||'10:00'),allday:false,
+    time:timeVal,allday:allday,
     cat:catEl?catEl.value:'기타',
     desc:'',done:false,fromParent:true,repeat:'none'};
   fsSet('tasks',task.id,task).then(function(){
     if(nameEl) nameEl.value='';
+    if(alldayEl) alldayEl.checked=false;
+    var wrap=document.getElementById('qa-timeWrap'); if(wrap) wrap.style.display='';
     var now4=new Date(); var h4=now4.getHours(), hE4=h4+1<24?h4+1:23;
-    initTimeBtns('qaStart','qaEnd','qa-btnStart','qa-btnEnd',String(h4).padStart(2,'0')+':00',String(hE4).padStart(2,'0')+':00');
+    initTimeBtns('qaStart','qaEnd','qa-btnStart','qa-btnEnd',
+      String(h4).padStart(2,'0')+':00',String(hE4<24?hE4:23).padStart(2,'0')+':00');
     showToast('✅ 할일이 추가됐어요');
   }).catch(function(){showToast('⚠️ 저장 실패. 네트워크를 확인해주세요');});
 }
@@ -1279,26 +1304,45 @@ function cancelEditShared() {
 }
 function editShared(id) {
   var e=state.sharedEvents.find(function(x){ return String(x.id)===String(id); });
-  if (!e) return;
-  var ft=document.getElementById('se-formTitle'); if(ft) ft.scrollIntoView({behavior:'smooth'});
-  document.getElementById('se-editId').value=e.id;
-  document.getElementById('se-name').value=e.name;
-  document.getElementById('se-desc').value=e.desc||'';
-  document.getElementById('se-allday').checked=!!e.allday;
-  document.getElementById('se-icon').value=e.icon||'📅';
-  var tw=document.getElementById('se-timeWrap'); if(tw) tw.style.display=e.allday?'none':'';
+  if (!e) { showToast('⚠️ 일정을 찾을 수 없어요'); return; }
+
+  // 폼 맨 위로 스크롤
+  var scrollArea=document.getElementById('scrollArea');
+  if(scrollArea) scrollArea.scrollTop=0;
+
+  var editIdEl=document.getElementById('se-editId');
+  var nameEl=document.getElementById('se-name');
+  var descEl=document.getElementById('se-desc');
+  var alldayEl=document.getElementById('se-allday');
+  var iconEl=document.getElementById('se-icon');
+  if(!editIdEl||!nameEl){ showToast('⚠️ 폼을 찾을 수 없어요'); return; }
+
+  editIdEl.value=String(e.id);
+  nameEl.value=e.name;
+  if(descEl) descEl.value=e.desc||'';
+  if(alldayEl){ alldayEl.checked=!!e.allday; }
+  if(iconEl) iconEl.value=e.icon||'📅';
+
+  var tw=document.getElementById('se-timeWrap');
+  if(tw) tw.style.display=e.allday?'none':'';
+
   var dateStart=e.date||fmt(TODAY), dateEnd=e.dateEnd||dateStart;
   var dsEl=document.getElementById('se-dateStart'); if(dsEl) dsEl.value=dateStart;
-  var deEl=document.getElementById('se-dateEnd'); if(deEl) deEl.value=dateEnd;
+  var deEl=document.getElementById('se-dateEnd');   if(deEl) deEl.value=dateEnd;
   var dsb=document.getElementById('se-btnDateStart'); if(dsb) dsb.textContent=koDateShort(dateStart);
-  var deb=document.getElementById('se-btnDateEnd'); if(deb) deb.textContent=koDateShort(dateEnd);
+  var deb=document.getElementById('se-btnDateEnd');   if(deb) deb.textContent=koDateShort(dateEnd);
+
   var sStr='09:00', eStr='10:00';
-  if (e.time&&e.time.indexOf('~')>=0) { var tp=e.time.split('~'); sStr=tp[0]; eStr=tp[1]; }
-  else if (e.time) sStr=e.time;
+  if(e.time&&e.time.indexOf('~')>=0){ var tp=e.time.split('~'); sStr=tp[0]; eStr=tp[1]; }
+  else if(e.time){ sStr=e.time; eStr=addMinutes(sStr,60); }
   initTimeBtns('seStart','seEnd','se-btnStart','se-btnEnd',sStr,eStr);
+
+  var title=document.getElementById('se-formTitle'); if(title) title.textContent='공유 일정 수정';
   var sb=document.getElementById('se-submitBtn'); if(sb) sb.textContent='✏️ 수정하기';
   var cb=document.getElementById('se-cancelBtn'); if(cb) cb.style.display='';
-  var t=document.getElementById('se-formTitle'); if(t) t.textContent='공유 일정 수정';
+
+  // 포커스
+  setTimeout(function(){ if(nameEl) nameEl.focus(); },100);
 }
 function addShared() {
   var nameEl=document.getElementById('se-name');
@@ -1358,10 +1402,12 @@ function revokeDevice(id) { if(!confirm('승인을 취소할까요?')) return; v
 
 // ── MODAL ──
 // ── DRUM PICKER ENGINE (완전 재작성) ──
+var DRUM_H=220;   // drum-scroll height (CSS와 일치)
+var ITEM_H=44;    // 각 아이템 높이
+var PAD_H=88;     // = ITEM_H*2 → 첫/마지막 아이템이 중앙에 스냅되도록
 var AMPM=['오전','오후'];
 var HOURS=['12','1','2','3','4','5','6','7','8','9','10','11'];
 var MINS=['00','10','20','30','40','50'];
-var ITEM_H=44;
 var drumState={};
 var _dsPrefix='', _dsContext='';
 
@@ -1410,58 +1456,48 @@ function addMinutes(hh24, mins) {
 
 function buildDrumScroll(elId, items, defaultIdx) {
   var el=document.getElementById(elId); if(!el) return;
-  // 기존 이벤트 제거를 위해 cloneNode
+  // cloneNode로 이전 이벤트 완전 제거
   var fresh=el.cloneNode(false);
-  el.parentNode.replaceChild(fresh, el);
+  el.parentNode.replaceChild(fresh,el);
   el=fresh;
 
-  // 패딩: drum-pad 클래스로 구분
   var padT=document.createElement('div');
-  padT.className='drum-pad'; padT.style.height=(ITEM_H*2)+'px';
+  padT.className='drum-pad'; padT.style.height=PAD_H+'px';
   el.appendChild(padT);
 
   items.forEach(function(v,i){
     var d=document.createElement('div');
-    d.className='drum-item'; d.textContent=v;
+    d.className='drum-item'+(i===defaultIdx?' selected':'');
+    d.textContent=v;
     el.appendChild(d);
   });
 
   var padB=document.createElement('div');
-  padB.className='drum-pad'; padB.style.height=(ITEM_H*2)+'px';
+  padB.className='drum-pad'; padB.style.height=PAD_H+'px';
   el.appendChild(padB);
 
-  // 스크롤 이벤트: .drum-item만 선택해서 인덱스 계산
-  function getIdx() {
-    var idx=Math.round(el.scrollTop/ITEM_H);
-    var drumItems=el.querySelectorAll('.drum-item');
-    if(idx<0)idx=0; if(idx>=drumItems.length)idx=drumItems.length-1;
-    return idx;
-  }
-  function updateSel() {
-    var idx=getIdx();
-    el.querySelectorAll('.drum-item').forEach(function(d,i){
-      d.classList.toggle('selected',i===idx);
-    });
-  }
-  el.addEventListener('scroll', updateSel, {passive:true});
-  el.addEventListener('scrollend', updateSel, {passive:true});
-
-  // 초기 선택 표시 (DOM 그린 후)
-  el.querySelectorAll('.drum-item')[defaultIdx] && el.querySelectorAll('.drum-item')[defaultIdx].classList.add('selected');
-  // scrollTop은 overlay가 열린 후 applyDrumScroll에서 적용
   el._targetIdx=defaultIdx;
+  el._items=items;
+
+  function syncSelected(){
+    var idx=Math.round(el.scrollTop/ITEM_H);
+    if(idx<0)idx=0; if(idx>=items.length)idx=items.length-1;
+    var drumItems=el.querySelectorAll('.drum-item');
+    drumItems.forEach(function(d,i){ d.classList.toggle('selected',i===idx); });
+  }
+  el.addEventListener('scroll',syncSelected,{passive:true});
+  el.addEventListener('scrollend',syncSelected,{passive:true});
 }
 
 function applyDrumScroll() {
   ['dsAmpm','dsHour','dsMin'].forEach(function(id){
     var el=document.getElementById(id);
-    if(el&&el._targetIdx!==undefined){
-      el.scrollTop=el._targetIdx*ITEM_H;
-      // 한 번 더 보정 (iOS 관성 스크롤 방지)
-      setTimeout(function(){
-        if(el) el.scrollTop=el._targetIdx*ITEM_H;
-      },80);
-    }
+    if(!el||el._targetIdx===undefined) return;
+    var target=el._targetIdx*ITEM_H;
+    el.scrollTop=target;
+    // iOS에서 display:none→flex 전환 후 scrollTop이 리셋되는 경우 대비
+    setTimeout(function(){ if(el) el.scrollTop=target; },50);
+    setTimeout(function(){ if(el) el.scrollTop=target; },150);
   });
 }
 
