@@ -1357,118 +1357,151 @@ function rejectDevice(id) { var d=devicesState.find(function(x){return String(x.
 function revokeDevice(id) { if(!confirm('승인을 취소할까요?')) return; var d=devicesState.find(function(x){return String(x.id)===String(id);}); if(d){fsSet('devices',d.id,Object.assign({},d,{status:'pending'})); showToast('🔒 승인이 취소됐어요');} }
 
 // ── MODAL ──
-// ── DRUM PICKER ENGINE ──
+// ── DRUM PICKER ENGINE (완전 재작성) ──
 var AMPM=['오전','오후'];
 var HOURS=['12','1','2','3','4','5','6','7','8','9','10','11'];
 var MINS=['00','10','20','30','40','50'];
 var ITEM_H=44;
-
-// 저장소: 각 prefix별 현재 값
-var drumState = {};  // { 'mStart': '09:00', 'mEnd': '10:00', ... }
+var drumState={};
+var _dsPrefix='', _dsContext='';
 
 function timeToLabel(hh24) {
-  if (!hh24) return '오전 9:00';
+  if(!hh24) return '오전 9:00';
   var p=hh24.split(':'), h=parseInt(p[0]), m=p[1]||'00';
   var ap=h>=12?'오후':'오전', h12=h%12; if(!h12)h12=12;
   return ap+' '+h12+':'+m;
 }
 
 function prettyTime(t) {
-  // '09:00~10:30' → '오전 9:00 ~ 오전 10:30'
-  if (!t) return t;
-  if (t.indexOf('~')>=0) {
-    var parts=t.split('~');
-    return timeToLabel(parts[0])+' ~ '+timeToLabel(parts[1]);
-  }
+  if(!t) return t;
+  if(t.indexOf('~')>=0){var pts=t.split('~');return timeToLabel(pts[0])+' ~ '+timeToLabel(pts[1]);}
   return timeToLabel(t);
 }
 
+// 24h → {ap:0/1, hIdx, mIdx}
+function parse24(hh24) {
+  var p=(hh24||'09:00').split(':');
+  var h=parseInt(p[0])||0, m=parseInt(p[1])||0;
+  var ap=h>=12?1:0;
+  var h12=h%12; if(!h12)h12=12;
+  var hIdx=HOURS.indexOf(String(h12)); if(hIdx<0)hIdx=0;
+  var mRound=Math.round(m/10)*10; if(mRound>=60)mRound=50;
+  var mIdx=MINS.indexOf(String(mRound).padStart(2,'0')); if(mIdx<0)mIdx=0;
+  return {ap:ap, hIdx:hIdx, mIdx:mIdx};
+}
+
+// {ap, hIdx, mIdx} → '09:30'
+function toHH24(ap, hIdx, mIdx) {
+  var h=parseInt(HOURS[hIdx]);
+  if(ap===0){if(h===12)h=0;}else{if(h!==12)h+=12;}
+  return String(h).padStart(2,'0')+':'+MINS[mIdx];
+}
+
+// hh24 + minutes → hh24
+function addMinutes(hh24, mins) {
+  var p=hh24.split(':');
+  var total=parseInt(p[0])*60+parseInt(p[1])+mins;
+  if(total<0)total=0; if(total>=24*60)total=23*60+50;
+  var h=Math.floor(total/60), m=total%60;
+  // round minutes to 10
+  m=Math.round(m/10)*10; if(m>=60){m=0;h=Math.min(h+1,23);}
+  return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+}
+
 function buildDrumScroll(elId, items, defaultIdx) {
-  var el=document.getElementById(elId);
-  if (!el) return;
-  el.innerHTML='';
-  var padT=document.createElement('div'); padT.style.height=(ITEM_H*2)+'px'; el.appendChild(padT);
+  var el=document.getElementById(elId); if(!el) return;
+  // 기존 이벤트 제거를 위해 cloneNode
+  var fresh=el.cloneNode(false);
+  el.parentNode.replaceChild(fresh, el);
+  el=fresh;
+
+  // 패딩: drum-pad 클래스로 구분
+  var padT=document.createElement('div');
+  padT.className='drum-pad'; padT.style.height=(ITEM_H*2)+'px';
+  el.appendChild(padT);
+
   items.forEach(function(v,i){
     var d=document.createElement('div');
-    d.className='drum-item'+(i===defaultIdx?' selected':'');
-    d.textContent=v;
+    d.className='drum-item'; d.textContent=v;
     el.appendChild(d);
   });
-  var padB=document.createElement('div'); padB.style.height=(ITEM_H*2)+'px'; el.appendChild(padB);
 
-  // scrollTop must be set AFTER the overlay is visible
-  // store target and apply via openDrumSheet after classList.add
-  el._targetIdx = defaultIdx;
+  var padB=document.createElement('div');
+  padB.className='drum-pad'; padB.style.height=(ITEM_H*2)+'px';
+  el.appendChild(padB);
 
-  // realtime selected highlight
-  function updateSelected() {
+  // 스크롤 이벤트: .drum-item만 선택해서 인덱스 계산
+  function getIdx() {
     var idx=Math.round(el.scrollTop/ITEM_H);
-    if(idx<0)idx=0; if(idx>=items.length)idx=items.length-1;
+    var drumItems=el.querySelectorAll('.drum-item');
+    if(idx<0)idx=0; if(idx>=drumItems.length)idx=drumItems.length-1;
+    return idx;
+  }
+  function updateSel() {
+    var idx=getIdx();
     el.querySelectorAll('.drum-item').forEach(function(d,i){
       d.classList.toggle('selected',i===idx);
     });
   }
-  el.addEventListener('scroll', updateSelected, {passive:true});
-  // scrollend for iOS (fires after snap settles)
-  el.addEventListener('scrollend', updateSelected, {passive:true});
+  el.addEventListener('scroll', updateSel, {passive:true});
+  el.addEventListener('scrollend', updateSel, {passive:true});
+
+  // 초기 선택 표시 (DOM 그린 후)
+  el.querySelectorAll('.drum-item')[defaultIdx] && el.querySelectorAll('.drum-item')[defaultIdx].classList.add('selected');
+  // scrollTop은 overlay가 열린 후 applyDrumScroll에서 적용
+  el._targetIdx=defaultIdx;
 }
 
 function applyDrumScroll() {
-  // called after overlay becomes visible
   ['dsAmpm','dsHour','dsMin'].forEach(function(id){
     var el=document.getElementById(id);
-    if (el && el._targetIdx !== undefined) {
-      el.scrollTop = el._targetIdx * ITEM_H;
+    if(el&&el._targetIdx!==undefined){
+      el.scrollTop=el._targetIdx*ITEM_H;
+      // 한 번 더 보정 (iOS 관성 스크롤 방지)
+      setTimeout(function(){
+        if(el) el.scrollTop=el._targetIdx*ITEM_H;
+      },80);
     }
   });
 }
 
 function getDsVal(elId, items) {
   var el=document.getElementById(elId); if(!el) return items[0];
-  // prefer .selected class (most accurate after scroll settles)
-  var sel=el.querySelector('.drum-item.selected');
-  if (sel) {
-    var idx=Array.prototype.indexOf.call(el.querySelectorAll('.drum-item'), sel);
-    if(idx>=0 && idx<items.length) return items[idx];
+  var drumItems=el.querySelectorAll('.drum-item');
+  // .selected 우선
+  for(var i=0;i<drumItems.length;i++){
+    if(drumItems[i].classList.contains('selected')) return items[i];
   }
-  // fallback to scrollTop
+  // fallback: scrollTop
   var idx=Math.round(el.scrollTop/ITEM_H);
   if(idx<0)idx=0; if(idx>=items.length)idx=items.length-1;
   return items[idx];
 }
 
 function dsTo24() {
-  var ap=getDsVal('dsAmpm',AMPM);
-  var h=parseInt(getDsVal('dsHour',HOURS));
-  var m=getDsVal('dsMin',MINS);
-  if(ap==='오전'){if(h===12)h=0;}else{if(h!==12)h+=12;}
-  return String(h).padStart(2,'0')+':'+m;
+  var ap=getDsVal('dsAmpm',AMPM)==='오후'?1:0;
+  var hStr=getDsVal('dsHour',HOURS);
+  var mStr=getDsVal('dsMin',MINS);
+  var hIdx=HOURS.indexOf(hStr); if(hIdx<0)hIdx=0;
+  var mIdx=MINS.indexOf(mStr); if(mIdx<0)mIdx=0;
+  return toHH24(ap,hIdx,mIdx);
 }
-
-// 현재 편집 중인 시트 상태
-var _dsPrefix='', _dsContext='';
 
 function openDrumSheet(prefix, context) {
   _dsPrefix=prefix; _dsContext=context;
   var current=drumState[prefix]||'09:00';
-  var p=current.split(':'), h=parseInt(p[0]), m=parseInt(p[1]||0);
-  var ap=h>=12?1:0; var h12=h%12; if(!h12)h12=12;
-  var hIdx=HOURS.indexOf(String(h12)); if(hIdx<0)hIdx=0;
-  var mIdx=MINS.indexOf(String(m).padStart(2,'0')); if(mIdx<0)mIdx=0;
+  var parsed=parse24(current);
 
   var isStart=prefix.indexOf('Start')>=0||prefix==='mStart'||prefix==='seStart'||prefix==='qaStart';
   document.getElementById('drumSheetTitle').textContent=isStart?'시작 시간':'종료 시간';
-
-  // 완료 버튼 색
   var doneBtn=document.getElementById('drumSheetDone');
   doneBtn.className='drum-sheet-done'+(context==='modal'?'':' p');
 
-  buildDrumScroll('dsAmpm',AMPM,ap);
-  buildDrumScroll('dsHour',HOURS,hIdx);
-  buildDrumScroll('dsMin',MINS,mIdx);
+  buildDrumScroll('dsAmpm',AMPM,parsed.ap);
+  buildDrumScroll('dsHour',HOURS,parsed.hIdx);
+  buildDrumScroll('dsMin',MINS,parsed.mIdx);
 
   document.getElementById('drumSheetOverlay').classList.add('open');
-  // apply scroll AFTER display:flex kicks in
   requestAnimationFrame(function(){
     requestAnimationFrame(applyDrumScroll);
   });
@@ -1476,16 +1509,34 @@ function openDrumSheet(prefix, context) {
 
 function confirmDrumSheet() {
   var val=dsTo24();
-  drumState[_dsPrefix]=val;
-  // 버튼 텍스트 업데이트
-  var btnMap={
+  var wasStart=_dsPrefix.indexOf('Start')>=0||_dsPrefix==='mStart'||_dsPrefix==='seStart'||_dsPrefix==='qaStart';
+
+  // 시작 선택 → 종료 = +1시간 자동 설정
+  // 종료 선택 → 시작 = -1시간 자동 설정
+  var pairMap={
+    'mStart':'mEnd','mEnd':'mStart',
+    'seStart':'seEnd','seEnd':'seStart',
+    'qaStart':'qaEnd','qaEnd':'qaStart'
+  };
+  var pairPrefix=pairMap[_dsPrefix];
+  var pairBtnMap={
     'mStart':'mBtnStart','mEnd':'mBtnEnd',
     'seStart':'se-btnStart','seEnd':'se-btnEnd',
     'qaStart':'qa-btnStart','qaEnd':'qa-btnEnd'
   };
-  var btnId=btnMap[_dsPrefix];
-  if(btnId){ var b=document.getElementById(btnId); if(b) b.textContent=timeToLabel(val); }
-  // 에러 체크
+
+  drumState[_dsPrefix]=val;
+  var btnId=pairBtnMap[_dsPrefix];
+  if(btnId){var b=document.getElementById(btnId); if(b) b.textContent=timeToLabel(val);}
+
+  // 짝꿍 시간 자동 조정
+  if(pairPrefix){
+    var autoVal=wasStart ? addMinutes(val,60) : addMinutes(val,-60);
+    drumState[pairPrefix]=autoVal;
+    var pairBtnId=pairBtnMap[pairPrefix];
+    if(pairBtnId){var pb=document.getElementById(pairBtnId); if(pb) pb.textContent=timeToLabel(autoVal);}
+  }
+
   validatePair(_dsContext);
   closeDrumSheet();
 }
@@ -1497,25 +1548,21 @@ function closeDrumSheet(e) {
 
 function validatePair(context) {
   var sp,ep,errId;
-  if(context==='modal'){ sp='mStart';ep='mEnd';errId='mTimeError'; }
-  else if(context==='shared'){ sp='seStart';ep='seEnd';errId='se-timeError'; }
-  else { sp='qaStart';ep='qaEnd';errId='qa-timeError'; }
+  if(context==='modal'){sp='mStart';ep='mEnd';errId='mTimeError';}
+  else if(context==='shared'){sp='seStart';ep='seEnd';errId='se-timeError';}
+  else{sp='qaStart';ep='qaEnd';errId=null;}
   var ts=drumState[sp]||'', te=drumState[ep]||'';
-  var err=document.getElementById(errId);
+  var err=errId?document.getElementById(errId):null;
   if(err) err.style.display=(ts&&te&&te<=ts)?'':'none';
 }
 
-function getDrumTimePair(startKey, endKey) {
-  return { start: drumState[startKey]||'09:00', end: drumState[endKey]||'10:00' };
+function initTimeBtns(startKey,endKey,startBtnId,endBtnId,defaultStart,defaultEnd){
+  drumState[startKey]=defaultStart||'09:00';
+  drumState[endKey]=defaultEnd||'10:00';
+  var bs=document.getElementById(startBtnId); if(bs) bs.textContent=timeToLabel(drumState[startKey]);
+  var be=document.getElementById(endBtnId);   if(be) be.textContent=timeToLabel(drumState[endKey]);
 }
-
-function initTimeBtns(startKey, endKey, startBtnId, endBtnId, defaultStart, defaultEnd) {
-  drumState[startKey] = defaultStart || '09:00';
-  drumState[endKey]   = defaultEnd   || '10:00';
-  var bs = document.getElementById(startBtnId); if (bs) bs.textContent = timeToLabel(drumState[startKey]);
-  var be = document.getElementById(endBtnId);   if (be) be.textContent = timeToLabel(drumState[endKey]);
-}
-function buildTimeOptions(selId, defaultVal) { /* no-op */ }
+function buildTimeOptions(selId,defaultVal){}
 
 var _editTaskId = null;
 
