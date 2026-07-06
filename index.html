@@ -908,6 +908,8 @@ function render() {
     sa.innerHTML=renderShared();
     if(state.mode==='parent'){
       var now2=new Date(); var h2=now2.getHours(), hE2=h2+1<24?h2+1:23;
+      drumState['touched_shared_seStart']=false;
+      drumState['touched_shared_seEnd']=false;
       initTimeBtns('seStart','seEnd','se-btnStart','se-btnEnd',String(h2).padStart(2,'0')+':00',String(hE2).padStart(2,'0')+':00');
       var todayStr=fmt(TODAY);
       var dsEl=document.getElementById('se-dateStart'); if(dsEl) dsEl.value=todayStr;
@@ -1319,6 +1321,8 @@ function cancelEditShared() {
   var dsb=document.getElementById('se-btnDateStart'); if(dsb) dsb.textContent=koDateShort(todayStr);
   var deb=document.getElementById('se-btnDateEnd'); if(deb) deb.textContent=koDateShort(todayStr);
   var now=new Date(); var h=now.getHours(), hE=h+1<24?h+1:23;
+  drumState['touched_shared_seStart']=false;
+  drumState['touched_shared_seEnd']=false;
   initTimeBtns('seStart','seEnd','se-btnStart','se-btnEnd',String(h).padStart(2,'0')+':00',String(hE).padStart(2,'0')+':00');
 }
 function editShared(id) {
@@ -1355,6 +1359,9 @@ function editShared(id) {
   if(e.time&&e.time.indexOf('~')>=0){ var tp=e.time.split('~'); sStr=tp[0]; eStr=tp[1]; }
   else if(e.time){ sStr=e.time; eStr=addMinutes(sStr,60); }
   initTimeBtns('seStart','seEnd','se-btnStart','se-btnEnd',sStr,eStr);
+  // 수정 모드: 자동 시간 조정 비활성화
+  drumState['touched_shared_seStart']=true;
+  drumState['touched_shared_seEnd']=true;
 
   var title=document.getElementById('se-formTitle'); if(title) title.textContent='공유 일정 수정';
   var sb=document.getElementById('se-submitBtn'); if(sb) sb.textContent='✏️ 수정하기';
@@ -1564,31 +1571,33 @@ function openDrumSheet(prefix, context) {
 
 function confirmDrumSheet() {
   var val=dsTo24();
-  var wasStart=_dsPrefix.indexOf('Start')>=0||_dsPrefix==='mStart'||_dsPrefix==='seStart'||_dsPrefix==='qaStart';
+  var isStart=_dsPrefix.indexOf('Start')>=0||_dsPrefix==='mStart'||_dsPrefix==='seStart'||_dsPrefix==='qaStart';
 
-  // 시작 선택 → 종료 = +1시간 자동 설정
-  // 종료 선택 → 시작 = -1시간 자동 설정
   var pairMap={
     'mStart':'mEnd','mEnd':'mStart',
     'seStart':'seEnd','seEnd':'seStart',
     'qaStart':'qaEnd','qaEnd':'qaStart'
   };
-  var pairPrefix=pairMap[_dsPrefix];
-  var pairBtnMap={
+  var btnMap={
     'mStart':'mBtnStart','mEnd':'mBtnEnd',
     'seStart':'se-btnStart','seEnd':'se-btnEnd',
     'qaStart':'qa-btnStart','qaEnd':'qa-btnEnd'
   };
 
   drumState[_dsPrefix]=val;
-  var btnId=pairBtnMap[_dsPrefix];
+  var btnId=btnMap[_dsPrefix];
   if(btnId){var b=document.getElementById(btnId); if(b) b.textContent=timeToLabel(val);}
 
-  // 짝꿍 시간 자동 조정
-  if(pairPrefix){
-    var autoVal=wasStart ? addMinutes(val,60) : addMinutes(val,-60);
+  // 짝꿍 자동 설정: 짝꿍이 아직 한 번도 선택된 적 없을 때만 (1회)
+  var pairPrefix=pairMap[_dsPrefix];
+  var pairTouchedKey='touched_'+_dsContext+'_'+pairPrefix;
+  var myTouchedKey='touched_'+_dsContext+'_'+_dsPrefix;
+  drumState[myTouchedKey]=true; // 내 선택 완료 표시
+
+  if(pairPrefix && !drumState[pairTouchedKey]){
+    var autoVal=isStart ? addMinutes(val,60) : addMinutes(val,-60);
     drumState[pairPrefix]=autoVal;
-    var pairBtnId=pairBtnMap[pairPrefix];
+    var pairBtnId=btnMap[pairPrefix];
     if(pairBtnId){var pb=document.getElementById(pairBtnId); if(pb) pb.textContent=timeToLabel(autoVal);}
   }
 
@@ -1694,6 +1703,9 @@ function openModal(taskId) {
   }
 
   updateDateBtns(dateStr);
+  // touched 초기화: 새 일정=미터치, 수정=이미터치(자동조정 안함)
+  drumState['touched_modal_mStart']=isEdit;
+  drumState['touched_modal_mEnd']=isEdit;
   initTimeBtns('mStart','mEnd','mBtnStart','mBtnEnd', sStr, eStr);
   document.getElementById('addModal').classList.add('open');
   setTimeout(function(){ document.getElementById('mName').focus(); }, 100);
