@@ -944,8 +944,7 @@ function emptyBox(ico,h,p) {
 function taskCard(t) {
   var done=t.done;
   var isP=state.mode==='parent';
-  // 수정 권한: 부모가 등록한 건 부모만, 자녀가 등록한 건 자녀만
-  var canEdit=(t.fromParent && isP) || (!t.fromParent && !isP);
+  var canEdit=(t.fromParent && isP)||(!t.fromParent && !isP);
   var tags='';
   if (t.allday) tags+='<span class="tag allday">🌅 하루종일</span>';
   else if (t.time) tags+='<span class="tag time">🕐 '+prettyTime(t.time)+'</span>';
@@ -953,8 +952,8 @@ function taskCard(t) {
   if (t.fromParent) tags+='<span class="tag pfrom">👨‍👩‍👧 부모등록</span>';
   if (t.repeat&&t.repeat!=='none') tags+='<span class="tag rep">🔄 반복</span>';
   if (done) tags+='<span class="tag done-t">✅ 완료</span>';
-  return '<div class="task-card'+(done?' done':'')+(t.fromParent?' from-parent':'')+'" '
-    +(canEdit?'ondblclick="openModal('+t.id+')" title="더블탭하면 수정"':'')+'>'
+  return '<div class="task-card'+(done?' done':'')+(t.fromParent?' from-parent':'')+'"'
+    +(canEdit?' data-dbtap="task:'+t.id+'"':'')+'>'
     +'<button class="chk'+(done?' checked':'')+'" onclick="toggleTask('+t.id+');event.stopPropagation()">'+(done?'✓':'')+'</button>'
     +'<div class="task-body"><div class="task-name">'+t.name+'</div>'
     +'<div class="tags">'+tags+'</div>'
@@ -967,8 +966,7 @@ function taskCard(t) {
 function sharedCard(e, showDel) {
   var isP=state.mode==='parent';
   var timeStr=e.allday?'하루종일':(e.time?'🕐 '+prettyTime(e.time):'');
-  return '<div class="shared-card" '
-    +(isP?'ondblclick="editShared('+e.id+')" style="cursor:pointer" title="더블탭하면 수정"':'')+'>'
+  return '<div class="shared-card"'+(isP?' data-dbtap="shared:'+e.id+'"':'')+'>'
     +'<div class="shared-icon">'+(e.icon||'📅')+'</div>'
     +'<div class="shared-body"><div class="shared-title">'+e.name+'</div>'
     +'<div class="shared-meta">'+timeStr+(e.desc?' · '+e.desc:'')+'</div></div>'
@@ -1076,7 +1074,7 @@ function renderWeek() {
     var ds=fmt(d);
     var has=tasksForDate(ds).length>0||sharedForDate(ds).length>0;
     var isTod=isToday(d), isSel=ds===fmt(state.selectedDate);
-    html+='<div class="week-day'+(isTod?' today':'')+(isSel?' sel':'')+'" onclick="selectDay(\''+ds+'\')" ondblclick="selectDayAndAdd(\''+ds+'\')">'
+    html+='<div class="week-day'+(isTod?' today':'')+(isSel?' sel':'')+'" onclick="selectDay(\''+ds+'\')" data-dbtap="date:'+ds+'">'
       +'<div class="wd-name">'+days[d.getDay()]+'</div>'
       +'<div class="wd-num">'+d.getDate()+'</div>'
       +'<div class="wd-dot'+(has?'':' empty')+'"></div>'+'</div>';
@@ -1129,7 +1127,7 @@ function mdCell(d,other) {
   var ds=fmt(d);
   var hasTasks=tasksForDate(ds).length>0, hasShared=sharedForDate(ds).length>0;
   var isTod=isToday(d), isSel=ds===fmt(state.selectedDate);
-  return '<div class="month-day'+(other?' other':'')+(isTod?' today':'')+(isSel&&!isTod?' sel':'')+'" onclick="selectDay(\''+ds+'\')" ondblclick="selectDayAndAdd(\''+ds+'\')">'
+  return '<div class="month-day'+(other?' other':'')+(isTod?' today':'')+(isSel&&!isTod?' sel':'')+'" onclick="selectDay(\''+ds+'\')" data-dbtap="date:'+ds+'">'
     +'<div class="md-num">'+d.getDate()+'</div>'
     +'<div class="md-dots">'
     +(hasTasks?'<div class="md-dot"></div>':'')
@@ -1204,7 +1202,7 @@ function renderShared() {
       : koDate(d);
     html+='<div class="shared-card" style="'+(isPast?'opacity:.55':'')+'">'
       +'<div class="shared-icon">'+(e.icon||'📅')+'</div>'
-      +'<div class="shared-body" '+(isP?'ondblclick="editShared('+e.id+')" style="cursor:pointer" title="더블탭하면 수정"':'')+' >'
+      +'<div class="shared-body" '+(isP?'data-dbtap="shared:'+e.id+'"':'')+' >'
       +'<div class="shared-title">'+e.name+'</div>'
       +'<div class="shared-meta">'+dateStr+' '+timeStr+(e.desc?' · '+e.desc:'')+'</div></div>'
       +(isP?'<button class="task-del" onclick="deleteShared('+e.id+')">🗑</button>':'')
@@ -1838,8 +1836,51 @@ function showToast(msg) {
   setTimeout(function(){ t.classList.remove('show'); },2200);
 }
 
-// ── LONG PRESS (제거 - dblclick으로 대체) ──
-function startLongPress(){} function cancelLongPress(){}
+// ── DOUBLE TAP ENGINE (모바일 더블탭, 줌 방지) ──
+(function(){
+  var lastTap=0, lastEl=null, DELAY=350;
+  function onTap(e) {
+    // 버튼 클릭은 무시
+    if (e.target.closest('button')) return;
+    var el=e.target.closest('[data-dbtap]');
+    if (!el) return;
+    var now=Date.now();
+    if (lastEl===el && now-lastTap<DELAY) {
+      // 더블탭!
+      e.preventDefault();
+      var val=el.dataset.dbtap;
+      lastTap=0; lastEl=null;
+      var parts=val.split(':');
+      var type=parts[0], id=parts.slice(1).join(':');
+      if (type==='task') openModal(id);
+      else if (type==='shared') editShared(id);
+      else if (type==='date') selectDayAndAdd(id);
+    } else {
+      lastTap=now; lastEl=el;
+    }
+  }
+  document.addEventListener('touchend', onTap, {passive:false});
+  // 데스크탑용 dblclick도 유지
+  document.addEventListener('dblclick', function(e){
+    if (e.target.closest('button')) return;
+    var el=e.target.closest('[data-dbtap]');
+    if (!el) return;
+    e.preventDefault();
+    var val=el.dataset.dbtap;
+    var parts=val.split(':');
+    var type=parts[0], id=parts.slice(1).join(':');
+    if (type==='task') openModal(id);
+    else if (type==='shared') editShared(id);
+    else if (type==='date') selectDayAndAdd(id);
+  });
+  // 더블탭 줌 방지 (touch-action CSS)
+  var style=document.createElement('style');
+  style.textContent='[data-dbtap]{touch-action:manipulation;} body{touch-action:pan-x pan-y;}';
+  document.head.appendChild(style);
+})();
+
+// ── INIT ──
+setupListeners();
 
 function selectDayAndAdd(ds) {
   state.selectedDate=parseDate(ds);
@@ -1859,7 +1900,6 @@ function onQaDateChange() {
 }
 
 // ── INIT ──
-setupListeners();
 seedIfEmpty();
 initDeviceRole();
 </script>
