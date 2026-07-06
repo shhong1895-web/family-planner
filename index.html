@@ -943,6 +943,9 @@ function emptyBox(ico,h,p) {
 
 function taskCard(t) {
   var done=t.done;
+  var isP=state.mode==='parent';
+  // 수정 권한: 부모가 등록한 건 부모만, 자녀가 등록한 건 자녀만
+  var canEdit=(t.fromParent && isP) || (!t.fromParent && !isP);
   var tags='';
   if (t.allday) tags+='<span class="tag allday">🌅 하루종일</span>';
   else if (t.time) tags+='<span class="tag time">🕐 '+prettyTime(t.time)+'</span>';
@@ -951,7 +954,7 @@ function taskCard(t) {
   if (t.repeat&&t.repeat!=='none') tags+='<span class="tag rep">🔄 반복</span>';
   if (done) tags+='<span class="tag done-t">✅ 완료</span>';
   return '<div class="task-card'+(done?' done':'')+(t.fromParent?' from-parent':'')+'" '
-    +'ondblclick="openModal('+t.id+')">'
+    +(canEdit?'ondblclick="openModal('+t.id+')" title="더블탭하면 수정"':'')+'>'
     +'<button class="chk'+(done?' checked':'')+'" onclick="toggleTask('+t.id+');event.stopPropagation()">'+(done?'✓':'')+'</button>'
     +'<div class="task-body"><div class="task-name">'+t.name+'</div>'
     +'<div class="tags">'+tags+'</div>'
@@ -962,12 +965,14 @@ function taskCard(t) {
 }
 
 function sharedCard(e, showDel) {
+  var isP=state.mode==='parent';
   var timeStr=e.allday?'하루종일':(e.time?'🕐 '+prettyTime(e.time):'');
-  return '<div class="shared-card">'
+  return '<div class="shared-card" '
+    +(isP?'ondblclick="editShared('+e.id+')" style="cursor:pointer" title="더블탭하면 수정"':'')+'>'
     +'<div class="shared-icon">'+(e.icon||'📅')+'</div>'
     +'<div class="shared-body"><div class="shared-title">'+e.name+'</div>'
     +'<div class="shared-meta">'+timeStr+(e.desc?' · '+e.desc:'')+'</div></div>'
-    +(showDel?'<button class="task-del" onclick="deleteShared('+e.id+')">🗑</button>':'')
+    +(showDel?'<button class="task-del" onclick="deleteShared('+e.id+');event.stopPropagation()">🗑</button>':'')
     +'</div>';
 }
 
@@ -1199,7 +1204,7 @@ function renderShared() {
       : koDate(d);
     html+='<div class="shared-card" style="'+(isPast?'opacity:.55':'')+'">'
       +'<div class="shared-icon">'+(e.icon||'📅')+'</div>'
-      +'<div class="shared-body" '+(isP?'onclick="editShared('+e.id+')" style="cursor:pointer"':'')+' >'
+      +'<div class="shared-body" '+(isP?'ondblclick="editShared('+e.id+')" style="cursor:pointer" title="더블탭하면 수정"':'')+' >'
       +'<div class="shared-title">'+e.name+'</div>'
       +'<div class="shared-meta">'+dateStr+' '+timeStr+(e.desc?' · '+e.desc:'')+'</div></div>'
       +(isP?'<button class="task-del" onclick="deleteShared('+e.id+')">🗑</button>':'')
@@ -1272,9 +1277,13 @@ function toggleTask(id) {
   if (t.done) showToast('🎉 완료! 잘했어요!');
 }
 function deleteTask(id) {
-  if (!confirm('이 할일을 삭제할까요?')) return;
   var t=state.tasks.find(function(x){ return String(x.id)===String(id); });
-  if (t) fsDel('tasks',t.id);
+  if (!t) return;
+  var isP=state.mode==='parent';
+  var canEdit=(t.fromParent && isP)||(!t.fromParent && !isP);
+  if (!canEdit) { showToast('⚠️ 본인이 등록한 일정만 삭제할 수 있어요'); return; }
+  if (!confirm('이 할일을 삭제할까요?')) return;
+  fsDel('tasks',t.id);
   showToast('🗑 삭제됐어요');
 }
 function deleteShared(id) {
