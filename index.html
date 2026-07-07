@@ -1837,55 +1837,58 @@ function showToast(msg) {
 }
 
 // ── DOUBLE TAP ENGINE (모바일 더블탭, 줌 방지) ──
+function selectDayAndAdd(ds) {
+  state.selectedDate = parseDate(ds);
+  openModal();
+}
+
+function editSharedAnywhere(id) {
+  // 공유탭이 현재 열려있으면 폼으로, 아니면 공유탭으로 이동 후 수정
+  if (state.view === 'shared') {
+    editShared(id);
+  } else {
+    state.view = 'shared';
+    render();
+    // render 후 DOM이 생성될 시간을 줘야 함
+    setTimeout(function(){ editShared(id); }, 100);
+  }
+}
+
 (function(){
   var lastTap=0, lastEl=null, DELAY=350;
+  function handleDbtap(val) {
+    var parts=val.split(':');
+    var type=parts[0], id=parts.slice(1).join(':');
+    if (type==='task') openModal(id);
+    else if (type==='shared') editSharedAnywhere(id);
+    else if (type==='date') selectDayAndAdd(id);
+  }
   function onTap(e) {
-    // 버튼 클릭은 무시
     if (e.target.closest('button')) return;
     var el=e.target.closest('[data-dbtap]');
     if (!el) return;
     var now=Date.now();
     if (lastEl===el && now-lastTap<DELAY) {
-      // 더블탭!
       e.preventDefault();
       var val=el.dataset.dbtap;
       lastTap=0; lastEl=null;
-      var parts=val.split(':');
-      var type=parts[0], id=parts.slice(1).join(':');
-      if (type==='task') openModal(id);
-      else if (type==='shared') editShared(id);
-      else if (type==='date') selectDayAndAdd(id);
+      handleDbtap(val);
     } else {
       lastTap=now; lastEl=el;
     }
   }
   document.addEventListener('touchend', onTap, {passive:false});
-  // 데스크탑용 dblclick도 유지
   document.addEventListener('dblclick', function(e){
     if (e.target.closest('button')) return;
     var el=e.target.closest('[data-dbtap]');
     if (!el) return;
     e.preventDefault();
-    var val=el.dataset.dbtap;
-    var parts=val.split(':');
-    var type=parts[0], id=parts.slice(1).join(':');
-    if (type==='task') openModal(id);
-    else if (type==='shared') editShared(id);
-    else if (type==='date') selectDayAndAdd(id);
+    handleDbtap(el.dataset.dbtap);
   });
-  // 더블탭 줌 방지 (touch-action CSS)
   var style=document.createElement('style');
-  style.textContent='[data-dbtap]{touch-action:manipulation;} body{touch-action:pan-x pan-y;}';
+  style.textContent='[data-dbtap]{touch-action:manipulation;-webkit-user-select:none;user-select:none;} .week-day,.month-day{touch-action:manipulation;}';
   document.head.appendChild(style);
 })();
-
-// ── INIT ──
-setupListeners();
-
-function selectDayAndAdd(ds) {
-  state.selectedDate=parseDate(ds);
-  openModal();
-}
 
 function focusQaDate() {
   var el=document.getElementById('qa-date'); if(!el) return;
@@ -1900,6 +1903,7 @@ function onQaDateChange() {
 }
 
 // ── INIT ──
+setupListeners();
 seedIfEmpty();
 initDeviceRole();
 </script>
