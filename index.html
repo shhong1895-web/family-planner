@@ -142,6 +142,11 @@ body.parent-device .mode-pills { visibility:hidden; }
 .pc-unit { font-size:13px; opacity:.75; }
 .prog-bar { height:8px; background:rgba(255,255,255,.25); border-radius:4px; overflow:hidden; }
 .prog-fill { height:100%; background:#fff; border-radius:4px; transition:width .5s; }
+.streak-badge {
+  margin-top:12px; padding:6px 12px; border-radius:20px;
+  background:rgba(255,255,255,.2); display:inline-block;
+  font-size:13px; font-weight:700;
+}
 
 .sec-title {
   font-size:12px; font-weight:700; color:var(--sub);
@@ -160,13 +165,14 @@ body.parent-device .mode-pills { visibility:hidden; }
 .task-card.done { border-left-color:var(--success); }
 .task-card.from-parent { border-left-color:var(--parent); }
 .chk {
-  width:26px; height:26px; border-radius:50%; flex-shrink:0; margin-top:1px;
+  width:32px; height:32px; border-radius:50%; flex-shrink:0; margin-top:1px;
   border:2px solid var(--border); background:transparent; cursor:pointer;
-  display:flex; align-items:center; justify-content:center; font-size:13px;
+  display:flex; align-items:center; justify-content:center; font-size:15px;
 }
 .chk.checked { background:var(--success); border-color:var(--success); color:#fff; }
+.chk.chk-disabled { cursor:not-allowed; opacity:.55; }
 .task-body { flex:1; min-width:0; }
-.task-name { font-size:15px; font-weight:600; line-height:1.35; }
+.task-name { font-size:16px; font-weight:700; line-height:1.35; }
 .task-card.done .task-name { text-decoration:line-through; color:var(--sub); }
 .tags { display:flex; gap:5px; flex-wrap:wrap; margin-top:6px; }
 .tag { font-size:11px; font-weight:600; padding:2px 8px; border-radius:8px; background:var(--child-l); color:var(--child); }
@@ -711,6 +717,35 @@ function getWeekStart(d) { var r=new Date(d); r.setHours(0,0,0,0); r.setDate(r.g
 function isToday(d) { return fmt(d)===fmt(TODAY); }
 function koDate(d) { var days=['일','월','화','수','목','금','토']; return (d.getMonth()+1)+'월 '+d.getDate()+'일 ('+days[d.getDay()]+')'; }
 function catEmoji(c) { return {'학습':'📚','운동':'🏃','가사':'🏠','취미':'🎨','기타':'⭐','부모일정':'👔'}[c]||'📌'; }
+// 입력값을 안전하게 화면에 표시하기 위한 이스케이프 (XSS 방지)
+function esc(s) {
+  if (s===undefined||s===null) return '';
+  return String(s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+// 반복 할일은 문서 하나를 여러 날짜에서 공유하므로, 완료 여부는 날짜별로 따로 기록한다
+function taskDoneForDate(t, ds) {
+  if (t.repeat && t.repeat!=='none') return (t.doneDates||[]).indexOf(ds)>=0;
+  return !!t.done;
+}
+// 특정 날짜의 할일 중 몇 %를 완료했는지 (할일이 없으면 null)
+function pctForDate(ds) {
+  var list=tasksForDate(ds);
+  if (!list.length) return null;
+  var done=list.filter(function(t){ return taskDoneForDate(t,ds); }).length;
+  return Math.round(done/list.length*100);
+}
+// 오늘부터 거슬러 올라가며 "그날 할일을 모두 완료"한 연속일수 계산 (최대 60일)
+function computeStreak() {
+  var streak=0, d=new Date(TODAY);
+  for (var i=0;i<60;i++) {
+    var ds=fmt(d);
+    var p=pctForDate(ds);
+    if (p===100) { streak++; d.setDate(d.getDate()-1); } else break;
+  }
+  return streak;
+}
 
 function tasksForDate(ds) {
   return state.tasks.filter(function(t) {
@@ -747,12 +782,15 @@ function setupListeners() {
 // ── SEED DATA ──
 function seedIfEmpty() {
   setTimeout(function() {
-    if (state.tasks.length===0) {
+    if (state.tasks.length!==0) return;
+    db.collection('meta').doc('seed').get().then(function(snap){
+      if (snap.exists) return; // 이미 한 번 시딩된 적 있음 → 지금 비어있는 건 실제로 다 지운 것이므로 다시 채우지 않음
+      db.collection('meta').doc('seed').set({seededAt:Date.now()});
       var ds=fmt(TODAY);
       var seed=[
         {id:1,name:'수학 문제집 5페이지',date:ds,time:'09:00',allday:false,cat:'학습',desc:'3단원 분수',done:false,fromParent:false,repeat:'none'},
         {id:2,name:'영어 단어 20개 암기',date:ds,time:'10:30',allday:false,cat:'학습',desc:'',done:false,fromParent:false,repeat:'none'},
-        {id:3,name:'줄넘기 100개',date:ds,time:'15:00',allday:false,cat:'운동',desc:'',done:true,fromParent:false,repeat:'daily'},
+        {id:3,name:'줄넘기 100개',date:ds,time:'15:00',allday:false,cat:'운동',desc:'',done:false,fromParent:false,repeat:'daily',doneDates:[]},
         {id:4,name:'방 청소하기',date:ds,time:'17:00',allday:false,cat:'가사',desc:'책상 정리 포함',done:false,fromParent:true,repeat:'none'},
       ];
       var ev=[{id:1,name:'가족 저녁 외식',date:ds,time:'18:30',allday:false,icon:'🍽️',desc:'이탈리안 레스토랑'}];
@@ -760,7 +798,7 @@ function seedIfEmpty() {
       seed.forEach(function(t){ fsSet('tasks',t.id,t); });
       ev.forEach(function(e){ fsSet('sharedEvents',e.id,e); });
       msg.forEach(function(m){ fsSet('messages',m.id,m); });
-    }
+    }).catch(function(){});
   }, 2500);
 }
 
@@ -776,7 +814,12 @@ function getDeviceId() {
 
 function initDeviceRole() {
   var params=new URLSearchParams(location.search);
-  if (params.has('reset')) { localStorage.removeItem(ROLE_KEY); localStorage.removeItem(REG_KEY); }
+  if (params.has('reset')) {
+    localStorage.removeItem(ROLE_KEY); localStorage.removeItem(REG_KEY);
+    Object.keys(localStorage).forEach(function(k){
+      if (k.indexOf('device_approved_')===0) localStorage.removeItem(k);
+    });
+  }
   var urlRole=params.get('role');
   if (urlRole==='child'||urlRole==='parent') { localStorage.setItem(ROLE_KEY,urlRole); }
   var role=localStorage.getItem(ROLE_KEY);
@@ -906,13 +949,76 @@ function setView(v) {
 }
 
 // ── RENDER ──
+// ── 배경 동기화로 인한 입력값 유실 방지 ──
+// scrollArea 안의 폼(빠른등록/메시지/공유일정)은 render() 때마다 통째로 다시 그려지므로,
+// 실제로 화면(view/mode)이 바뀐 게 아니라 다른 기기의 변경사항 때문에 재렌더링되는 경우엔
+// 입력 중이던 값과 포커스를 스냅샷했다가 그대로 복원한다.
+var _prevRenderedView=null, _prevRenderedMode=null;
+var STICKY_FIELDS=['qa-name','qa-cat','qa-allday','qa-date','msgInput','se-name','se-desc','se-allday','se-icon','se-editId','se-dateStart','se-dateEnd'];
+
+function snapshotStickyFields(sa) {
+  var snap={};
+  STICKY_FIELDS.forEach(function(id){
+    var el=document.getElementById(id);
+    if (el) snap[id]={ value: el.value, checked: (el.type==='checkbox')?el.checked:undefined };
+  });
+  var active=document.activeElement;
+  if (active && sa && sa.contains(active) && active.id && STICKY_FIELDS.indexOf(active.id)>=0) {
+    snap.__activeId=active.id;
+    snap.__selStart=(typeof active.selectionStart==='number')?active.selectionStart:null;
+    snap.__selEnd=(typeof active.selectionEnd==='number')?active.selectionEnd:null;
+  }
+  return snap;
+}
+
+function restoreStickyFields(snap) {
+  STICKY_FIELDS.forEach(function(id){
+    var el=document.getElementById(id);
+    if (!el || snap[id]===undefined) return;
+    if (el.type==='checkbox') el.checked=!!snap[id].checked;
+    else el.value=snap[id].value;
+  });
+  // drumState 값은 건드리지 않고, 화면에 보이는 라벨만 다시 맞춰준다
+  if (document.getElementById('qa-allday')) toggleAlldayQa();
+  if (document.getElementById('se-allday')) toggleAlldayShared();
+  var qaDateEl=document.getElementById('qa-date');
+  if (qaDateEl && qaDateEl.value) { var b=document.getElementById('qa-btnDate'); if (b) b.textContent=koDateShort(qaDateEl.value); }
+  var sdsEl=document.getElementById('se-dateStart');
+  if (sdsEl && sdsEl.value) { var b1=document.getElementById('se-btnDateStart'); if (b1) b1.textContent=koDateShort(sdsEl.value); }
+  var sdeEl=document.getElementById('se-dateEnd');
+  if (sdeEl && sdeEl.value) { var b2=document.getElementById('se-btnDateEnd'); if (b2) b2.textContent=koDateShort(sdeEl.value); }
+  [['qaStart','qa-btnStart'],['qaEnd','qa-btnEnd'],['seStart','se-btnStart'],['seEnd','se-btnEnd']].forEach(function(p){
+    if (drumState[p[0]]) { var el2=document.getElementById(p[1]); if (el2) el2.textContent=timeToLabel(drumState[p[0]]); }
+  });
+  var editIdEl=document.getElementById('se-editId');
+  if (editIdEl && editIdEl.value) {
+    var t=document.getElementById('se-formTitle'); if(t) t.textContent='공유 일정 수정';
+    var sb=document.getElementById('se-submitBtn'); if(sb) sb.textContent='✏️ 수정하기';
+    var cb=document.getElementById('se-cancelBtn'); if(cb) cb.style.display='';
+  }
+  if (snap.__activeId) {
+    var el3=document.getElementById(snap.__activeId);
+    if (el3) {
+      el3.focus();
+      if (snap.__selStart!=null && el3.setSelectionRange) {
+        try { el3.setSelectionRange(snap.__selStart, snap.__selEnd); } catch(e){}
+      }
+    }
+  }
+}
+
 function render() {
   var sa=document.getElementById('scrollArea');
   if (!sa) return;
   var v=state.view;
+  // 실제 view/mode 전환이 아니라 백그라운드 동기화로 인한 재렌더링이면 입력값을 보존한다
+  var isFreshView = (_prevRenderedView!==v || _prevRenderedMode!==state.mode);
+  var snap = isFreshView ? null : snapshotStickyFields(sa);
+  _prevRenderedView=v; _prevRenderedMode=state.mode;
+
   if (v==='day') {
     sa.innerHTML=renderDay();
-    if(state.mode==='parent'){
+    if(state.mode==='parent' && isFreshView){
       var now3=new Date(); var h3=now3.getHours(), hE3=h3+1<24?h3+1:23;
       initTimeBtns('qaStart','qaEnd','qa-btnStart','qa-btnEnd',
         String(h3).padStart(2,'0')+':00',String(hE3).padStart(2,'0')+':00');
@@ -924,7 +1030,7 @@ function render() {
   else if (v==='month') sa.innerHTML=renderMonth();
   else if (v==='shared') {
     sa.innerHTML=renderShared();
-    if(state.mode==='parent'){
+    if(state.mode==='parent' && isFreshView){
       var now2=new Date(); var h2=now2.getHours(), hE2=h2+1<24?h2+1:23;
       drumState['touched_shared_seStart']=false;
       drumState['touched_shared_seEnd']=false;
@@ -935,31 +1041,37 @@ function render() {
     }
   }
   else if (v==='devices') sa.innerHTML=renderDevices();
+
+  if (snap) restoreStickyFields(snap);
 }
 
 function emptyBox(ico,h,p) {
   return '<div class="empty"><div class="empty-ico">'+ico+'</div><div class="empty-h">'+h+'</div><div class="empty-p">'+p+'</div></div>';
 }
 
-function taskCard(t) {
-  var done=t.done;
+function taskCard(t, ds) {
+  var done=taskDoneForDate(t, ds);
   var isP=state.mode==='parent';
-  var canEdit=(t.fromParent && isP)||(!t.fromParent && !isP);
+  var canEdit=(t.fromParent && isP)||(!t.fromParent && !isP); // 수정/삭제: 만든 사람만
+  var canToggle=!isP; // 완료 체크는 항상 자녀 몫 (부모가 등록한 할일이라도 체크는 자녀가 직접)
   var tags='';
   if (t.allday) tags+='<span class="tag allday">🌅 하루종일</span>';
   else if (t.time) tags+='<span class="tag time">🕐 '+prettyTime(t.time)+'</span>';
-  tags+='<span class="tag">'+catEmoji(t.cat)+' '+t.cat+'</span>';
+  tags+='<span class="tag">'+catEmoji(t.cat)+' '+esc(t.cat)+'</span>';
   if (t.fromParent) tags+='<span class="tag pfrom">👨‍👩‍👧 부모등록</span>';
   if (t.repeat&&t.repeat!=='none') tags+='<span class="tag rep">🔄 반복</span>';
   if (done) tags+='<span class="tag done-t">✅ 완료</span>';
+  var chkHtml = canToggle
+    ? '<button class="chk'+(done?' checked':'')+'" onclick="toggleTask(\''+t.id+'\',\''+ds+'\');event.stopPropagation()">'+(done?'✓':'')+'</button>'
+    : '<button class="chk'+(done?' checked':'')+' chk-disabled" onclick="event.stopPropagation();showToast(\'⚠️ 완료 체크는 자녀가 직접 해요\')">'+(done?'✓':'')+'</button>';
   return '<div class="task-card'+(done?' done':'')+(t.fromParent?' from-parent':'')+'"'
     +(canEdit?' data-dbtap="task:'+t.id+'"':'')+'>'
-    +'<button class="chk'+(done?' checked':'')+'" onclick="toggleTask('+t.id+');event.stopPropagation()">'+(done?'✓':'')+'</button>'
-    +'<div class="task-body"><div class="task-name">'+t.name+'</div>'
+    +chkHtml
+    +'<div class="task-body"><div class="task-name">'+esc(t.name)+'</div>'
     +'<div class="tags">'+tags+'</div>'
-    +(t.desc?'<div class="task-desc">'+t.desc+'</div>':'')
+    +(t.desc?'<div class="task-desc">'+esc(t.desc)+'</div>':'')
     +'</div>'
-    +'<button class="task-del" onclick="deleteTask('+t.id+');event.stopPropagation()">🗑</button>'
+    +(canEdit?'<button class="task-del" onclick="deleteTask('+t.id+');event.stopPropagation()">🗑</button>':'')
     +'</div>';
 }
 
@@ -968,8 +1080,8 @@ function sharedCard(e, showDel) {
   var timeStr=e.allday?'하루종일':(e.time?'🕐 '+prettyTime(e.time):'');
   return '<div class="shared-card"'+(isP?' data-dbtap="shared:'+e.id+'"':'')+'>'
     +'<div class="shared-icon">'+(e.icon||'📅')+'</div>'
-    +'<div class="shared-body"><div class="shared-title">'+e.name+'</div>'
-    +'<div class="shared-meta">'+timeStr+(e.desc?' · '+e.desc:'')+'</div></div>'
+    +'<div class="shared-body"><div class="shared-title">'+esc(e.name)+'</div>'
+    +'<div class="shared-meta">'+timeStr+(e.desc?' · '+esc(e.desc):'')+'</div></div>'
     +(showDel?'<button class="task-del" onclick="deleteShared('+e.id+');event.stopPropagation()">🗑</button>':'')
     +'</div>';
 }
@@ -979,9 +1091,10 @@ function renderDay() {
   var ds=fmt(state.selectedDate);
   var tasks=tasksForDate(ds);
   var shared=sharedForDate(ds);
-  var done=tasks.filter(function(t){return t.done;}).length;
+  var done=tasks.filter(function(t){return taskDoneForDate(t,ds);}).length;
   var pct=tasks.length?Math.round(done/tasks.length*100):0;
   var isP=state.mode==='parent';
+  var streak=computeStreak();
   var html='';
 
   html+='<div class="date-nav">'
@@ -995,7 +1108,9 @@ function renderDay() {
     +'<div class="pc-date">'+(isToday(state.selectedDate)?'오늘':koDate(state.selectedDate).replace(/\(.*\)/,'').trim())+'</div></div>'
     +'<div><div class="pc-big">'+pct+'<span class="pc-unit">%</span></div>'
     +'<div class="pc-unit">'+done+'/'+tasks.length+' 완료</div></div></div>'
-    +'<div class="prog-bar"><div class="prog-fill" style="width:'+pct+'%"></div></div></div>';
+    +'<div class="prog-bar"><div class="prog-fill" style="width:'+pct+'%"></div></div>'
+    +(streak>0?'<div class="streak-badge">🔥 '+streak+'일 연속 완료 중!</div>':'')
+    +'</div>';
 
   if (shared.length) {
     html+='<div class="sec-title">공유 일정</div>';
@@ -1005,11 +1120,12 @@ function renderDay() {
   if (isP) {
     html+='<div class="sec-title">할일 현황</div>';
     if (!tasks.length) html+=emptyBox('📋','등록된 할일이 없어요','아래에서 할일을 추가해보세요');
-    tasks.forEach(function(t){ html+=taskCard(t); });
+    tasks.forEach(function(t){ html+=taskCard(t, ds); });
 
     html+='<div class="sec-title">메시지 보내기</div>';
     html+='<div class="form-box"><textarea class="f-field" id="msgInput" placeholder="자녀에게 응원 메시지를 보내세요..." style="height:70px;resize:none"></textarea>'
       +'<button class="f-btn p" onclick="sendMsg()">📨 메시지 보내기</button></div>';
+
 
     html+='<div class="sec-title">할일 추가 (부모 등록)</div>';
     html+='<div class="form-box">'
@@ -1043,14 +1159,14 @@ function renderDay() {
   } else {
     html+='<div class="sec-title">오늘 할 일</div>';
     if (!tasks.length) html+=emptyBox('📝','할일이 없어요','+ 버튼으로 할일을 추가해보세요');
-    tasks.forEach(function(t){ html+=taskCard(t); });
+    tasks.forEach(function(t){ html+=taskCard(t, ds); });
 
     var msgs=state.messages.filter(function(m){ return m.date===ds; });
     if (msgs.length) {
       html+='<div class="sec-title">부모님 메시지</div>';
       msgs.forEach(function(m){
         html+='<div class="msg-card"><div class="msg-from">👨‍👩‍👧 부모님</div>'
-          +'<div class="msg-txt">'+m.text+'</div><div class="msg-time">'+m.time+'</div></div>';
+          +'<div class="msg-txt">'+esc(m.text)+'</div><div class="msg-time">'+m.time+'</div></div>';
       });
     }
   }
@@ -1088,7 +1204,7 @@ function renderWeek() {
     html+=emptyBox('📅','이날 할일이 없어요','날짜를 더블탭하면 일정을 추가할 수 있어요');
   }
   shared.forEach(function(e){ html+=sharedCard(e,false); });
-  tasks.forEach(function(t){ html+=taskCard(t); });
+  tasks.forEach(function(t){ html+=taskCard(t, ds); });
   return html;
 }
 
@@ -1119,7 +1235,7 @@ function renderMonth() {
   html+='<div class="sec-title">'+koDate(state.selectedDate)+'</div>';
   if (!tasks.length&&!shared.length) html+=emptyBox('📅','이날 계획이 없어요','달력에서 날짜를 선택하세요');
   shared.forEach(function(e){ html+=sharedCard(e,false); });
-  tasks.forEach(function(t){ html+=taskCard(t); });
+  tasks.forEach(function(t){ html+=taskCard(t, ds); });
   return html;
 }
 
@@ -1203,8 +1319,8 @@ function renderShared() {
     html+='<div class="shared-card" style="'+(isPast?'opacity:.55':'')+'">'
       +'<div class="shared-icon">'+(e.icon||'📅')+'</div>'
       +'<div class="shared-body" '+(isP?'data-dbtap="shared:'+e.id+'"':'')+' >'
-      +'<div class="shared-title">'+e.name+'</div>'
-      +'<div class="shared-meta">'+dateStr+' '+timeStr+(e.desc?' · '+e.desc:'')+'</div></div>'
+      +'<div class="shared-title">'+esc(e.name)+'</div>'
+      +'<div class="shared-meta">'+dateStr+' '+timeStr+(e.desc?' · '+esc(e.desc):'')+'</div></div>'
       +(isP?'<button class="task-del" onclick="deleteShared('+e.id+')">🗑</button>':'')
       +'</div>';
   });
@@ -1267,12 +1383,33 @@ function renderDevices() {
 }
 
 // ── ACTIONS ──
-function toggleTask(id) {
+function toggleTask(id, ds) {
   var t=state.tasks.find(function(x){ return String(x.id)===String(id); });
   if (!t) return;
-  t.done=!t.done;
-  fsSet('tasks',t.id,t);
-  if (t.done) showToast('🎉 완료! 잘했어요!');
+  var isP=state.mode==='parent';
+  if (isP) { showToast('⚠️ 완료 체크는 자녀가 직접 해요'); return; }
+  var isRepeating = t.repeat && t.repeat!=='none';
+  var nowDone;
+  if (isRepeating) {
+    var doneDates=(t.doneDates||[]).slice();
+    var idx=doneDates.indexOf(ds);
+    if (idx>=0) { doneDates.splice(idx,1); nowDone=false; }
+    else { doneDates.push(ds); nowDone=true; }
+    t.doneDates=doneDates;
+  } else {
+    t.done=!t.done;
+    nowDone=t.done;
+  }
+  fsSet('tasks',t.id,t).then(function(){
+    if (!nowDone) return;
+    var p=pctForDate(ds);
+    if (p===100 && ds===fmt(TODAY)) {
+      var s=computeStreak();
+      showToast(s>1?('🎉 오늘 할일을 다 했어요! 🔥 '+s+'일 연속!'):'🎉 오늘 할일을 다 했어요! 최고예요!');
+    } else {
+      showToast('🎉 완료! 잘했어요!');
+    }
+  });
 }
 function deleteTask(id) {
   var t=state.tasks.find(function(x){ return String(x.id)===String(id); });
