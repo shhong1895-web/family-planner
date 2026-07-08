@@ -370,6 +370,19 @@ body.parent-device .mode-pills { visibility:hidden; }
 .m-row { display:flex; gap:10px; }
 .m-row .m-field { flex:1; }
 .m-label { font-size:12px; font-weight:700; color:var(--sub); margin-bottom:6px; letter-spacing:.5px; }
+.weekday-picker { display:flex; gap:6px; margin-bottom:10px; }
+.wd-btn {
+  flex:1; padding:10px 0; border-radius:10px; border:1.5px solid var(--border);
+  background:var(--bg); font-family:inherit; font-size:14px; font-weight:700;
+  color:var(--sub); cursor:pointer;
+}
+.wd-btn.active { background:var(--child); border-color:var(--child); color:#fff; }
+.wd-presets { display:flex; gap:8px; margin-bottom:14px; }
+.wd-preset-btn {
+  padding:8px 12px; border-radius:10px; border:1.5px solid var(--border);
+  background:transparent; font-family:inherit; font-size:13px; font-weight:600;
+  color:var(--sub); cursor:pointer;
+}
 .m-btns { display:flex; gap:10px; margin-top:8px; }
 .m-cancel { flex:1; padding:14px; border-radius:12px; border:1.5px solid var(--border); background:transparent; font-family:inherit; font-size:15px; font-weight:600; cursor:pointer; }
 .m-save { flex:2; padding:14px; border-radius:12px; border:none; background:var(--child); color:#fff; font-family:inherit; font-size:15px; font-weight:700; cursor:pointer; }
@@ -620,12 +633,39 @@ body.parent-device .mode-pills { visibility:hidden; }
         <option value="기타">⭐ 기타</option>
       </select>
       <div class="m-label">반복</div>
-      <select class="m-field" id="mRepeat">
+      <select class="m-field" id="mRepeat" onchange="onRepeatTypeChange()">
         <option value="none">반복 없음</option>
-        <option value="daily">매일</option>
-        <option value="weekly">매주</option>
-        <option value="monthly">매월</option>
+        <option value="weekday">요일 반복</option>
+        <option value="monthly">매월 (같은 날짜)</option>
       </select>
+
+      <div id="mWeekdayWrap" style="display:none">
+        <div class="m-label">반복할 요일</div>
+        <div class="weekday-picker">
+          <button type="button" class="wd-btn" data-day="1" onclick="toggleWeekday(this)">월</button>
+          <button type="button" class="wd-btn" data-day="2" onclick="toggleWeekday(this)">화</button>
+          <button type="button" class="wd-btn" data-day="3" onclick="toggleWeekday(this)">수</button>
+          <button type="button" class="wd-btn" data-day="4" onclick="toggleWeekday(this)">목</button>
+          <button type="button" class="wd-btn" data-day="5" onclick="toggleWeekday(this)">금</button>
+          <button type="button" class="wd-btn" data-day="6" onclick="toggleWeekday(this)">토</button>
+          <button type="button" class="wd-btn" data-day="0" onclick="toggleWeekday(this)">일</button>
+        </div>
+        <div class="wd-presets">
+          <button type="button" class="wd-preset-btn" onclick="setWeekdayPreset('all')">매일</button>
+          <button type="button" class="wd-preset-btn" onclick="setWeekdayPreset('weekday')">평일만</button>
+          <button type="button" class="wd-preset-btn" onclick="setWeekdayPreset('weekend')">주말만</button>
+        </div>
+      </div>
+
+      <div id="mRepeatEndWrap" style="display:none">
+        <div class="m-label">반복 종료일 (선택)</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="dt-date-btn" id="mBtnRepeatEnd" onclick="focusRepeatEndDate()" style="flex:1;text-align:left">종료일 설정 안 함 (계속 반복)</button>
+          <button type="button" class="wd-preset-btn" onclick="clearRepeatEnd()">해제</button>
+        </div>
+        <input type="date" id="mRepeatEnd" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" onchange="onRepeatEndDateChange()">
+      </div>
+
       <div class="m-label">메모</div>
       <textarea class="m-field" id="mDesc" placeholder="메모 (선택)" style="height:65px;resize:none"></textarea>
       <div class="m-btns">
@@ -724,6 +764,22 @@ function esc(s) {
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
   });
 }
+var WD_NAMES=['일','월','화','수','목','금','토'];
+function repeatSummary(t) {
+  var base;
+  if (t.repeat==='daily') base='매일';
+  else if (t.repeat==='weekly') base='매주 '+WD_NAMES[parseDate(t.date).getDay()]+'요일';
+  else if (t.repeat==='monthly') base='매월 '+parseDate(t.date).getDate()+'일';
+  else if (t.repeat==='weekday') {
+    var days=(t.repeatDays||[]).slice().sort();
+    if (days.length===7) base='매일';
+    else if (days.length===5 && [1,2,3,4,5].every(function(d){return days.indexOf(d)>=0;})) base='평일마다';
+    else if (days.length===2 && days.indexOf(0)>=0 && days.indexOf(6)>=0) base='주말마다';
+    else base=days.map(function(d){return WD_NAMES[d];}).join('·')+'요일';
+  } else base='반복';
+  if (t.repeatEnd) base += ' ('+koDateShort(t.repeatEnd)+'까지)';
+  return base;
+}
 // 반복 할일은 문서 하나를 여러 날짜에서 공유하므로, 완료 여부는 날짜별로 따로 기록한다
 function taskDoneForDate(t, ds) {
   if (t.repeat && t.repeat!=='none') return (t.doneDates||[]).indexOf(ds)>=0;
@@ -750,9 +806,14 @@ function computeStreak() {
 function tasksForDate(ds) {
   return state.tasks.filter(function(t) {
     if (t.date===ds) return true;
-    if (t.repeat==='daily') return true;
-    if (t.repeat==='weekly') { var o=parseDate(t.date),s=parseDate(ds); return o.getDay()===s.getDay()&&s>=o; }
-    if (t.repeat==='monthly') { var o=parseDate(t.date),s=parseDate(ds); return o.getDate()===s.getDate()&&s>=o; }
+    if (!t.repeat || t.repeat==='none') return false;
+    var o=parseDate(t.date), s=parseDate(ds);
+    if (s<o) return false; // 시작일 이전에는 반복 적용 안 함
+    if (t.repeatEnd) { var end=parseDate(t.repeatEnd); if (s>end) return false; } // 종료일 이후는 제외
+    if (t.repeat==='daily') return true; // 예전 데이터 호환
+    if (t.repeat==='weekly') return o.getDay()===s.getDay(); // 예전 데이터 호환
+    if (t.repeat==='weekday') return (t.repeatDays||[]).indexOf(s.getDay())>=0;
+    if (t.repeat==='monthly') return o.getDate()===s.getDate();
     return false;
   });
 }
@@ -1063,7 +1124,7 @@ function taskCard(t, ds) {
   else if (t.time) tags+='<span class="tag time">🕐 '+prettyTime(t.time)+'</span>';
   tags+='<span class="tag">'+catEmoji(t.cat)+' '+esc(t.cat)+'</span>';
   if (t.fromParent) tags+='<span class="tag pfrom">👨‍👩‍👧 부모등록</span>';
-  if (t.repeat&&t.repeat!=='none') tags+='<span class="tag rep">🔄 반복</span>';
+  if (t.repeat&&t.repeat!=='none') tags+='<span class="tag rep">🔄 '+esc(repeatSummary(t))+'</span>';
   if (done) tags+='<span class="tag done-t">✅ 완료</span>';
   var chkHtml = canToggle
     ? '<button class="chk'+(done?' checked':'')+'" onclick="toggleTask(\''+t.id+'\',\''+ds+'\');event.stopPropagation()">'+(done?'✓':'')+'</button>'
@@ -1842,6 +1903,39 @@ function onModalDateChange() {
   if (v) updateDateBtns(v);
 }
 
+// ── 반복 설정 (요일 선택 + 종료일) ──
+function onRepeatTypeChange() {
+  var v=document.getElementById('mRepeat').value;
+  document.getElementById('mWeekdayWrap').style.display = v==='weekday' ? '' : 'none';
+  document.getElementById('mRepeatEndWrap').style.display = v!=='none' ? '' : 'none';
+}
+function toggleWeekday(btn) { btn.classList.toggle('active'); }
+function setWeekdayPreset(type) {
+  var sel = type==='all' ? [0,1,2,3,4,5,6] : type==='weekday' ? [1,2,3,4,5] : [0,6];
+  document.querySelectorAll('#mWeekdayWrap .wd-btn').forEach(function(b){
+    b.classList.toggle('active', sel.indexOf(parseInt(b.dataset.day,10))>=0);
+  });
+}
+function getSelectedWeekdays() {
+  return [...document.querySelectorAll('#mWeekdayWrap .wd-btn.active')].map(function(b){ return parseInt(b.dataset.day,10); });
+}
+function setSelectedWeekdays(days) {
+  days=days||[];
+  document.querySelectorAll('#mWeekdayWrap .wd-btn').forEach(function(b){
+    b.classList.toggle('active', days.indexOf(parseInt(b.dataset.day,10))>=0);
+  });
+}
+function focusRepeatEndDate() { openHiddenDatePicker(document.getElementById('mRepeatEnd')); }
+function onRepeatEndDateChange() {
+  var v=document.getElementById('mRepeatEnd').value;
+  var btn=document.getElementById('mBtnRepeatEnd');
+  if (btn) btn.textContent = v ? (koDateShort(v)+'까지') : '종료일 설정 안 함 (계속 반복)';
+}
+function clearRepeatEnd() {
+  document.getElementById('mRepeatEnd').value='';
+  document.getElementById('mBtnRepeatEnd').textContent='종료일 설정 안 함 (계속 반복)';
+}
+
 function openModal(taskId) {
   _editTaskId = taskId || null;
   var isP = state.mode === 'parent';
@@ -1865,7 +1959,6 @@ function openModal(taskId) {
     if (!t) { showToast('⚠️ 일정을 찾을 수 없어요'); return; }
     document.getElementById('mName').value = t.name;
     document.getElementById('mCat').value = t.cat || '기타';
-    document.getElementById('mRepeat').value = t.repeat || 'none';
     document.getElementById('mDesc').value = t.desc || '';
     document.getElementById('mAllday').checked = !!t.allday;
     dateStr = t.date || dateStr;
@@ -1874,6 +1967,16 @@ function openModal(taskId) {
     if (t.time && t.time.indexOf('~') >= 0) {
       var tp = t.time.split('~'); sStr = tp[0]; eStr = tp[1];
     } else if (t.time) { sStr = t.time; }
+
+    // 예전 방식(daily/weekly)으로 저장된 데이터는 요일선택 방식으로 자동 변환해서 보여준다
+    var rep = t.repeat || 'none';
+    var days = t.repeatDays || [];
+    if (rep==='daily') { rep='weekday'; days=[0,1,2,3,4,5,6]; }
+    else if (rep==='weekly') { rep='weekday'; days=[parseDate(t.date).getDay()]; }
+    document.getElementById('mRepeat').value = rep;
+    setSelectedWeekdays(days);
+    document.getElementById('mRepeatEnd').value = t.repeatEnd || '';
+    onRepeatEndDateChange();
   } else {
     document.getElementById('mName').value = '';
     document.getElementById('mCat').value = '기타';
@@ -1882,7 +1985,11 @@ function openModal(taskId) {
     document.getElementById('mAllday').checked = false;
     document.getElementById('mDate').value = dateStr;
     document.getElementById('mTimeWrap').style.display = '';
+    setSelectedWeekdays([]);
+    document.getElementById('mRepeatEnd').value = '';
+    onRepeatEndDateChange();
   }
+  onRepeatTypeChange();
 
   updateDateBtns(dateStr);
   // touched 초기화: 새 일정=미터치, 수정=이미터치(자동조정 안함)
@@ -1920,13 +2027,20 @@ function saveTask() {
     errEl.style.display = 'none';
     timeVal = ts+'~'+te;
   }
+  var repeat = document.getElementById('mRepeat').value;
+  var repeatDays = [];
+  if (repeat==='weekday') {
+    repeatDays = getSelectedWeekdays();
+    if (!repeatDays.length) { showToast('⚠️ 반복할 요일을 선택해주세요'); return; }
+  }
+  var repeatEnd = repeat!=='none' ? (document.getElementById('mRepeatEnd').value || '') : '';
   var isEdit = !!_editTaskId;
   var existing = isEdit ? (state.tasks.find(function(x){ return String(x.id)===String(_editTaskId); })||{}) : {};
   var task = Object.assign({}, existing, {
     id: isEdit ? existing.id : Date.now(),
     name: name, date: date, allday: allday, time: timeVal,
     cat: document.getElementById('mCat').value,
-    repeat: document.getElementById('mRepeat').value,
+    repeat: repeat, repeatDays: repeatDays, repeatEnd: repeatEnd,
     desc: document.getElementById('mDesc').value,
     done: existing.done || false,
     fromParent: isEdit ? existing.fromParent : (state.mode==='parent')
