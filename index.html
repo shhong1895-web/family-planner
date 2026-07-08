@@ -29,18 +29,18 @@
   --r: 16px; --sh: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html { height: 100%; }
+html { height: 100%; overscroll-behavior: none; }
 body {
   font-family: 'Noto Sans KR', sans-serif;
   background: var(--bg); color: var(--text);
   max-width: 430px; margin: 0 auto;
-  height: 100vh; display: flex; flex-direction: column;
-  position: relative; overflow: hidden;
+  height: 100vh; height: 100dvh; display: flex; flex-direction: column;
+  position: relative; overflow: hidden; overscroll-behavior: none;
 }
 
 /* ONBOARDING */
 #onboardOverlay {
-  position: fixed; top:0; left:0; width:100%; height:100%;
+  position: fixed; top:0; left:0; width:100%; height:100%; height:100dvh;
   background: #F8FAFC; z-index: 9999;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
@@ -57,7 +57,7 @@ body {
 
 /* APPROVAL */
 #approvalOverlay {
-  position: fixed; top:0; left:0; width:100%; height:100%;
+  position: fixed; top:0; left:0; width:100%; height:100%; height:100dvh;
   background: #F8FAFC; z-index: 9998;
   display: none; flex-direction: column;
   align-items: center; justify-content: center;
@@ -113,7 +113,7 @@ body.child-device .mode-pills { visibility:hidden; }
 body.parent-device .mode-pills { visibility:hidden; }
 
 /* SCROLL */
-.scroll-area { flex:1; overflow-y:auto; padding:16px 16px 100px; min-height:0; -webkit-overflow-scrolling:touch; }
+.scroll-area { flex:1; overflow-y:auto; padding:16px 16px 100px; min-height:0; -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain; }
 
 /* CARDS */
 .date-nav {
@@ -182,10 +182,10 @@ body.parent-device .mode-pills { visibility:hidden; }
 .tag.done-t { background:var(--success-l); color:var(--success); }
 .tag.rep { background:#F5F3FF; color:#7C3AED; }
 .task-desc { font-size:12px; color:var(--sub); margin-top:5px; line-height:1.45; }
-.task-del {
+.task-del, .task-edit {
   width:28px; height:28px; border-radius:8px; border:none;
   background:transparent; cursor:pointer; font-size:14px; color:var(--sub);
-  display:flex; align-items:center; justify-content:center;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
 }
 
 /* SHARED CARD */
@@ -953,7 +953,7 @@ function setView(v) {
 // scrollArea 안의 폼(빠른등록/메시지/공유일정)은 render() 때마다 통째로 다시 그려지므로,
 // 실제로 화면(view/mode)이 바뀐 게 아니라 다른 기기의 변경사항 때문에 재렌더링되는 경우엔
 // 입력 중이던 값과 포커스를 스냅샷했다가 그대로 복원한다.
-var _prevRenderedView=null, _prevRenderedMode=null;
+var _prevRenderedView=null, _prevRenderedMode=null, _prevRenderedDate=null;
 var STICKY_FIELDS=['qa-name','qa-cat','qa-allday','qa-date','msgInput','se-name','se-desc','se-allday','se-icon','se-editId','se-dateStart','se-dateEnd'];
 
 function snapshotStickyFields(sa) {
@@ -998,7 +998,9 @@ function restoreStickyFields(snap) {
   }
   if (snap.__activeId) {
     var el3=document.getElementById(snap.__activeId);
-    if (el3) {
+    // type=date 입력에 focus()를 걸면 iOS에서 달력 피커가 잠깐 떴다 사라지는 문제가 생기므로
+    // 텍스트 입력류(input[type=text], textarea)만 포커스를 복원한다
+    if (el3 && (el3.tagName==='TEXTAREA' || el3.type==='text')) {
       el3.focus();
       if (snap.__selStart!=null && el3.setSelectionRange) {
         try { el3.setSelectionRange(snap.__selStart, snap.__selEnd); } catch(e){}
@@ -1011,10 +1013,11 @@ function render() {
   var sa=document.getElementById('scrollArea');
   if (!sa) return;
   var v=state.view;
-  // 실제 view/mode 전환이 아니라 백그라운드 동기화로 인한 재렌더링이면 입력값을 보존한다
-  var isFreshView = (_prevRenderedView!==v || _prevRenderedMode!==state.mode);
+  var ds=fmt(state.selectedDate);
+  // 실제 view/mode/날짜 전환이 아니라 백그라운드 동기화로 인한 재렌더링이면 입력값을 보존한다
+  var isFreshView = (_prevRenderedView!==v || _prevRenderedMode!==state.mode || _prevRenderedDate!==ds);
   var snap = isFreshView ? null : snapshotStickyFields(sa);
-  _prevRenderedView=v; _prevRenderedMode=state.mode;
+  _prevRenderedView=v; _prevRenderedMode=state.mode; _prevRenderedDate=ds;
 
   if (v==='day') {
     sa.innerHTML=renderDay();
@@ -1043,6 +1046,7 @@ function render() {
   else if (v==='devices') sa.innerHTML=renderDevices();
 
   if (snap) restoreStickyFields(snap);
+  if (isFreshView) sa.scrollTop=0; // 탭/날짜를 바꾸면 항상 맨 위에서부터 보이게
 }
 
 function emptyBox(ico,h,p) {
@@ -1071,6 +1075,7 @@ function taskCard(t, ds) {
     +'<div class="tags">'+tags+'</div>'
     +(t.desc?'<div class="task-desc">'+esc(t.desc)+'</div>':'')
     +'</div>'
+    +(canEdit?'<button class="task-edit" onclick="openModal('+t.id+');event.stopPropagation()">✏️</button>':'')
     +(canEdit?'<button class="task-del" onclick="deleteTask('+t.id+');event.stopPropagation()">🗑</button>':'')
     +'</div>';
 }
@@ -1458,10 +1463,7 @@ function quickAdd() {
 }
 function focusSeDate(which) {
   var elId=which==='start'?'se-dateStart':'se-dateEnd';
-  var el=document.getElementById(elId); if(!el) return;
-  el.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;opacity:0;z-index:99999;pointer-events:auto;font-size:16px;';
-  el.focus(); el.click();
-  setTimeout(function(){ el.style.cssText='position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;'; },500);
+  openHiddenDatePicker(document.getElementById(elId));
 }
 function onSeDateChange(which) {
   var val=document.getElementById(which==='start'?'se-dateStart':'se-dateEnd').value;
@@ -1813,16 +1815,26 @@ function updateDateBtns(dateStr) {
   if (e) e.textContent = koDateShort(dateStr);
 }
 
-function focusModalDate() {
-  var el = document.getElementById('mDate');
+// 숨겨진 type=date input을 통해 iOS 네이티브 달력 피커를 여는 공통 헬퍼.
+// 피커가 열려있는 동안만 화면 전체를 덮게 했다가, 선택이 끝나면(blur) 바로 원래대로 되돌려서
+// 화면 여기저기를 탭할 때 이 투명 레이어가 탭을 가로채 화면이 흔들리는 문제를 막는다.
+function openHiddenDatePicker(el) {
   if (!el) return;
-  // iOS Safari requires the input to be visible and in the DOM flow to open picker
-  el.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;opacity:0;z-index:99999;pointer-events:auto;font-size:16px;';
+  el.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;opacity:0;z-index:99999;pointer-events:auto;font-size:16px;';
+  var cleaned=false;
+  function cleanup(){
+    if (cleaned) return;
+    cleaned=true;
+    el.style.cssText='position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;';
+    el.removeEventListener('blur', cleanup);
+  }
+  el.addEventListener('blur', cleanup);
   el.focus();
   el.click();
-  setTimeout(function(){
-    el.style.cssText = 'position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;';
-  }, 500);
+  setTimeout(cleanup, 800); // blur가 안 걸리는 경우를 위한 안전장치
+}
+function focusModalDate() {
+  openHiddenDatePicker(document.getElementById('mDate'));
 }
 
 function onModalDateChange() {
@@ -2028,10 +2040,7 @@ function editSharedAnywhere(id) {
 })();
 
 function focusQaDate() {
-  var el=document.getElementById('qa-date'); if(!el) return;
-  el.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;opacity:0;z-index:99999;pointer-events:auto;font-size:16px;';
-  el.focus(); el.click();
-  setTimeout(function(){ el.style.cssText='position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;'; },500);
+  openHiddenDatePicker(document.getElementById('qa-date'));
 }
 
 function onQaDateChange() {
