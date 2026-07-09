@@ -544,12 +544,12 @@ body.parent-device .mode-pills { visibility:hidden; }
   <div style="font-size:24px;font-weight:800;color:#0F172A;margin-bottom:8px">우리가족 플래너</div>
   <div style="font-size:14px;color:#64748B;margin-bottom:36px;line-height:1.7">이 기기를 사용하는 사람이 누구인가요?<br>한 번만 선택하면 다음부터 자동으로 열려요.</div>
   <div style="display:flex;gap:16px;width:100%;max-width:320px">
-    <div class="ob-card" onclick="setDeviceRole('child')">
+    <div class="ob-card" onclick="chooseRole('child')">
       <span style="font-size:48px;line-height:1">👦</span>
       <span style="font-size:17px;font-weight:800;color:#0F172A">자녀예요</span>
       <span style="font-size:12px;color:#64748B;line-height:1.5">할일 확인하고<br>체크해요</span>
     </div>
-    <div class="ob-card" onclick="setDeviceRole('parent')">
+    <div class="ob-card" onclick="chooseRole('parent')">
       <span style="font-size:48px;line-height:1">👨‍👩‍👧</span>
       <span style="font-size:17px;font-weight:800;color:#0F172A">부모예요</span>
       <span style="font-size:12px;color:#64748B;line-height:1.5">자녀 일정을<br>관리해요</span>
@@ -905,6 +905,21 @@ function getAuthUid() {
   return u ? u.uid : null;
 }
 
+// 온보딩 버튼은 항상 이걸 통해서 호출한다: 로그인(익명 로그인)이 아직 안 끝났으면
+// 기기 등록을 진행하지 않고 끝날 때까지 기다렸다가 진행한다 (uid 없이 문서가 만들어지는 걸 방지)
+function chooseRole(role) {
+  if (getAuthUid()) { setDeviceRole(role); return; }
+  document.getElementById('onboardOverlay').style.display='none';
+  document.getElementById('approvalOverlay').style.display='flex';
+  document.getElementById('approvalDeviceId').textContent='연결 중...';
+  var tries=0;
+  var iv=setInterval(function(){
+    tries++;
+    if (getAuthUid()) { clearInterval(iv); setDeviceRole(role); }
+    else if (tries>100) { clearInterval(iv); showToast('⚠️ 연결에 실패했어요. 새로고침 해주세요'); }
+  }, 100);
+}
+
 // 예전 방식(기기 코드로 문서를 저장)으로 이미 등록된 관리자 기기가 있다면,
 // 이번 업데이트의 새 방식(로그인 uid로 문서를 저장)으로 한 번만 옮겨준다.
 function migrateLegacyAdminIfNeeded(did, uid) {
@@ -926,10 +941,11 @@ function migrateLegacyAdminIfNeeded(did, uid) {
 }
 
 function setDeviceRole(role, skipRegister) {
+  var uid=getAuthUid();        // 실제 권한 판단 기준 (로그인 식별자)
+  if (!uid) { chooseRole(role); return; } // 로그인이 아직 안 끝난 채 호출된 경우를 위한 방어막
   localStorage.setItem(ROLE_KEY, role);
   document.getElementById('onboardOverlay').style.display='none';
   var did=getDeviceId();       // 사람이 보는 기기 코드 (화면 표시용)
-  var uid=getAuthUid();        // 실제 권한 판단 기준 (로그인 식별자)
   var APPROVED_KEY='device_approved_'+did;
 
   migrateLegacyAdminIfNeeded(did, uid).then(function(){
