@@ -219,9 +219,10 @@ body.parent-device .mode-pills { visibility:hidden; }
 .wd-name { font-size:10px; font-weight:600; color:var(--sub); line-height:1.2; }
 .week-day.sel .wd-name { color:rgba(255,255,255,.8); }
 .wd-num { font-size:15px; font-weight:800; line-height:1.2; }
-.wd-dot { width:4px; height:4px; border-radius:50%; background:var(--child); margin:2px auto 0; }
+.wd-dots { display:flex; gap:2px; justify-content:center; margin-top:2px; height:4px; }
+.wd-dot { width:4px; height:4px; border-radius:50%; background:var(--child); }
+.wd-dot.s { background:var(--shared); }
 .week-day.sel .wd-dot { background:#fff; }
-.wd-dot.empty { visibility:hidden; }
 
 /* 주간 일정 슬림 카드 */
 .week-task-item {
@@ -1330,12 +1331,15 @@ function renderWeek() {
   for (var i=0;i<7;i++) {
     var d=new Date(ws); d.setDate(ws.getDate()+i);
     var ds=fmt(d);
-    var has=tasksForDate(ds).length>0||sharedForDate(ds).length>0;
+    var hasTasks=tasksForDate(ds).length>0, hasShared=sharedForDate(ds).length>0;
     var isTod=isToday(d), isSel=ds===fmt(state.selectedDate);
     html+='<div class="week-day'+(isTod?' today':'')+(isSel?' sel':'')+'" onclick="selectDay(\''+ds+'\')" data-dbtap="date:'+ds+'">'
       +'<div class="wd-name">'+days[d.getDay()]+'</div>'
       +'<div class="wd-num">'+d.getDate()+'</div>'
-      +'<div class="wd-dot'+(has?'':' empty')+'"></div>'+'</div>';
+      +'<div class="wd-dots">'
+      +(hasTasks?'<div class="wd-dot"></div>':'')
+      +(hasShared?'<div class="wd-dot s"></div>':'')
+      +'</div></div>';
   }
   html+='</div>';
 
