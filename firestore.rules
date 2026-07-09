@@ -1,0 +1,76 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // devices/{내 uid} 문서가 있고 isAdmin이 true이며 승인된 상태면 나는 관리자
+    function isAdmin() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/devices/$(request.auth.uid))
+        && get(/databases/$(database)/documents/devices/$(request.auth.uid)).data.isAdmin == true
+        && get(/databases/$(database)/documents/devices/$(request.auth.uid)).data.status == 'approved';
+    }
+
+    // 관리자 부트스트랩 게이트: 앱에서 딱 한 번, 아직 관리자가 없을 때만 만들어질 수 있다.
+    // (이 문서 자체는 "관리자가 이미 정해졌는지"를 표시하는 용도일 뿐, 누가 관리자인지는
+    //  devices/{uid}.isAdmin 이 실제 기준이라서 공동관리자·관리자 이관이 자유롭게 된다)
+    match /meta/admin {
+      allow read: if signedIn();
+      allow create: if signedIn() && !exists(/databases/$(database)/documents/meta/admin);
+      allow update, delete: if false;
+    }
+    match /meta/{docId} {
+      allow read, write: if signedIn() && docId != 'admin';
+    }
+
+    // 기기 등록/승인. 문서 ID는 기기의 로그인 uid.
+    match /devices/{deviceUid} {
+      allow read: if signedIn();
+      // 새로 등록: 자기 자신의 문서만, 항상 '대기중 + 관리자 아님'으로만 스스로 만들 수 있다.
+      // (최초 관리자가 되는 경우는 meta/admin이 아직 없을 때만 예외적으로 허용)
+      allow create: if signedIn() && deviceUid == request.auth.uid
+        && (
+          (request.resource.data.status == 'pending' && request.resource.data.isAdmin == false)
+          || (request.resource.data.status == 'approved' && request.resource.data.isAdmin == true && !exists(/databases/$(database)/documents/meta/admin))
+        );
+      // 승인/거절/취소/공동관리자 지정·해제 등 기존 문서 수정·삭제는 관리자만
+      allow update, delete: if isAdmin();
+    }
+
+    // 할일
+    match /tasks/{taskId} {
+      allow read: if signedIn();
+      allow write: if signedIn()
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() < 200;
+    }
+
+    // 공유 일정
+    match /sharedEvents/{eventId} {
+      allow read: if signedIn();
+      allow write: if signedIn()
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() < 200;
+    }
+
+    // 메시지
+    match /messages/{msgId} {
+      allow read: if signedIn();
+      allow write: if signedIn()
+        && request.resource.data.text is string
+        && request.resource.data.text.size() < 1000;
+    }
+
+    // 그 외 컬렉션은 전부 차단
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+
