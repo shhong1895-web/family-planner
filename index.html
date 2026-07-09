@@ -1400,7 +1400,7 @@ function mdCell(d,other) {
 // ── SHARED VIEW ──
 function renderShared() {
   var isP=state.mode==='parent';
-  var sorted=[].concat(state.sharedEvents).sort(function(a,b){ return a.date.localeCompare(b.date); });
+  var sorted=[].concat(state.sharedEvents).sort(function(a,b){ return b.date.localeCompare(a.date); });
   var html='<div class="progress-card" style="background:linear-gradient(135deg,#8B5CF6,#6D28D9)">'
     +'<div class="pc-row"><div><div class="pc-label">가족 공유 일정</div><div class="pc-date">함께하는 시간 ✨</div></div>'
     +'<div><div class="pc-big">'+state.sharedEvents.length+'</div><div class="pc-unit">개 일정</div></div></div></div>';
