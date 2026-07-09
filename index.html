@@ -207,11 +207,12 @@ body.parent-device .mode-pills { visibility:hidden; }
 .shared-meta { font-size:12px; color:var(--sub); margin-top:3px; }
 
 /* WEEK */
-.week-grid { display:flex; gap:4px; margin-bottom:10px; }
+.week-grid { display:flex; align-items:stretch; gap:4px; margin-bottom:10px; }
 .week-day {
   flex:1; background:var(--card); border-radius:10px; padding:3px 2px 4px;
   text-align:center; box-shadow:var(--sh); cursor:pointer;
-  border:2px solid transparent; min-width:0;
+  border:2px solid transparent; min-width:0; min-height:56px;
+  box-sizing:border-box; display:flex; flex-direction:column; justify-content:center;
 }
 .week-day.today { border-color:var(--child); }
 .week-day.sel { background:var(--child); color:#fff; }
@@ -823,7 +824,12 @@ function tasksForDate(ds) {
     return false;
   });
 }
-function sharedForDate(ds) { return state.sharedEvents.filter(function(e){ return e.date===ds; }); }
+function sharedForDate(ds) {
+  return state.sharedEvents.filter(function(e){
+    var start=e.date, end=e.dateEnd||e.date;
+    return ds>=start && ds<=end;
+  });
+}
 
 // ── FIREBASE LISTENERS ──
 function setupListeners() {
