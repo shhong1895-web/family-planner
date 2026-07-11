@@ -66,6 +66,15 @@ service cloud.firestore {
         && request.resource.data.text.size() < 1000;
     }
 
+    // 학교/학원 시간표
+    match /schoolSchedule/{itemId} {
+      allow read: if signedIn();
+      allow write: if signedIn()
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() < 200;
+    }
+
     // 그 외 컬렉션은 전부 차단
     match /{document=**} {
       allow read, write: if false;
