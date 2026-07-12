@@ -678,7 +678,8 @@ body.parent-device .mode-pills { visibility:hidden; }
 <div id="onboardOverlay">
   <div style="font-size:52px;margin-bottom:14px">🏠</div>
   <div style="font-size:24px;font-weight:800;color:#0F172A;margin-bottom:8px">우리가족 플래너</div>
-  <div style="font-size:14px;color:#64748B;margin-bottom:36px;line-height:1.7">이 기기를 사용하는 사람이 누구인가요?<br>한 번만 선택하면 다음부터 자동으로 열려요.</div>
+  <div style="font-size:14px;color:#64748B;margin-bottom:20px;line-height:1.7">이 기기를 사용하는 사람이 누구인가요?<br>한 번만 선택하면 다음부터 자동으로 열려요.</div>
+  <input id="deviceNickname" placeholder="이 기기 이름 (예: 엄마 폰, 첫째 아이패드)" style="width:100%;max-width:320px;padding:12px 14px;border-radius:12px;border:1.5px solid #E2E8F0;font-family:inherit;font-size:14px;margin-bottom:16px;text-align:center;background:#fff">
   <div style="display:flex;gap:16px;width:100%;max-width:320px">
     <div class="ob-card" onclick="chooseRole('child')">
       <span style="font-size:48px;line-height:1">👦</span>
@@ -1077,6 +1078,20 @@ function sharedForDate(ds) {
 
 // ── FIREBASE LISTENERS ──
 function setupListeners() {
+  db.collection('devices').onSnapshot(function(snap) {
+    devicesState = snap.docs.map(function(d){ return d.data(); });
+    updatePendingBadge(devicesState.filter(function(d){ return d.status==='pending'; }).length);
+    render();
+  });
+}
+
+// 가족 데이터(할일/일정/메시지 등)는 보안 규칙상 "승인된 기기"만 읽을 수 있으므로,
+// 승인이 확인된 뒤에야 리스너를 켠다 (승인 전에 켜면 permission-denied로 리스너가 죽어서
+// 나중에 승인돼도 새로고침 전까지 데이터가 안 보이는 문제가 생긴다)
+var _familyListenersStarted=false;
+function setupFamilyListeners() {
+  if (_familyListenersStarted) return;
+  _familyListenersStarted=true;
   var bar = document.getElementById('syncBar');
   db.collection('tasks').onSnapshot(function(snap) {
     state.tasks = snap.docs.map(function(d){ return d.data(); });
@@ -1088,11 +1103,6 @@ function setupListeners() {
   });
   db.collection('messages').onSnapshot(function(snap) {
     state.messages = snap.docs.map(function(d){ return d.data(); }); render();
-  });
-  db.collection('devices').onSnapshot(function(snap) {
-    devicesState = snap.docs.map(function(d){ return d.data(); });
-    updatePendingBadge(devicesState.filter(function(d){ return d.status==='pending'; }).length);
-    render();
   });
   db.collection('schoolSchedule').onSnapshot(function(snap) {
     state.schoolSchedule = snap.docs.map(function(d){ return d.data(); }); render();
@@ -1115,6 +1125,7 @@ function setupListeners() {
     var panel = document.getElementById('wbManagePanel');
     if (panel && panel.style.display !== 'none') renderWorkbookChips();
   });
+  seedIfEmpty();
 }
 
 // ── SEED DATA ──
@@ -1179,6 +1190,8 @@ function getAuthUid() {
 // 온보딩 버튼은 항상 이걸 통해서 호출한다: 로그인(익명 로그인)이 아직 안 끝났으면
 // 기기 등록을 진행하지 않고 끝날 때까지 기다렸다가 진행한다 (uid 없이 문서가 만들어지는 걸 방지)
 function chooseRole(role) {
+  var nickEl=document.getElementById('deviceNickname');
+  if (nickEl) localStorage.setItem('fp_nickname', nickEl.value.trim());
   if (getAuthUid()) { setDeviceRole(role); return; }
   document.getElementById('onboardOverlay').style.display='none';
   document.getElementById('approvalOverlay').style.display='flex';
@@ -1218,6 +1231,9 @@ function setDeviceRole(role, skipRegister) {
   document.getElementById('onboardOverlay').style.display='none';
   var did=getDeviceId();       // 사람이 보는 기기 코드 (화면 표시용)
   var APPROVED_KEY='device_approved_'+did;
+  var nick=(localStorage.getItem('fp_nickname')||'').trim();
+  var defaultLabel = role==='parent' ? '부모 기기' : '자녀 기기';
+  var label = nick || defaultLabel;
 
   migrateLegacyAdminIfNeeded(did, uid).then(function(){
 
@@ -1248,7 +1264,7 @@ function setDeviceRole(role, skipRegister) {
           return tx.get(adminRef).then(function(adminDoc){
             if (adminDoc.exists) throw new Error('admin-already-exists');
             tx.set(adminRef, { registeredAt: Date.now() });
-            tx.set(deviceRef, { uid:uid, code:did, role:'parent', label:'부모 기기(관리자)', status:'approved', isAdmin:true, registeredAt: Date.now() });
+            tx.set(deviceRef, { uid:uid, code:did, role:'parent', label: nick || '부모 기기(관리자)', status:'approved', isAdmin:true, registeredAt: Date.now() });
           });
         }).then(function(){
           localStorage.setItem(APPROVED_KEY,'1');
@@ -1257,7 +1273,7 @@ function setDeviceRole(role, skipRegister) {
         }).catch(function(){
           // 트랜잭션 도중 다른 기기가 먼저 관리자가 된 경우 -> 승인 대기로 전환
           if (!mine) {
-            fsSet('devices', uid, { uid:uid, code:did, role:role, label: role==='parent'?'부모 기기':'자녀 기기', status:'pending', isAdmin:false, registeredAt:Date.now() });
+            fsSet('devices', uid, { uid:uid, code:did, role:role, label: label, status:'pending', isAdmin:false, registeredAt:Date.now() });
           }
           showApprovalWait(uid, did);
         });
@@ -1272,7 +1288,7 @@ function setDeviceRole(role, skipRegister) {
       if (!mine) {
         fsSet('devices', uid, {
           uid:uid, code:did, role:role,
-          label: role==='parent' ? '부모 기기' : '자녀 기기',
+          label: label,
           status:'pending', isAdmin:false, registeredAt:Date.now()
         });
       }
@@ -1317,6 +1333,7 @@ function showApp() {
 function completeShowApp() {
   document.getElementById('childPickOverlay').style.display='none';
   document.getElementById('appWrapper').style.display='flex';
+  setupFamilyListeners();
   applyMode(localStorage.getItem(ROLE_KEY)==='parent' ? 'parent' : 'child');
   render();
 }
@@ -1910,7 +1927,7 @@ function renderDevices() {
     pending.forEach(function(d) {
       html+='<div class="device-card"><div class="dev-avatar" style="background:#FEF3C7">📱</div>'
         +'<div class="dev-info">'
-        +'<div class="dev-name">'+( d.label||'새 기기')+(d.role==='parent'?' (부모 요청)':' (자녀 요청)'+(d.childId?' · '+childLabel(d.childId):''))+'</div>'
+        +'<div class="dev-name">'+esc(d.label||'새 기기')+(d.role==='parent'?' (부모 요청)':' (자녀 요청)'+(d.childId?' · '+childLabel(d.childId):''))+'</div>'
         +'<div class="dev-meta">코드: '+(d.code||'-')+' · '+new Date(d.registeredAt).toLocaleDateString('ko')+'</div>'
         +'<span class="dev-badge pending">대기중</span>'
         +(isAdmin
@@ -1930,7 +1947,7 @@ function renderDevices() {
     html+='<div class="device-card">'
       +'<div class="dev-avatar" style="background:'+(d.role==='parent'?'var(--parent-l)':'var(--child-l)')+'">'+(d.isAdmin?'👑':(d.role==='parent'?'👨‍👩‍👧':'👦'))+'</div>'
       +'<div class="dev-info">'
-      +'<div class="dev-name">'+(d.isAdmin?'관리자 기기':(d.role==='parent'?'부모 기기':(d.childId?childLabel(d.childId)+' 기기':'자녀 기기')))+(isMe?' <span style="font-size:11px;color:var(--sub)">(이 기기)</span>':'')+'</div>'
+      +'<div class="dev-name">'+(d.label && d.label.indexOf('기기')<0 ? esc(d.label) : (d.isAdmin?'관리자 기기':(d.role==='parent'?'부모 기기':(d.childId?childLabel(d.childId)+' 기기':'자녀 기기'))))+(isMe?' <span style="font-size:11px;color:var(--sub)">(이 기기)</span>':'')+'</div>'
       +'<div class="dev-meta">코드: '+(d.code||'-')+' · '+new Date(d.registeredAt).toLocaleDateString('ko')+'</div>'
       +'<span class="dev-badge approved">승인됨</span>'
       +(isAdmin && d.role==='parent'
@@ -3115,7 +3132,6 @@ function startApp() {
   if (_appInited) return;
   _appInited=true;
   setupListeners();
-  seedIfEmpty();
   initDeviceRole();
 }
 firebase.auth().onAuthStateChanged(function(user){
