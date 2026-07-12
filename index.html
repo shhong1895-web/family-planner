@@ -154,6 +154,68 @@ body.parent-device .mode-pills { visibility:hidden; }
 .pc-unit { font-size:13px; opacity:.75; }
 .prog-bar { height:8px; background:rgba(255,255,255,.25); border-radius:4px; overflow:hidden; }
 .prog-fill { height:100%; background:#fff; border-radius:4px; transition:width .5s; }
+/* COMPLETE ANIMATION OVERLAY */
+.done-anim-layer {
+  position:fixed; inset:0; pointer-events:none; z-index:9999; overflow:hidden;
+}
+.confetti-piece {
+  position:absolute; top:-20px; width:9px; height:14px; opacity:0.95;
+  animation:confettiFall 1.4s cubic-bezier(.2,.6,.4,1) forwards;
+}
+@keyframes confettiFall {
+  0% { transform:translateY(0) translateX(0) rotate(0deg); opacity:1; }
+  100% { transform:translateY(110vh) translateX(var(--drift,0px)) rotate(var(--spin,540deg)); opacity:0; }
+}
+.star-burst-wrap {
+  position:absolute; top:50%; left:50%; width:0; height:0;
+}
+.star-piece {
+  position:absolute; top:0; left:0; font-size:22px;
+  animation:starFly 0.9s ease-out forwards;
+  transform-origin:center;
+}
+@keyframes starFly {
+  0% { transform:translate(-50%,-50%) scale(0.3) rotate(0deg); opacity:1; }
+  100% { transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(1.2) rotate(var(--rot)); opacity:0; }
+}
+.firework-wrap { position:absolute; }
+.fw-dot {
+  position:absolute; width:8px; height:8px; border-radius:50%;
+  animation:fwOut 0.85s ease-out forwards;
+}
+@keyframes fwOut {
+  0% { transform:translate(0,0) scale(1); opacity:1; }
+  100% { transform:translate(var(--fx),var(--fy)) scale(0.3); opacity:0; }
+}
+.stamp-box {
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) rotate(-18deg) scale(2.6);
+  font-size:34px; font-weight:900; color:#ff5252; border:6px solid #ff5252; border-radius:16px;
+  padding:10px 26px; opacity:0; font-family:inherit; letter-spacing:2px;
+  animation:stampIn 0.7s cubic-bezier(.3,1.6,.4,1) forwards;
+  background:rgba(255,255,255,0.05);
+}
+@keyframes stampIn {
+  0% { opacity:0; transform:translate(-50%,-50%) rotate(-18deg) scale(3.4); }
+  55% { opacity:1; transform:translate(-50%,-50%) rotate(-14deg) scale(0.92); }
+  75% { transform:translate(-50%,-50%) rotate(-14deg) scale(1.06); }
+  100% { opacity:0; transform:translate(-50%,-50%) rotate(-14deg) scale(1); transition:opacity 0.3s; }
+}
+.sparkle-trail { position:absolute; font-size:20px; animation:sparkleUp 1.1s ease-out forwards; }
+@keyframes sparkleUp {
+  0% { transform:translateY(0) scale(0.5) rotate(0deg); opacity:1; }
+  100% { transform:translateY(-160px) scale(1.3) rotate(180deg); opacity:0; }
+}
+.medal-pop {
+  position:absolute; top:50%; left:50%; font-size:64px;
+  transform:translate(-50%,-50%) scale(0); opacity:0;
+  animation:medalPop 1s cubic-bezier(.3,1.7,.4,1) forwards;
+}
+@keyframes medalPop {
+  0% { transform:translate(-50%,-50%) scale(0) rotate(-30deg); opacity:0; }
+  50% { transform:translate(-50%,-50%) scale(1.3) rotate(10deg); opacity:1; }
+  70% { transform:translate(-50%,-50%) scale(0.95) rotate(-4deg); }
+  100% { transform:translate(-50%,-70%) scale(1) rotate(0deg); opacity:0; transition:opacity 0.3s,transform 0.3s; }
+}
 .streak-badge {
   margin-top:12px; padding:6px 12px; border-radius:20px;
   background:rgba(255,255,255,.2); display:inline-block;
@@ -406,6 +468,18 @@ body.parent-device .mode-pills { visibility:hidden; }
 .m-allday-row { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
 .m-allday-row label { font-size:14px; font-weight:600; color:var(--text); }
 
+/* TASK TYPE PICKER */
+.task-type-picker { display:flex; gap:6px; margin-bottom:14px; }
+.tt-btn {
+  flex:1; padding:10px 4px; border-radius:10px; border:1.5px solid var(--border);
+  background:var(--bg); font-family:inherit; font-size:12px; font-weight:700;
+  color:var(--sub); cursor:pointer; white-space:nowrap;
+}
+.tt-btn.active { background:var(--child); border-color:var(--child); color:#fff; }
+.wb-row { display:flex; gap:8px; align-items:center; margin-bottom:12px; }
+.wb-row .m-field { margin-bottom:0; flex:1; }
+.wb-tilde { font-weight:700; color:var(--sub); }
+
 /* DATE+TIME BLOCK (iOS calendar style) */
 .dt-block {
   background:#F8FAFC; border-radius:14px; margin-bottom:14px; overflow:hidden;
@@ -600,6 +674,7 @@ body.parent-device .mode-pills { visibility:hidden; }
     </div>
   </div>
   <div class="scroll-area" id="scrollArea"></div>
+  <div class="done-anim-layer" id="doneAnimLayer"></div>
   <button class="fab" id="fab" onclick="openModal()">+</button>
   <div class="bottom-nav">
     <button class="nav-item active" id="nav-day" onclick="setView('day')"><span class="nav-icon">📋</span>오늘</button>
@@ -616,8 +691,41 @@ body.parent-device .mode-pills { visibility:hidden; }
     <div class="modal-handle"></div>
     <div class="modal-body">
       <div class="modal-h" id="modalH">할일 추가</div>
-      <div class="m-label">제목</div>
-      <input class="m-field" id="mName" placeholder="할일 제목">
+
+      <div class="m-label">할일 종류</div>
+      <div class="task-type-picker">
+        <button type="button" class="tt-btn" data-type="school" onclick="selectTaskType('school')">🏫 학교숙제</button>
+        <button type="button" class="tt-btn" data-type="academy" onclick="selectTaskType('academy')">🎒 학원숙제</button>
+        <button type="button" class="tt-btn" data-type="study" onclick="selectTaskType('study')">📖 자율학습</button>
+        <button type="button" class="tt-btn active" data-type="etc" onclick="selectTaskType('etc')">✏️ 기타</button>
+      </div>
+
+      <div id="mNameWrap">
+        <div class="m-label">제목</div>
+        <input class="m-field" id="mName" placeholder="할일 제목">
+      </div>
+
+      <div id="mStudyWrap" style="display:none">
+        <div class="m-label">문제집</div>
+        <select class="m-field" id="mWorkbook" onchange="onWorkbookChange()">
+          <option value="">선택해주세요</option>
+          <option value="기적의 계산법">기적의 계산법</option>
+          <option value="디딤돌">디딤돌</option>
+          <option value="쎈수학">쎈수학</option>
+          <option value="수학의 정석">수학의 정석</option>
+          <option value="EBS 만점왕">EBS 만점왕</option>
+          <option value="__custom__">✏️ 직접 입력</option>
+        </select>
+        <input class="m-field" id="mWorkbookCustom" placeholder="문제집 이름 입력" style="display:none">
+        <div class="m-label">단계 / 권 (선택)</div>
+        <input class="m-field" id="mWorkbookLevel" placeholder="예: 5-2">
+        <div class="m-label">페이지</div>
+        <div class="wb-row">
+          <input class="m-field" id="mPageStart" type="number" inputmode="numeric" placeholder="시작p">
+          <span class="wb-tilde">~</span>
+          <input class="m-field" id="mPageEnd" type="number" inputmode="numeric" placeholder="끝p (선택)">
+        </div>
+      </div>
 
       <div class="m-allday-row">
         <input type="checkbox" id="mAllday" onchange="toggleAlldayModal()" style="width:18px;height:18px;cursor:pointer">
@@ -642,14 +750,16 @@ body.parent-device .mode-pills { visibility:hidden; }
       <!-- 숨겨진 날짜 input -->
       <input type="date" id="mDate" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" onchange="onModalDateChange()">
 
-      <div class="m-label">카테고리</div>
-      <select class="m-field" id="mCat">
-        <option value="학습">📚 학습</option>
-        <option value="운동">🏃 운동</option>
-        <option value="가사">🏠 가사</option>
-        <option value="취미">🎨 취미</option>
-        <option value="기타">⭐ 기타</option>
-      </select>
+      <div id="mCatWrap">
+        <div class="m-label">카테고리</div>
+        <select class="m-field" id="mCat">
+          <option value="학습">📚 학습</option>
+          <option value="운동">🏃 운동</option>
+          <option value="가사">🏠 가사</option>
+          <option value="취미">🎨 취미</option>
+          <option value="기타">⭐ 기타</option>
+        </select>
+      </div>
       <div class="m-label">반복</div>
       <select class="m-field" id="mRepeat" onchange="onRepeatTypeChange()">
         <option value="none">반복 없음</option>
@@ -812,6 +922,7 @@ function getHoliday(ds) { return KR_HOLIDAYS[ds] || null; }
 
 function koDate(d) { var days=['일','월','화','수','목','금','토']; return (d.getMonth()+1)+'월 '+d.getDate()+'일 ('+days[d.getDay()]+')'; }
 function catEmoji(c) { return {'학습':'📚','운동':'🏃','가사':'🏠','취미':'🎨','기타':'⭐','부모일정':'👔'}[c]||'📌'; }
+function taskTypeLabel(tt) { return {'school':'🏫 학교숙제','academy':'🎒 학원숙제','study':'📖 자율학습'}[tt]||''; }
 // 입력값을 안전하게 화면에 표시하기 위한 이스케이프 (XSS 방지)
 function esc(s) {
   if (s===undefined||s===null) return '';
@@ -1279,7 +1390,8 @@ function taskCard(t, ds) {
   var tags='';
   if (t.allday) tags+='<span class="tag allday">🌅 하루종일</span>';
   else if (t.time) tags+='<span class="tag time">🕐 '+prettyTime(t.time)+'</span>';
-  tags+='<span class="tag">'+catEmoji(t.cat)+' '+esc(t.cat)+'</span>';
+  if (t.taskType && t.taskType!=='etc') tags+='<span class="tag">'+taskTypeLabel(t.taskType)+'</span>';
+  else tags+='<span class="tag">'+catEmoji(t.cat)+' '+esc(t.cat)+'</span>';
   if (t.fromParent) tags+='<span class="tag pfrom">👨‍👩‍👧 부모등록</span>';
   if (t.repeat&&t.repeat!=='none') tags+='<span class="tag rep">🔄 '+esc(repeatSummary(t))+'</span>';
   if (done) tags+='<span class="tag done-t">✅ 완료</span>';
@@ -1724,6 +1836,104 @@ function deleteSchoolItem(id) {
   if (!confirm('이 시간표를 삭제할까요?')) return;
   fsDel('schoolSchedule', id).then(function(){ showToast('🗑 삭제됐어요'); });
 }
+// ── COMPLETE ANIMATIONS (랜덤 재생) ──
+var CONFETTI_COLORS = ['#ff6b6b','#ffd93d','#6bcB77','#4d96ff','#c780fa','#ff9f45','#38e1c6'];
+function _clearAnim() { document.getElementById('doneAnimLayer').innerHTML=''; }
+function animConfetti() {
+  var layer=document.getElementById('doneAnimLayer'); _clearAnim();
+  var n=32;
+  for (var i=0;i<n;i++) {
+    var p=document.createElement('div');
+    p.className='confetti-piece';
+    var x=Math.random()*100;
+    p.style.left=x+'vw';
+    p.style.background=CONFETTI_COLORS[i%CONFETTI_COLORS.length];
+    p.style.setProperty('--drift',(Math.random()*160-80)+'px');
+    p.style.setProperty('--spin',(Math.random()*720+360)+'deg');
+    p.style.animationDelay=(Math.random()*0.3)+'s';
+    p.style.borderRadius=(Math.random()>0.5)?'50%':'2px';
+    layer.appendChild(p);
+  }
+  setTimeout(_clearAnim,1700);
+}
+function animStars() {
+  var layer=document.getElementById('doneAnimLayer'); _clearAnim();
+  var wrap=document.createElement('div');
+  wrap.className='star-burst-wrap';
+  wrap.style.left='50%'; wrap.style.top='40%';
+  var n=12;
+  var stars=['⭐','✨','🌟'];
+  for (var i=0;i<n;i++) {
+    var s=document.createElement('div');
+    s.className='star-piece';
+    s.textContent=stars[i%stars.length];
+    var ang=(Math.PI*2*i)/n;
+    var dist=90+Math.random()*60;
+    s.style.setProperty('--tx',(Math.cos(ang)*dist)+'px');
+    s.style.setProperty('--ty',(Math.sin(ang)*dist)+'px');
+    s.style.setProperty('--rot',(Math.random()*360)+'deg');
+    s.style.animationDelay=(Math.random()*0.15)+'s';
+    wrap.appendChild(s);
+  }
+  layer.appendChild(wrap);
+  setTimeout(_clearAnim,1100);
+}
+function animFireworks() {
+  var layer=document.getElementById('doneAnimLayer'); _clearAnim();
+  var wrap=document.createElement('div');
+  wrap.className='firework-wrap';
+  wrap.style.left=(30+Math.random()*40)+'vw';
+  wrap.style.top=(28+Math.random()*20)+'vh';
+  var n=18;
+  for (var i=0;i<n;i++) {
+    var d=document.createElement('div');
+    d.className='fw-dot';
+    var ang=(Math.PI*2*i)/n;
+    var dist=70+Math.random()*40;
+    d.style.setProperty('--fx',(Math.cos(ang)*dist)+'px');
+    d.style.setProperty('--fy',(Math.sin(ang)*dist)+'px');
+    d.style.background=CONFETTI_COLORS[i%CONFETTI_COLORS.length];
+    wrap.appendChild(d);
+  }
+  layer.appendChild(wrap);
+  setTimeout(_clearAnim,1000);
+}
+function animStamp() {
+  var layer=document.getElementById('doneAnimLayer'); _clearAnim();
+  var s=document.createElement('div');
+  s.className='stamp-box';
+  s.textContent='완료!';
+  layer.appendChild(s);
+  setTimeout(_clearAnim,900);
+}
+function animSparkle() {
+  var layer=document.getElementById('doneAnimLayer'); _clearAnim();
+  var n=14;
+  var chars=['✨','💫','⭐'];
+  for (var i=0;i<n;i++) {
+    var s=document.createElement('div');
+    s.className='sparkle-trail';
+    s.textContent=chars[i%chars.length];
+    s.style.left=(20+Math.random()*60)+'vw';
+    s.style.top=(55+Math.random()*20)+'vh';
+    s.style.animationDelay=(Math.random()*0.4)+'s';
+    layer.appendChild(s);
+  }
+  setTimeout(_clearAnim,1400);
+}
+function animMedal() {
+  var layer=document.getElementById('doneAnimLayer'); _clearAnim();
+  var m=document.createElement('div');
+  m.className='medal-pop';
+  m.textContent='🏅';
+  layer.appendChild(m);
+  setTimeout(_clearAnim,1200);
+}
+var COMPLETE_ANIMS=[animConfetti,animStars,animFireworks,animStamp,animSparkle,animMedal];
+function playCompleteAnimation() {
+  var fn=COMPLETE_ANIMS[Math.floor(Math.random()*COMPLETE_ANIMS.length)];
+  fn();
+}
 function toggleTask(id, ds) {
   var t=state.tasks.find(function(x){ return String(x.id)===String(id); });
   if (!t) return;
@@ -1743,6 +1953,7 @@ function toggleTask(id, ds) {
   }
   fsSet('tasks',t.id,t).then(function(){
     if (!nowDone) return;
+    playCompleteAnimation();
     var p=pctForDate(ds);
     if (p===100 && ds===fmt(TODAY)) {
       var s=computeStreak();
@@ -2211,6 +2422,25 @@ function clearRepeatEnd() {
   document.getElementById('mBtnRepeatEnd').textContent='종료일 설정 안 함 (계속 반복)';
 }
 
+var _taskType = 'etc';
+function selectTaskType(type) {
+  _taskType = type;
+  document.querySelectorAll('.tt-btn').forEach(function(b){ b.classList.toggle('active', b.dataset.type===type); });
+  var isStudy = type === 'study';
+  document.getElementById('mNameWrap').style.display = isStudy ? 'none' : '';
+  document.getElementById('mStudyWrap').style.display = isStudy ? '' : 'none';
+  var catWrap = document.getElementById('mCatWrap');
+  if (type === 'etc') {
+    catWrap.style.display = '';
+  } else {
+    catWrap.style.display = 'none';
+    document.getElementById('mCat').value = '학습';
+  }
+}
+function onWorkbookChange() {
+  var v = document.getElementById('mWorkbook').value;
+  document.getElementById('mWorkbookCustom').style.display = v === '__custom__' ? '' : 'none';
+}
 function openModal(taskId) {
   _editTaskId = taskId || null;
   var isP = state.mode === 'parent';
@@ -2252,6 +2482,19 @@ function openModal(taskId) {
     setSelectedWeekdays(days);
     document.getElementById('mRepeatEnd').value = t.repeatEnd || '';
     onRepeatEndDateChange();
+
+    var tt = t.taskType || 'etc';
+    selectTaskType(tt);
+    if (tt === 'study') {
+      var wbSelect = document.getElementById('mWorkbook');
+      var found = [].slice.call(wbSelect.options).some(function(o){ return o.value === t.workbook; });
+      wbSelect.value = found ? t.workbook : '__custom__';
+      document.getElementById('mWorkbookCustom').style.display = found ? 'none' : '';
+      document.getElementById('mWorkbookCustom').value = found ? '' : (t.workbook || '');
+      document.getElementById('mWorkbookLevel').value = t.workbookLevel || '';
+      document.getElementById('mPageStart').value = t.pageStart || '';
+      document.getElementById('mPageEnd').value = t.pageEnd || '';
+    }
   } else {
     document.getElementById('mName').value = '';
     document.getElementById('mCat').value = '기타';
@@ -2263,6 +2506,14 @@ function openModal(taskId) {
     setSelectedWeekdays([]);
     document.getElementById('mRepeatEnd').value = '';
     onRepeatEndDateChange();
+
+    selectTaskType('etc');
+    document.getElementById('mWorkbook').value = '';
+    document.getElementById('mWorkbookCustom').value = '';
+    document.getElementById('mWorkbookCustom').style.display = 'none';
+    document.getElementById('mWorkbookLevel').value = '';
+    document.getElementById('mPageStart').value = '';
+    document.getElementById('mPageEnd').value = '';
   }
   onRepeatTypeChange();
 
@@ -2272,7 +2523,10 @@ function openModal(taskId) {
   drumState['touched_modal_mEnd']=isEdit;
   initTimeBtns('mStart','mEnd','mBtnStart','mBtnEnd', sStr, eStr);
   document.getElementById('addModal').classList.add('open');
-  setTimeout(function(){ document.getElementById('mName').focus(); }, 100);
+  setTimeout(function(){
+    var f = _taskType==='study' ? document.getElementById('mWorkbook') : document.getElementById('mName');
+    if (f) f.focus();
+  }, 100);
 }
 
 function closeModal() {
@@ -2290,8 +2544,21 @@ function toggleAlldayShared() {
 }
 
 function saveTask() {
-  var name = document.getElementById('mName').value.trim();
-  if (!name) { showToast('⚠️ 제목을 입력해주세요'); return; }
+  var isStudy = _taskType === 'study';
+  var name, workbook = '', workbookLevel = '', pageStart = '', pageEnd = '';
+  if (isStudy) {
+    var wbSel = document.getElementById('mWorkbook').value;
+    workbook = wbSel === '__custom__' ? document.getElementById('mWorkbookCustom').value.trim() : wbSel;
+    if (!workbook) { showToast('⚠️ 문제집을 선택하거나 입력해주세요'); return; }
+    workbookLevel = document.getElementById('mWorkbookLevel').value.trim();
+    pageStart = document.getElementById('mPageStart').value.trim();
+    pageEnd = document.getElementById('mPageEnd').value.trim();
+    if (!pageStart) { showToast('⚠️ 시작 페이지를 입력해주세요'); return; }
+    name = workbook + (workbookLevel ? '(' + workbookLevel + ')' : '') + ', ' + pageStart + (pageEnd ? '~' + pageEnd : '') + 'p';
+  } else {
+    name = document.getElementById('mName').value.trim();
+    if (!name) { showToast('⚠️ 제목을 입력해주세요'); return; }
+  }
   var date = document.getElementById('mDate').value || fmt(state.selectedDate);
   var allday = document.getElementById('mAllday').checked;
   var errEl = document.getElementById('mTimeError');
@@ -2315,6 +2582,11 @@ function saveTask() {
     id: isEdit ? existing.id : Date.now(),
     name: name, date: date, allday: allday, time: timeVal,
     cat: document.getElementById('mCat').value,
+    taskType: _taskType,
+    workbook: isStudy ? workbook : '',
+    workbookLevel: isStudy ? workbookLevel : '',
+    pageStart: isStudy ? pageStart : '',
+    pageEnd: isStudy ? pageEnd : '',
     repeat: repeat, repeatDays: repeatDays, repeatEnd: repeatEnd,
     desc: document.getElementById('mDesc').value,
     done: existing.done || false,
