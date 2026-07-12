@@ -996,7 +996,11 @@ function tasksForDate(ds) {
 }
 function schoolForDate(ds) {
   var dow=parseDate(ds).getDay();
-  return state.schoolSchedule.filter(function(s){ return (s.weekdays||[]).indexOf(dow)>=0; });
+  return state.schoolSchedule.filter(function(s){
+    if ((s.weekdays||[]).indexOf(dow)<0) return false;
+    if (s.repeatEnd && ds>s.repeatEnd) return false; // 종료일 이후는 달력에서 제외
+    return true;
+  });
 }
 function sharedForDate(ds) {
   var real=state.sharedEvents.filter(function(e){
@@ -1295,7 +1299,7 @@ function setView(v) {
 // 실제로 화면(view/mode)이 바뀐 게 아니라 다른 기기의 변경사항 때문에 재렌더링되는 경우엔
 // 입력 중이던 값과 포커스를 스냅샷했다가 그대로 복원한다.
 var _prevRenderedView=null, _prevRenderedMode=null, _prevRenderedDate=null;
-var STICKY_FIELDS=['msgInput','se-name','se-desc','se-allday','se-icon','se-editId','se-dateStart','se-dateEnd','sch-name','sch-cat','sch-editId'];
+var STICKY_FIELDS=['msgInput','se-name','se-desc','se-allday','se-icon','se-editId','se-dateStart','se-dateEnd','sch-name','sch-cat','sch-editId','sch-repeatEnd'];
 
 function snapshotStickyFields(sa) {
   var snap={};
@@ -1346,6 +1350,7 @@ function restoreStickyFields(snap) {
     var ssb=document.getElementById('sch-submitBtn'); if(ssb) ssb.textContent='✏️ 수정하기';
     var scb=document.getElementById('sch-cancelBtn'); if(scb) scb.style.display='';
   }
+  if (document.getElementById('sch-repeatEnd')) onRepeatEndDateChange('sch-repeatEnd','sch-btnRepeatEnd');
   if (snap.__activeId) {
     var el3=document.getElementById(snap.__activeId);
     // type=date 입력에 focus()를 걸면 iOS에서 달력 피커가 잠깐 떴다 사라지는 문제가 생기므로
@@ -1779,6 +1784,12 @@ function renderSchool() {
         +'<button type="button" class="wd-preset-btn" onclick="setWeekdayPreset(\'weekday\',\'schWeekdayWrap\')">평일만</button>'
         +'<button type="button" class="wd-preset-btn" onclick="setWeekdayPreset(\'weekend\',\'schWeekdayWrap\')">주말만</button>'
       +'</div>'
+      +'<div class="f-label">종료일 (선택)</div>'
+      +'<div style="display:flex;gap:8px;align-items:center;margin-bottom:14px">'
+        +'<button class="dt-date-btn" id="sch-btnRepeatEnd" onclick="focusRepeatEndDate(\'sch-repeatEnd\')" style="flex:1;text-align:left">종료일 설정 안 함 (계속 반복)</button>'
+        +'<button type="button" class="wd-preset-btn" onclick="clearRepeatEnd(\'sch-repeatEnd\',\'sch-btnRepeatEnd\')">해제</button>'
+      +'</div>'
+      +'<input type="date" id="sch-repeatEnd" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" onchange="onRepeatEndDateChange(\'sch-repeatEnd\',\'sch-btnRepeatEnd\')">'
       +'<div class="dt-block">'
         +'<div class="dt-row">'
           +'<div class="dt-label">시작</div>'
@@ -1804,7 +1815,7 @@ function renderSchool() {
       +'<div class="shared-icon">'+(s.cat==='학원'?'✏️':'🏫')+'</div>'
       +'<div class="shared-body">'
       +'<div class="shared-title">'+esc(s.name)+'</div>'
-      +'<div class="shared-meta">'+schoolWeekdaySummary(s.weekdays)+' · 🕐 '+prettyTime(s.startTime)+'~'+prettyTime(s.endTime)+'</div></div>'
+      +'<div class="shared-meta">'+schoolWeekdaySummary(s.weekdays)+' · 🕐 '+prettyTime(s.startTime)+'~'+prettyTime(s.endTime)+(s.repeatEnd?' · '+koDateShort(s.repeatEnd)+'까지':'')+'</div></div>'
       +(isP?'<button class="task-edit" onclick="openEditSchool(\''+s.id+'\')">✏️</button><button class="task-del" onclick="deleteSchoolItem(\''+s.id+'\')">🗑</button>':'')
       +'</div>';
   });
@@ -1820,10 +1831,11 @@ function saveSchoolItem() {
   var ts=drumState['schStart']||'09:00', te=drumState['schEnd']||'10:00';
   if (te<=ts) { showToast('⚠️ 종료 시간이 시작보다 빨라요'); return; }
   var editId=document.getElementById('sch-editId').value;
+  var repeatEnd=document.getElementById('sch-repeatEnd').value||'';
   var item={
     id: editId || Date.now(),
     name:name, cat:document.getElementById('sch-cat').value,
-    weekdays:days, startTime:ts, endTime:te
+    weekdays:days, startTime:ts, endTime:te, repeatEnd:repeatEnd
   };
   fsSet('schoolSchedule', item.id, item).then(function(){
     showToast(editId?'✏️ 수정됐어요':'✅ 시간표가 추가됐어요');
@@ -1838,6 +1850,8 @@ function openEditSchool(id) {
   document.getElementById('sch-cat').value=s.cat;
   setSelectedWeekdays(s.weekdays,'schWeekdayWrap');
   initTimeBtns('schStart','schEnd','sch-btnStart','sch-btnEnd',s.startTime,s.endTime);
+  document.getElementById('sch-repeatEnd').value=s.repeatEnd||'';
+  onRepeatEndDateChange('sch-repeatEnd','sch-btnRepeatEnd');
   document.getElementById('sch-formTitle').textContent='시간표 수정';
   document.getElementById('sch-submitBtn').textContent='✏️ 수정하기';
   document.getElementById('sch-cancelBtn').style.display='';
@@ -1848,6 +1862,7 @@ function cancelEditSchool() {
   var editIdEl=document.getElementById('sch-editId'); if(editIdEl) editIdEl.value='';
   var nameEl=document.getElementById('sch-name'); if(nameEl) nameEl.value='';
   setSelectedWeekdays([],'schWeekdayWrap');
+  clearRepeatEnd('sch-repeatEnd','sch-btnRepeatEnd');
   var now=new Date(); var h=now.getHours(), hE=h+1<24?h+1:23;
   initTimeBtns('schStart','schEnd','sch-btnStart','sch-btnEnd',
     String(h).padStart(2,'0')+':00', String(hE).padStart(2,'0')+':00');
@@ -2434,15 +2449,19 @@ function setSelectedWeekdays(days, containerId) {
     b.classList.toggle('active', days.indexOf(parseInt(b.dataset.day,10))>=0);
   });
 }
-function focusRepeatEndDate() { openHiddenDatePicker(document.getElementById('mRepeatEnd')); }
-function onRepeatEndDateChange() {
-  var v=document.getElementById('mRepeatEnd').value;
-  var btn=document.getElementById('mBtnRepeatEnd');
+function focusRepeatEndDate(inputId) {
+  openHiddenDatePicker(document.getElementById(inputId||'mRepeatEnd'));
+}
+function onRepeatEndDateChange(inputId, btnId) {
+  inputId = inputId||'mRepeatEnd'; btnId = btnId||'mBtnRepeatEnd';
+  var v=document.getElementById(inputId).value;
+  var btn=document.getElementById(btnId);
   if (btn) btn.textContent = v ? (koDateShort(v)+'까지') : '종료일 설정 안 함 (계속 반복)';
 }
-function clearRepeatEnd() {
-  document.getElementById('mRepeatEnd').value='';
-  document.getElementById('mBtnRepeatEnd').textContent='종료일 설정 안 함 (계속 반복)';
+function clearRepeatEnd(inputId, btnId) {
+  inputId = inputId||'mRepeatEnd'; btnId = btnId||'mBtnRepeatEnd';
+  document.getElementById(inputId).value='';
+  document.getElementById(btnId).textContent='종료일 설정 안 함 (계속 반복)';
 }
 
 function currentWorkbookList() {
