@@ -76,6 +76,32 @@ body {
   flex: 1; min-height: 0; height: 100%;
 }
 
+/* CHILD PICK (다자녀 지원) */
+#childPickOverlay {
+  position: fixed; top:0; left:0; width:100%; height:100%; height:100dvh;
+  background: #F8FAFC; z-index: 9997; display: none; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 40px 24px; text-align: center; overflow-y: auto;
+}
+.child-pick-card {
+  padding:16px; border-radius:16px; border:2px solid var(--border); background:#fff;
+  display:flex; align-items:center; gap:12px; cursor:pointer; text-align:left;
+  box-shadow: var(--sh); transition: all .15s;
+}
+.child-pick-card:active { transform: scale(.97); border-color: var(--child); }
+.child-pick-emoji { font-size:32px; flex-shrink:0; }
+.child-pick-name { font-size:16px; font-weight:800; color:var(--text); }
+.child-pick-new { border-style:dashed; justify-content:center; color:var(--sub); font-weight:700; }
+
+/* CHILD SWITCH BAR (부모 모드에서 자녀 전환) */
+.child-switch-bar { display:none; gap:8px; padding:10px 16px; overflow-x:auto; background:#fff; border-bottom:1px solid var(--border); }
+.child-switch-btn {
+  flex-shrink:0; display:flex; align-items:center; gap:6px; padding:8px 14px;
+  border-radius:20px; border:1.5px solid var(--border); background:var(--bg);
+  font-family:inherit; font-size:13px; font-weight:700; color:var(--text); cursor:pointer; white-space:nowrap;
+}
+.child-switch-btn.active { background:var(--parent); border-color:var(--parent); color:#fff; }
+
 /* SYNC BAR */
 .sync-bar {
   display:flex; align-items:center; gap:6px;
@@ -679,6 +705,14 @@ body.parent-device .mode-pills { visibility:hidden; }
   <button onclick="checkApprovalNow()" style="margin-top:20px;padding:10px 24px;border-radius:20px;border:1.5px solid var(--border);background:transparent;font-family:inherit;font-size:14px;cursor:pointer;color:var(--sub)">🔄 새로고침</button>
 </div>
 
+<!-- CHILD PICK (다자녀 지원) -->
+<div id="childPickOverlay">
+  <div style="font-size:52px;margin-bottom:14px">🧒</div>
+  <div style="font-size:22px;font-weight:800;color:#0F172A;margin-bottom:8px">이 기기는 누구의 기기인가요?</div>
+  <div style="font-size:14px;color:#64748B;margin-bottom:28px;line-height:1.7">한 번만 선택하면 다음부터 자동으로 열려요</div>
+  <div id="childPickList" style="display:flex;flex-direction:column;gap:12px;width:100%;max-width:320px"></div>
+</div>
+
 <!-- APP -->
 <div id="appWrapper">
   <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중...</div>
@@ -699,6 +733,7 @@ body.parent-device .mode-pills { visibility:hidden; }
       <button class="view-tab" data-v="devices" id="tabDevices" style="display:none" onclick="setView('devices')">기기관리</button>
     </div>
   </div>
+  <div class="child-switch-bar" id="childSwitchBar"></div>
   <div class="scroll-area" id="scrollArea"></div>
   <div class="done-anim-layer" id="doneAnimLayer"></div>
   <button class="fab" id="fab" onclick="openModal()">+</button>
@@ -901,7 +936,7 @@ var state = {
   selectedDate: new Date(TODAY),
   weekStart: getWeekStart(TODAY),
   month: new Date(TODAY.getFullYear(), TODAY.getMonth(), 1),
-  tasks: [], sharedEvents: [], messages: [], schoolSchedule: [], workbooks: []
+  tasks: [], sharedEvents: [], messages: [], schoolSchedule: [], workbooks: [], children: []
 };
 var devicesState = [];
 
@@ -1001,6 +1036,7 @@ function computeStreak() {
 
 function tasksForDate(ds) {
   return state.tasks.filter(function(t) {
+    if (!isForActiveChild(t)) return false;
     if (t.date===ds) return true;
     if (!t.repeat || t.repeat==='none') return false;
     var o=parseDate(t.date), s=parseDate(ds);
@@ -1060,6 +1096,12 @@ function setupListeners() {
   });
   db.collection('schoolSchedule').onSnapshot(function(snap) {
     state.schoolSchedule = snap.docs.map(function(d){ return d.data(); }); render();
+  });
+  db.collection('children').onSnapshot(function(snap) {
+    state.children = snap.docs.map(function(d){ return d.data(); }).sort(function(a,b){ return (a.createdAt||0)-(b.createdAt||0); });
+    var cpo=document.getElementById('childPickOverlay');
+    if (cpo && cpo.style.display!=='none') renderChildPickOverlay();
+    render();
   });
   var _wbSeeded = false;
   db.collection('meta').doc('workbooks').onSnapshot(function(snap) {
@@ -1258,9 +1300,102 @@ function showApprovalWait(uid, did) {
 
 function showApp() {
   document.getElementById('approvalOverlay').style.display='none';
+  var role = localStorage.getItem(ROLE_KEY)==='parent' ? 'parent' : 'child';
+  if (role!=='child') { completeShowApp(); return; }
+  var uid=getAuthUid();
+  db.collection('devices').doc(uid).get().then(function(snap){
+    var d = snap.exists ? snap.data() : {};
+    if (!d.childId) {
+      document.getElementById('appWrapper').style.display='none';
+      document.getElementById('childPickOverlay').style.display='flex';
+      renderChildPickOverlay();
+    } else {
+      completeShowApp();
+    }
+  }).catch(function(){ completeShowApp(); });
+}
+function completeShowApp() {
+  document.getElementById('childPickOverlay').style.display='none';
   document.getElementById('appWrapper').style.display='flex';
   applyMode(localStorage.getItem(ROLE_KEY)==='parent' ? 'parent' : 'child');
   render();
+}
+
+// ── 다자녀 지원 ──
+var CHILD_EMOJIS=['🐰','🐻','🐱','🐶','🦊','🐼','🐨','🦁'];
+function renderChildPickOverlay() {
+  var box=document.getElementById('childPickList');
+  if (!box) return;
+  var html='';
+  state.children.forEach(function(c){
+    html+='<div class="child-pick-card" onclick="assignChildToDevice(\''+c.id+'\')">'
+      +'<span class="child-pick-emoji">'+esc(c.emoji||'🧒')+'</span>'
+      +'<span class="child-pick-name">'+esc(c.name)+'</span></div>';
+  });
+  html+='<div class="child-pick-card child-pick-new" onclick="startNewChildProfile()">➕ 새로운 자녀 등록</div>'
+    +'<div id="newChildForm" style="display:none;margin-top:4px;width:100%">'
+    +'<input class="m-field" id="newChildName" placeholder="이름 (예: 첫째, 지우)">'
+    +'<button class="f-btn p" onclick="confirmNewChildProfile()">등록하고 시작하기</button></div>';
+  box.innerHTML=html;
+}
+function startNewChildProfile() {
+  var f=document.getElementById('newChildForm');
+  f.style.display='';
+  setTimeout(function(){ var el=document.getElementById('newChildName'); if(el) el.focus(); },100);
+}
+function confirmNewChildProfile() {
+  var nameEl=document.getElementById('newChildName');
+  var name=nameEl.value.trim();
+  if (!name) { showToast('⚠️ 이름을 입력해주세요'); return; }
+  var emoji=CHILD_EMOJIS[state.children.length % CHILD_EMOJIS.length];
+  var id='child_'+Date.now();
+  fsSet('children', id, {id:id, name:name, emoji:emoji, createdAt:Date.now()}).then(function(){
+    assignChildToDevice(id);
+  }).catch(function(){ showToast('⚠️ 저장 실패. 네트워크를 확인해주세요'); });
+}
+function assignChildToDevice(childId) {
+  var uid=getAuthUid();
+  var existing=devicesState.find(function(d){ return d.uid===uid; });
+  function proceed(base) {
+    fsSet('devices', uid, Object.assign({}, base, {childId:childId})).then(function(){
+      completeShowApp();
+    }).catch(function(){ showToast('⚠️ 저장 실패. 네트워크를 확인해주세요'); });
+  }
+  if (existing) proceed(existing);
+  else db.collection('devices').doc(uid).get().then(function(snap){ proceed(snap.exists?snap.data():{uid:uid}); });
+}
+function firstChildId() { return state.children.length ? state.children[0].id : null; }
+function myChildId() {
+  var uid=getAuthUid();
+  var mine=devicesState.find(function(d){ return d.uid===uid; });
+  return mine ? (mine.childId||null) : null;
+}
+function activeChildId() {
+  if (state.mode==='parent') return state.viewChildId || firstChildId();
+  return myChildId();
+}
+function isForActiveChild(item) {
+  if (state.children.length<2) return true; // 자녀가 1명 이하면 필터링 안 함 (기존 동작 그대로)
+  var ac=activeChildId();
+  if (!ac) return true;
+  return item.childId ? item.childId===ac : ac===firstChildId();
+}
+function renderChildSwitchBar() {
+  var bar=document.getElementById('childSwitchBar');
+  if (!bar) return;
+  if (state.mode!=='parent' || state.children.length<2) { bar.style.display='none'; return; }
+  if (!state.viewChildId || !state.children.some(function(c){ return c.id===state.viewChildId; })) {
+    state.viewChildId=firstChildId();
+  }
+  bar.style.display='flex';
+  bar.innerHTML=state.children.map(function(c){
+    return '<button class="child-switch-btn'+(c.id===state.viewChildId?' active':'')+'" onclick="setViewChild(\''+c.id+'\')">'+esc(c.emoji||'🧒')+' '+esc(c.name)+'</button>';
+  }).join('');
+}
+function setViewChild(id) { state.viewChildId=id; render(); }
+function childLabel(childId) {
+  var c=state.children.find(function(x){ return x.id===childId; });
+  return c ? (c.emoji||'🧒')+' '+c.name : '';
 }
 
 function checkApprovalNow() {
@@ -1318,7 +1453,7 @@ function setView(v) {
 // 실제로 화면(view/mode)이 바뀐 게 아니라 다른 기기의 변경사항 때문에 재렌더링되는 경우엔
 // 입력 중이던 값과 포커스를 스냅샷했다가 그대로 복원한다.
 var _prevRenderedView=null, _prevRenderedMode=null, _prevRenderedDate=null;
-var STICKY_FIELDS=['msgInput','msgReplyInput','se-name','se-desc','se-allday','se-icon','se-editId','se-dateStart','se-dateEnd','sch-name','sch-cat','sch-editId','sch-repeatEnd'];
+var STICKY_FIELDS=['msgInput','msgReplyInput','se-name','se-desc','se-allday','se-icon','se-editId','se-dateStart','se-dateEnd','sch-name','sch-cat','sch-editId','sch-repeatEnd','devNewChildName'];
 
 function snapshotStickyFields(sa) {
   var snap={};
@@ -1386,6 +1521,7 @@ function restoreStickyFields(snap) {
 function render() {
   var sa=document.getElementById('scrollArea');
   if (!sa) return;
+  renderChildSwitchBar();
   var v=state.view;
   var ds=fmt(state.selectedDate);
   // 실제 view/mode/날짜 전환이 아니라 백그라운드 동기화로 인한 재렌더링이면 입력값을 보존한다
@@ -1489,7 +1625,7 @@ function renderDay() {
   if (holiday) html+='<div class="holiday-banner">🎉 '+esc(holiday)+'</div>';
 
   html+='<div class="progress-card'+(isP?' p-mode':'')+'">'
-    +'<div class="pc-row"><div><div class="pc-label">'+(isP?'자녀 현황':'나의 진행률')+'</div>'
+    +'<div class="pc-row"><div><div class="pc-label">'+(isP?(state.children.length>1?childLabel(activeChildId())+' 현황':'자녀 현황'):'나의 진행률')+'</div>'
     +'<div class="pc-date">'+(isToday(state.selectedDate)?'오늘':koDate(state.selectedDate).replace(/\(.*\)/,'').trim())+'</div></div>'
     +'<div><div class="pc-big">'+pct+'<span class="pc-unit">%</span></div>'
     +'<div class="pc-unit">'+done+'/'+tasks.length+' 완료</div></div></div>'
@@ -1525,7 +1661,7 @@ function renderDay() {
 
 function msgFromLabel(from) { return from==='child' ? '👦 자녀' : '👨‍👩‍👧 부모님'; }
 function renderMessages(ds, isP) {
-  var top=state.messages.filter(function(m){ return m.date===ds && !m.parentId; })
+  var top=state.messages.filter(function(m){ return m.date===ds && !m.parentId && isForActiveChild(m); })
     .sort(function(a,b){ return a.time.localeCompare(b.time); });
   var html='<div class="sec-title">💬 메시지</div>';
   if (!top.length) {
@@ -1720,6 +1856,17 @@ function renderShared() {
 }
 
 // ── DEVICES VIEW ──
+function addChildFromDevices() {
+  var el=document.getElementById('devNewChildName');
+  var name=el.value.trim();
+  if (!name) { showToast('⚠️ 이름을 입력해주세요'); return; }
+  var emoji=CHILD_EMOJIS[state.children.length % CHILD_EMOJIS.length];
+  var id='child_'+Date.now();
+  fsSet('children', id, {id:id, name:name, emoji:emoji, createdAt:Date.now()}).then(function(){
+    el.value='';
+    showToast('✅ '+emoji+' '+name+' 등록됐어요!');
+  }).catch(function(){ showToast('⚠️ 저장 실패. 네트워크를 확인해주세요'); });
+}
 function renderDevices() {
   var baseUrl=location.origin+location.pathname;
   var childUrl=baseUrl+'?role=child';
@@ -1746,12 +1893,24 @@ function renderDevices() {
     +'<div style="background:var(--bg);border-radius:10px;padding:10px 12px;font-size:11px;color:var(--parent);word-break:break-all;margin-bottom:8px;font-weight:600">'+parentUrl+'</div>'
     +'<button class="f-btn p" onclick="showUrlPopupFn(\''+parentUrl+'\',\'parent\')" style="margin-top:0">📋 부모용 URL 복사</button></div>';
 
+  html+='<div class="sec-title">👨‍👩‍👧‍👦 자녀 관리</div>';
+  html+='<div class="form-box">';
+  if (!state.children.length) {
+    html+='<div style="font-size:13px;color:var(--sub);margin-bottom:10px">아직 등록된 자녀가 없어요. 자녀 기기가 처음 접속하면 자동으로 등록돼요.</div>';
+  } else {
+    html+='<div class="wb-chips" style="margin-bottom:10px">'+state.children.map(function(c){
+      return '<span class="wb-chip">'+esc(c.emoji||'🧒')+' '+esc(c.name)+'</span>';
+    }).join('')+'</div>';
+  }
+  html+='<input class="m-field" id="devNewChildName" placeholder="새 자녀 이름 (예: 둘째, 민준)">'
+    +'<button class="f-btn p" onclick="addChildFromDevices()">➕ 자녀 추가</button></div>';
+
   if (pending.length) {
     html+='<div class="sec-title">승인 대기 중 🔴</div>';
     pending.forEach(function(d) {
       html+='<div class="device-card"><div class="dev-avatar" style="background:#FEF3C7">📱</div>'
         +'<div class="dev-info">'
-        +'<div class="dev-name">'+( d.label||'새 기기')+(d.role==='parent'?' (부모 요청)':' (자녀 요청)')+'</div>'
+        +'<div class="dev-name">'+( d.label||'새 기기')+(d.role==='parent'?' (부모 요청)':' (자녀 요청)'+(d.childId?' · '+childLabel(d.childId):''))+'</div>'
         +'<div class="dev-meta">코드: '+(d.code||'-')+' · '+new Date(d.registeredAt).toLocaleDateString('ko')+'</div>'
         +'<span class="dev-badge pending">대기중</span>'
         +(isAdmin
@@ -1771,7 +1930,7 @@ function renderDevices() {
     html+='<div class="device-card">'
       +'<div class="dev-avatar" style="background:'+(d.role==='parent'?'var(--parent-l)':'var(--child-l)')+'">'+(d.isAdmin?'👑':(d.role==='parent'?'👨‍👩‍👧':'👦'))+'</div>'
       +'<div class="dev-info">'
-      +'<div class="dev-name">'+(d.isAdmin?'관리자 기기':(d.role==='parent'?'부모 기기':'자녀 기기'))+(isMe?' <span style="font-size:11px;color:var(--sub)">(이 기기)</span>':'')+'</div>'
+      +'<div class="dev-name">'+(d.isAdmin?'관리자 기기':(d.role==='parent'?'부모 기기':(d.childId?childLabel(d.childId)+' 기기':'자녀 기기')))+(isMe?' <span style="font-size:11px;color:var(--sub)">(이 기기)</span>':'')+'</div>'
       +'<div class="dev-meta">코드: '+(d.code||'-')+' · '+new Date(d.registeredAt).toLocaleDateString('ko')+'</div>'
       +'<span class="dev-badge approved">승인됨</span>'
       +(isAdmin && d.role==='parent'
@@ -1942,7 +2101,7 @@ function _parseCalDateToken(tok, refMonth) {
   return null;
 }
 function _ymd(p) { return p.y+'-'+String(p.m).padStart(2,'0')+'-'+String(p.d).padStart(2,'0'); }
-var BULK_CAL_LINE_RE = /^(\d{4}[-.\/]\d{1,2}[-.\/]\d{1,2}|\d{1,2}[-.\/]\d{1,2}(?:~\d{1,2}(?:[-.\/]\d{1,2})?)?|\d{1,2}월\s*\d{1,2}일?(?:\s*~\s*(?:\d{1,2}월\s*)?\d{1,2}일?)?)\s+(.+)$/;
+var BULK_CAL_LINE_RE = /^(\d{4}[-.\/]\d{1,2}[-.\/]\d{1,2}(?:~\d{4}[-.\/]\d{1,2}[-.\/]\d{1,2})?|\d{1,2}[-.\/]\d{1,2}(?:~\d{1,2}(?:[-.\/]\d{1,2})?)?|\d{1,2}월\s*\d{1,2}일?(?:\s*~\s*(?:\d{1,2}월\s*)?\d{1,2}일?)?)\s+(.+)$/;
 function parseBulkCalendarLines(text) {
   var lines=text.split('\n');
   var parsed=[], errors=[];
@@ -2289,7 +2448,7 @@ function sendMsg(ds) {
   var now=new Date();
   var msg={id:Date.now(), from:(state.mode==='parent'?'parent':'child'), text:text,
     time:pad(now.getHours())+':'+pad(now.getMinutes()),
-    date: ds || fmt(state.selectedDate), parentId:null};
+    date: ds || fmt(state.selectedDate), parentId:null, childId:activeChildId()};
   fsSet('messages',msg.id,msg).then(function(){
     if(el) el.value='';
     showToast('📨 메시지를 보냈어요!');
@@ -2303,7 +2462,7 @@ function sendReply(parentId, ds) {
   var now=new Date();
   var msg={id:Date.now(), from:(state.mode==='parent'?'parent':'child'), text:text,
     time:pad(now.getHours())+':'+pad(now.getMinutes()),
-    date: ds || fmt(state.selectedDate), parentId:parentId};
+    date: ds || fmt(state.selectedDate), parentId:parentId, childId:activeChildId()};
   fsSet('messages',msg.id,msg).then(function(){
     _replyTargetId=null;
     showToast('📨 답장을 보냈어요!');
@@ -2830,6 +2989,7 @@ function saveTask() {
     name: name, date: date, allday: allday, time: timeVal,
     cat: document.getElementById('mCat').value,
     taskType: _taskType,
+    childId: existing.childId || activeChildId(),
     workbook: isStudy ? workbook : '',
     workbookLevel: isStudy ? workbookLevel : '',
     pageStart: isStudy ? pageStart : '',
