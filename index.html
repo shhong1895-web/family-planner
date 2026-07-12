@@ -339,9 +339,16 @@ body.parent-device .mode-pills { visibility:hidden; }
   background:var(--card); border-radius:var(--r); padding:14px;
   margin-bottom:10px; box-shadow:var(--sh); border-left:3px solid var(--parent);
 }
+.msg-card.from-child { border-left-color:var(--child); }
 .msg-from { font-size:11px; font-weight:700; color:var(--parent); margin-bottom:5px; }
+.msg-card.from-child .msg-from { color:var(--child); }
 .msg-txt { font-size:14px; line-height:1.5; }
 .msg-time { font-size:11px; color:var(--sub); margin-top:5px; }
+.msg-reply-link { font-size:12px; font-weight:700; color:var(--sub); margin-top:8px; cursor:pointer; display:inline-block; }
+.msg-replies { margin:6px 0 10px 18px; padding-left:12px; border-left:2px solid var(--border); }
+.msg-reply-box { margin:8px 0 10px 18px; padding-left:12px; border-left:2px solid var(--border); }
+.msg-reply-box textarea { height:50px; resize:none; margin-bottom:8px; }
+.msg-reply-btns { display:flex; gap:8px; }
 
 /* FORM */
 .form-box { background:var(--card); border-radius:var(--r); padding:16px; box-shadow:var(--sh); margin-bottom:10px; }
@@ -486,6 +493,13 @@ body.parent-device .mode-pills { visibility:hidden; }
 .wb-chip { display:inline-flex; align-items:center; gap:5px; background:var(--bg); border:1.5px solid var(--border); border-radius:20px; padding:5px 8px 5px 12px; font-size:13px; font-weight:600; color:var(--text); }
 .wb-chip b { cursor:pointer; color:var(--sub); font-weight:900; padding:2px 5px; }
 .wb-add-btn { flex:0 0 auto; padding:12px 16px; border-radius:12px; border:none; background:var(--child); color:#fff; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer; }
+.bulk-row { display:flex; align-items:flex-start; gap:10px; padding:10px 0; border-top:1px solid var(--border); }
+.bulk-row input[type=checkbox] { width:18px; height:18px; margin-top:2px; flex-shrink:0; }
+.bulk-row-body { flex:1; }
+.bulk-row-date { font-size:13px; font-weight:700; color:var(--parent); }
+.bulk-row-name { font-size:14px; font-weight:600; color:var(--text); }
+.bulk-row-skip { font-size:12px; color:var(--sub); }
+.bulk-row-err { font-size:13px; color:#DC2626; padding:6px 0; border-top:1px solid var(--border); }
 
 /* DATE+TIME BLOCK (iOS calendar style) */
 .dt-block {
@@ -513,6 +527,11 @@ body.parent-device .mode-pills { visibility:hidden; }
 }
 .dt-time-btn.p { background:#E0F2FE; color:var(--parent); }
 .dt-time-btn.hidden { visibility:hidden; }
+.repeat-end-btn {
+  border:1.5px solid var(--border); border-radius:12px; background:var(--bg);
+  font-family:inherit; font-size:14px; font-weight:600; color:var(--text);
+  cursor:pointer; padding:12px 14px; text-align:left;
+}
 
 /* TOAST */
 .toast {
@@ -798,7 +817,7 @@ body.parent-device .mode-pills { visibility:hidden; }
       <div id="mRepeatEndWrap" style="display:none">
         <div class="m-label">반복 종료일 (선택)</div>
         <div style="display:flex;gap:8px;align-items:center">
-          <button class="dt-date-btn" id="mBtnRepeatEnd" onclick="focusRepeatEndDate()" style="flex:1;text-align:left">종료일 설정 안 함 (계속 반복)</button>
+          <button class="repeat-end-btn" id="mBtnRepeatEnd" onclick="focusRepeatEndDate()" style="flex:1">종료일 설정 안 함 (계속 반복)</button>
           <button type="button" class="wd-preset-btn" onclick="clearRepeatEnd()">해제</button>
         </div>
         <input type="date" id="mRepeatEnd" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" onchange="onRepeatEndDateChange()">
@@ -1299,7 +1318,7 @@ function setView(v) {
 // 실제로 화면(view/mode)이 바뀐 게 아니라 다른 기기의 변경사항 때문에 재렌더링되는 경우엔
 // 입력 중이던 값과 포커스를 스냅샷했다가 그대로 복원한다.
 var _prevRenderedView=null, _prevRenderedMode=null, _prevRenderedDate=null;
-var STICKY_FIELDS=['msgInput','se-name','se-desc','se-allday','se-icon','se-editId','se-dateStart','se-dateEnd','sch-name','sch-cat','sch-editId','sch-repeatEnd'];
+var STICKY_FIELDS=['msgInput','msgReplyInput','se-name','se-desc','se-allday','se-icon','se-editId','se-dateStart','se-dateEnd','sch-name','sch-cat','sch-editId','sch-repeatEnd'];
 
 function snapshotStickyFields(sa) {
   var snap={};
@@ -1488,10 +1507,7 @@ function renderDay() {
     if (!tasks.length) html+=emptyBox('📋','등록된 할일이 없어요','아래에서 할일을 추가해보세요');
     tasks.forEach(function(t){ html+=taskCard(t, ds); });
 
-    html+='<div class="sec-title">메시지 보내기</div>';
-    html+='<div class="form-box"><textarea class="f-field" id="msgInput" placeholder="자녀에게 응원 메시지를 보내세요..." style="height:70px;resize:none"></textarea>'
-      +'<button class="f-btn p" onclick="sendMsg()">📨 메시지 보내기</button></div>';
-
+    html+=renderMessages(ds, true);
 
     html+='<div class="sec-title">할일 추가</div>';
     html+='<div class="form-box" style="text-align:center">'
@@ -1502,15 +1518,43 @@ function renderDay() {
     if (!tasks.length) html+=emptyBox('📝','할일이 없어요','+ 버튼으로 할일을 추가해보세요');
     tasks.forEach(function(t){ html+=taskCard(t, ds); });
 
-    var msgs=state.messages.filter(function(m){ return m.date===ds; });
-    if (msgs.length) {
-      html+='<div class="sec-title">부모님 메시지</div>';
-      msgs.forEach(function(m){
-        html+='<div class="msg-card"><div class="msg-from">👨‍👩‍👧 부모님</div>'
-          +'<div class="msg-txt">'+esc(m.text)+'</div><div class="msg-time">'+m.time+'</div></div>';
-      });
-    }
+    html+=renderMessages(ds, false);
   }
+  return html;
+}
+
+function msgFromLabel(from) { return from==='child' ? '👦 자녀' : '👨‍👩‍👧 부모님'; }
+function renderMessages(ds, isP) {
+  var top=state.messages.filter(function(m){ return m.date===ds && !m.parentId; })
+    .sort(function(a,b){ return a.time.localeCompare(b.time); });
+  var html='<div class="sec-title">💬 메시지</div>';
+  if (!top.length) {
+    html+=emptyBox('💬','아직 메시지가 없어요', isP?'자녀에게 응원 메시지를 남겨보세요':'부모님께 메시지를 남겨보세요');
+  } else {
+    top.forEach(function(m){
+      var replies=state.messages.filter(function(r){ return r.parentId===m.id; })
+        .sort(function(a,b){ return a.time.localeCompare(b.time); });
+      html+='<div class="msg-card'+(m.from==='child'?' from-child':'')+'"><div class="msg-from">'+msgFromLabel(m.from)+'</div>'
+        +'<div class="msg-txt">'+esc(m.text)+'</div><div class="msg-time">'+m.time+'</div>'
+        +'<div class="msg-reply-link" onclick="toggleReply(\''+m.id+'\')">'+(_replyTargetId===m.id?'취소':'💬 답장하기')+'</div>'
+        +'</div>';
+      if (replies.length) {
+        html+='<div class="msg-replies">';
+        replies.forEach(function(r){
+          html+='<div class="msg-card'+(r.from==='child'?' from-child':'')+'"><div class="msg-from">'+msgFromLabel(r.from)+'</div>'
+            +'<div class="msg-txt">'+esc(r.text)+'</div><div class="msg-time">'+r.time+'</div></div>';
+        });
+        html+='</div>';
+      }
+      if (_replyTargetId===m.id) {
+        html+='<div class="msg-reply-box"><textarea class="f-field" id="msgReplyInput" placeholder="답장을 입력해주세요..."></textarea>'
+          +'<div class="msg-reply-btns"><button class="f-btn'+(isP?' p':'')+'" style="flex:2" onclick="sendReply(\''+m.id+'\',\''+ds+'\')">답장 보내기</button>'
+          +'<button class="f-btn" style="flex:1;background:#F1F5F9;color:var(--text)" onclick="toggleReply(\''+m.id+'\')">취소</button></div></div>';
+      }
+    });
+  }
+  html+='<div class="form-box"><textarea class="f-field" id="msgInput" placeholder="'+(isP?'자녀에게 응원 메시지를 보내세요...':'부모님께 메시지를 보내세요...')+'" style="height:70px;resize:none"></textarea>'
+    +'<button class="f-btn'+(isP?' p':'')+'" onclick="sendMsg(\''+ds+'\')">📨 메시지 보내기</button></div>';
   return html;
 }
 
@@ -1786,19 +1830,17 @@ function renderSchool() {
       +'</div>'
       +'<div class="f-label">종료일 (선택)</div>'
       +'<div style="display:flex;gap:8px;align-items:center;margin-bottom:14px">'
-        +'<button class="dt-date-btn" id="sch-btnRepeatEnd" onclick="focusRepeatEndDate(\'sch-repeatEnd\')" style="flex:1;text-align:left">종료일 설정 안 함 (계속 반복)</button>'
+        +'<button class="repeat-end-btn" id="sch-btnRepeatEnd" onclick="focusRepeatEndDate(\'sch-repeatEnd\')" style="flex:1">종료일 설정 안 함 (계속 반복)</button>'
         +'<button type="button" class="wd-preset-btn" onclick="clearRepeatEnd(\'sch-repeatEnd\',\'sch-btnRepeatEnd\')">해제</button>'
       +'</div>'
       +'<input type="date" id="sch-repeatEnd" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" onchange="onRepeatEndDateChange(\'sch-repeatEnd\',\'sch-btnRepeatEnd\')">'
       +'<div class="dt-block">'
         +'<div class="dt-row">'
           +'<div class="dt-label">시작</div>'
-          +'<button class="dt-time-btn p" id="sch-btnStart" onclick="openDrumSheet(\'schStart\',\'school\')" style="margin-left:auto">오전 9:00</button>'
-        +'</div>'
-        +'<div class="dt-divider"></div>'
-        +'<div class="dt-row">'
-          +'<div class="dt-label">종료</div>'
-          +'<button class="dt-time-btn p" id="sch-btnEnd" onclick="openDrumSheet(\'schEnd\',\'school\')" style="margin-left:auto">오전 10:00</button>'
+          +'<button class="dt-time-btn p" id="sch-btnStart" onclick="openDrumSheet(\'schStart\',\'school\')">오전 9:00</button>'
+          +'<div style="width:8px"></div>'
+          +'<div class="dt-label" style="width:auto">~ 종료</div>'
+          +'<button class="dt-time-btn p" id="sch-btnEnd" onclick="openDrumSheet(\'schEnd\',\'school\')" style="margin-left:8px">오전 10:00</button>'
         +'</div>'
         +'<div class="drum-time-error" id="sch-timeError">⚠️ 종료가 시작보다 빨라요</div>'
       +'</div>'
@@ -1806,6 +1848,14 @@ function renderSchool() {
       +'<button class="f-btn p" id="sch-submitBtn" onclick="saveSchoolItem()" style="flex:2">+ 시간표 추가</button>'
       +'<button class="f-btn" id="sch-cancelBtn" onclick="cancelEditSchool()" style="flex:1;display:none;background:#F1F5F9;color:var(--text)">취소</button>'
       +'</div></div>';
+
+    html+='<div class="sec-title">📋 학사일정 일괄 등록</div>';
+    html+='<div class="form-box">'
+      +'<div style="font-size:12px;color:var(--sub);margin-bottom:10px;line-height:1.6">학교 홈페이지의 학사일정을 한 줄에 하나씩 붙여넣어보세요<br>예) 3/2 입학식 · 3월 2일 입학식 · 3/16~18 수학여행</div>'
+      +'<textarea class="f-field" id="bulkCalText" placeholder="3/2 입학식&#10;3/16~18 수학여행&#10;4/10 중간고사" style="height:90px;resize:none"></textarea>'
+      +'<button class="f-btn p" onclick="previewBulkCalendar()">미리보기</button>'
+      +'<div id="bulkCalPreview"></div>'
+      +'</div>';
   }
 
   html+='<div class="sec-title">등록된 시간표</div>';
@@ -1873,6 +1923,96 @@ function cancelEditSchool() {
 function deleteSchoolItem(id) {
   if (!confirm('이 시간표를 삭제할까요?')) return;
   fsDel('schoolSchedule', id).then(function(){ showToast('🗑 삭제됐어요'); });
+}
+
+// ── 학사일정 일괄 등록 (붙여넣기 파싱) ──
+var _bulkCalParsed = [];
+function _inferCalYear(month) {
+  var curY=TODAY.getFullYear(), curM=TODAY.getMonth()+1;
+  if (curM>=3) return month<=2 ? curY+1 : curY;
+  return month<=2 ? curY : curY-1;
+}
+function _parseCalDateToken(tok, refMonth) {
+  tok=tok.trim();
+  var m;
+  if ((m=tok.match(/^(\d{4})[-.\/](\d{1,2})[-.\/](\d{1,2})$/))) return {y:+m[1], m:+m[2], d:+m[3]};
+  if ((m=tok.match(/^(\d{1,2})[-.\/](\d{1,2})$/))) return {y:_inferCalYear(+m[1]), m:+m[1], d:+m[2]};
+  if ((m=tok.match(/^(\d{1,2})월\s*(\d{1,2})일?$/))) return {y:_inferCalYear(+m[1]), m:+m[1], d:+m[2]};
+  if (refMonth && (m=tok.match(/^(\d{1,2})일?$/))) return {y:_inferCalYear(refMonth), m:refMonth, d:+m[1]};
+  return null;
+}
+function _ymd(p) { return p.y+'-'+String(p.m).padStart(2,'0')+'-'+String(p.d).padStart(2,'0'); }
+var BULK_CAL_LINE_RE = /^(\d{4}[-.\/]\d{1,2}[-.\/]\d{1,2}|\d{1,2}[-.\/]\d{1,2}(?:~\d{1,2}(?:[-.\/]\d{1,2})?)?|\d{1,2}월\s*\d{1,2}일?(?:\s*~\s*(?:\d{1,2}월\s*)?\d{1,2}일?)?)\s+(.+)$/;
+function parseBulkCalendarLines(text) {
+  var lines=text.split('\n');
+  var parsed=[], errors=[];
+  lines.forEach(function(raw){
+    var line=raw.trim();
+    if (!line || line[0]==='#') return;
+    var m=line.match(BULK_CAL_LINE_RE);
+    if (!m) { errors.push(raw); return; }
+    var dateTok=m[1].replace(/\s+/g,''), name=m[2].trim();
+    if (!name) { errors.push(raw); return; }
+    var range=dateTok.split('~');
+    var startP=_parseCalDateToken(range[0]);
+    if (!startP || startP.m<1||startP.m>12||startP.d<1||startP.d>31) { errors.push(raw); return; }
+    var endP=startP;
+    if (range[1]) {
+      endP=_parseCalDateToken(range[1], startP.m) || startP;
+    }
+    parsed.push({ dateStart:_ymd(startP), dateEnd:_ymd(endP), name:name, raw:raw });
+  });
+  return {parsed:parsed, errors:errors};
+}
+function previewBulkCalendar() {
+  var text=document.getElementById('bulkCalText').value;
+  var result=parseBulkCalendarLines(text);
+  _bulkCalParsed = result.parsed.map(function(p){
+    var holidayDup = getHoliday(p.dateStart) || getHoliday(p.dateEnd);
+    var eventDup = state.sharedEvents.some(function(e){ return e.date===p.dateStart && e.name===p.name; });
+    p.skip = !!(holidayDup || eventDup);
+    p.skipReason = holidayDup ? '이미 국경일에 등록됨 ('+holidayDup+')' : (eventDup ? '이미 등록된 일정이에요' : '');
+    p.checked = !p.skip;
+    return p;
+  });
+  renderBulkCalPreview(result.errors);
+}
+function renderBulkCalPreview(errors) {
+  var box=document.getElementById('bulkCalPreview');
+  if (!box) return;
+  if (!_bulkCalParsed.length && (!errors||!errors.length)) { box.innerHTML='<div style="font-size:13px;color:var(--sub);padding-top:10px">인식된 일정이 없어요</div>'; return; }
+  var html='';
+  _bulkCalParsed.forEach(function(p,i){
+    var dateLabel = p.dateStart===p.dateEnd ? koDateShort(p.dateStart) : (koDateShort(p.dateStart)+' ~ '+koDateShort(p.dateEnd));
+    html+='<div class="bulk-row">'
+      +'<input type="checkbox" '+(p.checked?'checked':'')+' onchange="_bulkCalParsed['+i+'].checked=this.checked">'
+      +'<div class="bulk-row-body"><div class="bulk-row-date">'+dateLabel+'</div>'
+      +'<div class="bulk-row-name">'+esc(p.name)+'</div>'
+      +(p.skipReason?'<div class="bulk-row-skip">⚠️ '+esc(p.skipReason)+'</div>':'')
+      +'</div></div>';
+  });
+  (errors||[]).forEach(function(raw){
+    html+='<div class="bulk-row-err">❌ 인식하지 못했어요: "'+esc(raw)+'"</div>';
+  });
+  if (_bulkCalParsed.length) {
+    html+='<button class="f-btn p" style="margin-top:10px" onclick="confirmBulkCalendarImport()">선택한 일정 등록하기</button>';
+  }
+  box.innerHTML=html;
+}
+function confirmBulkCalendarImport() {
+  var toAdd=_bulkCalParsed.filter(function(p){ return p.checked; });
+  if (!toAdd.length) { showToast('⚠️ 등록할 일정을 선택해주세요'); return; }
+  var base=Date.now();
+  var proms=toAdd.map(function(p,i){
+    var ev={ id:base+i, name:p.name, date:p.dateStart, dateEnd:p.dateEnd, allday:true, time:'', icon:'📚', desc:'학사일정' };
+    return fsSet('sharedEvents', ev.id, ev);
+  });
+  Promise.all(proms).then(function(){
+    showToast('✅ '+toAdd.length+'개 일정이 등록됐어요!');
+    document.getElementById('bulkCalText').value='';
+    _bulkCalParsed=[];
+    document.getElementById('bulkCalPreview').innerHTML='';
+  }).catch(function(){ showToast('⚠️ 일부 저장에 실패했어요. 네트워크를 확인해주세요'); });
 }
 // ── COMPLETE ANIMATIONS (랜덤 재생) ──
 var CONFETTI_COLORS = ['#ff6b6b','#ffd93d','#6bcB77','#4d96ff','#c780fa','#ff9f45','#38e1c6'];
@@ -2136,18 +2276,37 @@ function addShared() {
     showToast('⚠️ 저장 실패. 네트워크를 확인해주세요');
   });
 }
-function sendMsg() {
+var _replyTargetId = null;
+function toggleReply(id) {
+  _replyTargetId = (_replyTargetId===id) ? null : id;
+  render();
+}
+function sendMsg(ds) {
   var el=document.getElementById('msgInput');
   if (!el) { showToast('⚠️ 오류가 발생했어요'); return; }
   var text=el.value.trim();
   if (!text) { showToast('⚠️ 메시지를 입력해주세요'); return; }
   var now=new Date();
-  var msg={id:Date.now(),from:'부모',text:text,
+  var msg={id:Date.now(), from:(state.mode==='parent'?'parent':'child'), text:text,
     time:pad(now.getHours())+':'+pad(now.getMinutes()),
-    date:fmt(state.selectedDate)};
+    date: ds || fmt(state.selectedDate), parentId:null};
   fsSet('messages',msg.id,msg).then(function(){
     if(el) el.value='';
     showToast('📨 메시지를 보냈어요!');
+  }).catch(function(){ showToast('⚠️ 저장 실패. 네트워크를 확인해주세요'); });
+}
+function sendReply(parentId, ds) {
+  var el=document.getElementById('msgReplyInput');
+  if (!el) { showToast('⚠️ 오류가 발생했어요'); return; }
+  var text=el.value.trim();
+  if (!text) { showToast('⚠️ 답장을 입력해주세요'); return; }
+  var now=new Date();
+  var msg={id:Date.now(), from:(state.mode==='parent'?'parent':'child'), text:text,
+    time:pad(now.getHours())+':'+pad(now.getMinutes()),
+    date: ds || fmt(state.selectedDate), parentId:parentId};
+  fsSet('messages',msg.id,msg).then(function(){
+    _replyTargetId=null;
+    showToast('📨 답장을 보냈어요!');
   }).catch(function(){ showToast('⚠️ 저장 실패. 네트워크를 확인해주세요'); });
 }
 function amIAdmin() {
