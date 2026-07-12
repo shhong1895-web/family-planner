@@ -75,6 +75,15 @@ service cloud.firestore {
         && request.resource.data.name.size() < 200;
     }
 
+    // 자녀 프로필 (다자녀 지원)
+    match /children/{childId} {
+      allow read: if signedIn();
+      allow write: if signedIn()
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() < 50;
+    }
+
     // 그 외 컬렉션은 전부 차단
     match /{document=**} {
       allow read, write: if false;
