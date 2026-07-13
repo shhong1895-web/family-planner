@@ -1090,6 +1090,9 @@ function setupListeners() {
     devicesState = snap.docs.map(function(d){ return d.data(); });
     updatePendingBadge(devicesState.filter(function(d){ return d.status==='pending'; }).length);
     render();
+  }, function(){
+    // 연결이 끊기면 잠시 후 재구독 (조용히 멈춰서 승인 요청이 안 보이는 문제 방지)
+    setTimeout(setupListeners, 3000);
   });
 }
 
