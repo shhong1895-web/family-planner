@@ -1872,7 +1872,7 @@ function renderShared() {
     html+='<div class="shared-card" style="'+(isPast?'opacity:.55':'')+'">'
       +'<div class="shared-icon">'+(e.icon||'📅')+'</div>'
       +'<div class="shared-body" '+(isP?'data-dbtap="shared:'+e.id+'"':'')+' >'
-      +'<div class="shared-title">'+esc(e.name)+'</div>'
+      +'<div class="shared-title">'+esc(e.name)+(e.childId && state.children.length>1?' <span class="tag" style="margin-left:4px">'+esc(childLabel(e.childId))+'</span>':'')+'</div>'
       +'<div class="shared-meta">'+dateStr+' '+timeStr+(e.desc?' · '+esc(e.desc):'')+'</div></div>'
       +(isP?'<button class="task-del" onclick="deleteShared('+e.id+')">🗑</button>':'')
       +'</div>';
@@ -2035,7 +2035,8 @@ function renderSchool() {
 
     html+='<div class="sec-title">📋 학사일정 일괄 등록</div>';
     html+='<div class="form-box">'
-      +'<div style="font-size:12px;color:var(--sub);margin-bottom:10px;line-height:1.6">학교 홈페이지의 학사일정을 한 줄에 하나씩 붙여넣어보세요<br>예) 3/2 입학식 · 3월 2일 입학식 · 3/16~18 수학여행</div>'
+      +'<div style="font-size:12px;color:var(--sub);margin-bottom:10px;line-height:1.6">학교 홈페이지의 학사일정을 한 줄에 하나씩 붙여넣어보세요<br>예) 3/2 입학식 · 3월 2일 입학식 · 3/16~18 수학여행'
+      +(state.children.length>1?'<br><b style="color:var(--parent)">'+childLabel(activeChildId())+'</b> 학사일정으로 등록돼요 (상단 탭에서 자녀를 바꿀 수 있어요)':'')+'</div>'
       +'<textarea class="f-field" id="bulkCalText" placeholder="3/2 입학식&#10;3/16~18 수학여행&#10;4/10 중간고사" style="height:90px;resize:none"></textarea>'
       +'<button class="f-btn p" onclick="previewBulkCalendar()">미리보기</button>'
       +'<div id="bulkCalPreview"></div>'
@@ -2153,9 +2154,10 @@ function parseBulkCalendarLines(text) {
 function previewBulkCalendar() {
   var text=document.getElementById('bulkCalText').value;
   var result=parseBulkCalendarLines(text);
+  var ac=activeChildId();
   _bulkCalParsed = result.parsed.map(function(p){
     var holidayDup = getHoliday(p.dateStart) || getHoliday(p.dateEnd);
-    var eventDup = state.sharedEvents.some(function(e){ return e.date===p.dateStart && e.name===p.name; });
+    var eventDup = state.sharedEvents.some(function(e){ return e.date===p.dateStart && e.name===p.name && (e.childId||null)===(ac||null); });
     p.skip = !!(holidayDup || eventDup);
     p.skipReason = holidayDup ? '이미 국경일에 등록됨 ('+holidayDup+')' : (eventDup ? '이미 등록된 일정이에요' : '');
     p.checked = !p.skip;
@@ -2189,8 +2191,9 @@ function confirmBulkCalendarImport() {
   var toAdd=_bulkCalParsed.filter(function(p){ return p.checked; });
   if (!toAdd.length) { showToast('⚠️ 등록할 일정을 선택해주세요'); return; }
   var base=Date.now();
+  var ac=activeChildId();
   var proms=toAdd.map(function(p,i){
-    var ev={ id:base+i, name:p.name, date:p.dateStart, dateEnd:p.dateEnd, allday:true, time:'', icon:'📚', desc:'학사일정' };
+    var ev={ id:base+i, name:p.name, date:p.dateStart, dateEnd:p.dateEnd, allday:true, time:'', icon:'📚', desc:'학사일정', childId: ac||null };
     return fsSet('sharedEvents', ev.id, ev);
   });
   Promise.all(proms).then(function(){
