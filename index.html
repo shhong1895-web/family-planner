@@ -1053,13 +1053,21 @@ function tasksForDate(ds) {
 function schoolForDate(ds) {
   var dow=parseDate(ds).getDay();
   return state.schoolSchedule.filter(function(s){
+    if (!isForActiveChild(s)) return false;
     if ((s.weekdays||[]).indexOf(dow)<0) return false;
     if (s.repeatEnd && ds>s.repeatEnd) return false; // 종료일 이후는 달력에서 제외
     return true;
   });
 }
+function isSharedForActiveChild(item) {
+  if (state.children.length<2) return true;
+  if (!item.childId) return true; // 자녀 구분 없는 진짜 가족 공유 일정
+  var ac=activeChildId();
+  return !ac || item.childId===ac;
+}
 function sharedForDate(ds) {
   var real=state.sharedEvents.filter(function(e){
+    if (!isSharedForActiveChild(e)) return false;
     var start=e.date, end=e.dateEnd||e.date;
     return ds>=start && ds<=end;
   });
@@ -1400,7 +1408,7 @@ function isForActiveChild(item) {
 function renderChildSwitchBar() {
   var bar=document.getElementById('childSwitchBar');
   if (!bar) return;
-  if (state.mode!=='parent' || state.children.length<2) { bar.style.display='none'; return; }
+  if (state.mode!=='parent' || state.children.length<2 || state.view==='shared') { bar.style.display='none'; return; }
   if (!state.viewChildId || !state.children.some(function(c){ return c.id===state.viewChildId; })) {
     state.viewChildId=firstChildId();
   }
@@ -1973,13 +1981,13 @@ function schoolWeekdaySummary(days) {
 }
 function renderSchool() {
   var isP=state.mode==='parent';
-  var sorted=[].concat(state.schoolSchedule).sort(function(a,b){
+  var sorted=state.schoolSchedule.filter(isForActiveChild).sort(function(a,b){
     if (a.cat!==b.cat) return a.cat==='학교'?-1:1;
     return (a.startTime||'').localeCompare(b.startTime||'');
   });
   var html='<div class="progress-card" style="background:linear-gradient(135deg,#0EA5E9,#0369A1)">'
-    +'<div class="pc-row"><div><div class="pc-label">학교 · 학원 시간표</div><div class="pc-date">등록하면 달력에 자동으로 표시돼요 📌</div></div>'
-    +'<div><div class="pc-big">'+state.schoolSchedule.length+'</div><div class="pc-unit">개 등록</div></div></div></div>';
+    +'<div class="pc-row"><div><div class="pc-label">학교 · 학원 시간표'+(isP && state.children.length>1?' — '+childLabel(activeChildId()):'')+'</div><div class="pc-date">등록하면 달력에 자동으로 표시돼요 📌</div></div>'
+    +'<div><div class="pc-big">'+sorted.length+'</div><div class="pc-unit">개 등록</div></div></div></div>';
 
   if (isP) {
     html+='<div class="sec-title" id="sch-formTitle">시간표 추가</div>';
@@ -2041,7 +2049,7 @@ function renderSchool() {
       +'<div class="shared-icon">'+(s.cat==='학원'?'✏️':'🏫')+'</div>'
       +'<div class="shared-body">'
       +'<div class="shared-title">'+esc(s.name)+'</div>'
-      +'<div class="shared-meta">'+schoolWeekdaySummary(s.weekdays)+' · 🕐 '+prettyTime(s.startTime)+'~'+prettyTime(s.endTime)+(s.repeatEnd?' · '+koDateShort(s.repeatEnd)+'까지':'')+'</div></div>'
+      +'<div class="shared-meta">'+schoolWeekdaySummary(s.weekdays)+' · 🕐 '+prettyTime(s.startTime)+'~'+prettyTime(s.endTime)+(s.repeatEnd?' · '+koDateShort(s.repeatEnd)+'까지':'')+(state.children.length>1 && s.childId?' · '+childLabel(s.childId):'')+'</div></div>'
       +(isP?'<button class="task-edit" onclick="openEditSchool(\''+s.id+'\')">✏️</button><button class="task-del" onclick="deleteSchoolItem(\''+s.id+'\')">🗑</button>':'')
       +'</div>';
   });
@@ -2058,10 +2066,12 @@ function saveSchoolItem() {
   if (te<=ts) { showToast('⚠️ 종료 시간이 시작보다 빨라요'); return; }
   var editId=document.getElementById('sch-editId').value;
   var repeatEnd=document.getElementById('sch-repeatEnd').value||'';
+  var existing=editId ? (state.schoolSchedule.find(function(x){ return String(x.id)===String(editId); })||{}) : {};
   var item={
     id: editId || Date.now(),
     name:name, cat:document.getElementById('sch-cat').value,
-    weekdays:days, startTime:ts, endTime:te, repeatEnd:repeatEnd
+    weekdays:days, startTime:ts, endTime:te, repeatEnd:repeatEnd,
+    childId: existing.childId || activeChildId()
   };
   fsSet('schoolSchedule', item.id, item).then(function(){
     showToast(editId?'✏️ 수정됐어요':'✅ 시간표가 추가됐어요');
