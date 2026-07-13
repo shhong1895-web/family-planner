@@ -679,7 +679,8 @@ body.parent-device .mode-pills { visibility:hidden; }
   <div style="font-size:52px;margin-bottom:14px">🏠</div>
   <div style="font-size:24px;font-weight:800;color:#0F172A;margin-bottom:8px">우리가족 플래너</div>
   <div style="font-size:14px;color:#64748B;margin-bottom:20px;line-height:1.7">이 기기를 사용하는 사람이 누구인가요?<br>한 번만 선택하면 다음부터 자동으로 열려요.</div>
-  <input id="deviceNickname" placeholder="이 기기 이름 (예: 엄마 폰, 첫째 아이패드)" style="width:100%;max-width:320px;padding:12px 14px;border-radius:12px;border:1.5px solid #E2E8F0;font-family:inherit;font-size:14px;margin-bottom:16px;text-align:center;background:#fff">
+  <input id="deviceNickname" placeholder="이 기기 이름 (예: 엄마 폰, 첫째 아이패드)" style="width:100%;max-width:320px;padding:12px 14px;border-radius:12px;border:1.5px solid #E2E8F0;font-family:inherit;font-size:14px;margin-bottom:10px;text-align:center;background:#fff">
+  <input id="devicePin" placeholder="가족 암호 (알고 있으면 입력 — 없으면 비워두세요)" style="width:100%;max-width:320px;padding:12px 14px;border-radius:12px;border:1.5px solid #E2E8F0;font-family:inherit;font-size:14px;margin-bottom:16px;text-align:center;background:#fff">
   <div style="display:flex;gap:16px;width:100%;max-width:320px">
     <div class="ob-card" onclick="chooseRole('child')">
       <span style="font-size:48px;line-height:1">👦</span>
@@ -937,7 +938,7 @@ var state = {
   selectedDate: new Date(TODAY),
   weekStart: getWeekStart(TODAY),
   month: new Date(TODAY.getFullYear(), TODAY.getMonth(), 1),
-  tasks: [], sharedEvents: [], messages: [], schoolSchedule: [], workbooks: [], children: []
+  tasks: [], sharedEvents: [], messages: [], schoolSchedule: [], workbooks: [], children: [], pinConfigured:false
 };
 var devicesState = [];
 
@@ -1136,6 +1137,10 @@ function setupFamilyListeners() {
     var panel = document.getElementById('wbManagePanel');
     if (panel && panel.style.display !== 'none') renderWorkbookChips();
   });
+  db.collection('meta').doc('pinHash').onSnapshot(function(snap) {
+    state.pinConfigured = snap.exists;
+    render();
+  });
   seedIfEmpty();
 }
 
@@ -1166,6 +1171,12 @@ function seedIfEmpty() {
 var ROLE_KEY='fp_role', DID_KEY='fp_did', REG_KEY='fp_reg';
 var approvalUnsub=null;
 
+function sha256Hex(str) {
+  var enc=new TextEncoder().encode(str);
+  return crypto.subtle.digest('SHA-256', enc).then(function(buf){
+    return Array.prototype.map.call(new Uint8Array(buf), function(b){ return ('00'+b.toString(16)).slice(-2); }).join('');
+  });
+}
 function getDeviceId() {
   var id=localStorage.getItem(DID_KEY);
   if (!id) { var c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; id=Array.from({length:6},function(){ return c[Math.floor(Math.random()*c.length)]; }).join(''); localStorage.setItem(DID_KEY,id); }
@@ -1200,9 +1211,17 @@ function getAuthUid() {
 
 // 온보딩 버튼은 항상 이걸 통해서 호출한다: 로그인(익명 로그인)이 아직 안 끝났으면
 // 기기 등록을 진행하지 않고 끝날 때까지 기다렸다가 진행한다 (uid 없이 문서가 만들어지는 걸 방지)
+function hashPin(pin) {
+  var enc=new TextEncoder().encode('family-planner-'+pin);
+  return crypto.subtle.digest('SHA-256', enc).then(function(buf){
+    return Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+  });
+}
 function chooseRole(role) {
   var nickEl=document.getElementById('deviceNickname');
   if (nickEl) localStorage.setItem('fp_nickname', nickEl.value.trim());
+  var pinEl=document.getElementById('devicePin');
+  if (pinEl && pinEl.value.trim()) localStorage.setItem('fp_pin_attempt', pinEl.value.trim());
   if (getAuthUid()) { setDeviceRole(role); return; }
   document.getElementById('onboardOverlay').style.display='none';
   document.getElementById('approvalOverlay').style.display='flex';
@@ -1279,6 +1298,7 @@ function setDeviceRole(role, skipRegister) {
           });
         }).then(function(){
           localStorage.setItem(APPROVED_KEY,'1');
+          localStorage.removeItem('fp_pin_attempt');
           showApp();
           showToast('👑 이 기기가 관리자로 등록됐어요');
         }).catch(function(){
@@ -1297,6 +1317,25 @@ function setDeviceRole(role, skipRegister) {
         return;
       }
       if (!mine) {
+        var pinAttempt=(localStorage.getItem('fp_pin_attempt')||'').trim();
+        if (pinAttempt) {
+          hashPin(pinAttempt).then(function(hash){
+            var quickDoc={ uid:uid, code:did, role:role, label:label, status:'approved', isAdmin:false, pinHash:hash, registeredAt:Date.now() };
+            db.collection('devices').doc(uid).set(quickDoc).then(function(){
+              localStorage.removeItem('fp_pin_attempt');
+              db.collection('devices').doc(uid).update({ pinHash: firebase.firestore.FieldValue.delete() }).catch(function(){});
+              localStorage.setItem(APPROVED_KEY,'1');
+              showApp();
+              showToast('✅ 가족 암호로 바로 연결됐어요!');
+            }).catch(function(){
+              // 암호가 틀렸거나 아직 설정되지 않음 -> 평소처럼 승인 대기로
+              localStorage.removeItem('fp_pin_attempt');
+              fsSet('devices', uid, { uid:uid, code:did, role:role, label:label, status:'pending', isAdmin:false, registeredAt:Date.now() });
+              showApprovalWait(uid, did);
+            });
+          });
+          return;
+        }
         fsSet('devices', uid, {
           uid:uid, code:did, role:role,
           label: label,
@@ -1481,7 +1520,7 @@ function setView(v) {
 // 실제로 화면(view/mode)이 바뀐 게 아니라 다른 기기의 변경사항 때문에 재렌더링되는 경우엔
 // 입력 중이던 값과 포커스를 스냅샷했다가 그대로 복원한다.
 var _prevRenderedView=null, _prevRenderedMode=null, _prevRenderedDate=null;
-var STICKY_FIELDS=['msgInput','msgReplyInput','se-name','se-desc','se-allday','se-icon','se-editId','se-dateStart','se-dateEnd','sch-name','sch-cat','sch-editId','sch-repeatEnd','devNewChildName'];
+var STICKY_FIELDS=['msgInput','msgReplyInput','se-name','se-desc','se-allday','se-icon','se-editId','se-dateStart','se-dateEnd','sch-name','sch-cat','sch-editId','sch-repeatEnd','devNewChildName','devPinInput'];
 
 function snapshotStickyFields(sa) {
   var snap={};
@@ -1884,6 +1923,18 @@ function renderShared() {
 }
 
 // ── DEVICES VIEW ──
+function setFamilyPin() {
+  if (!amIAdmin()) { showToast('🔒 관리자만 설정할 수 있어요'); return; }
+  var el=document.getElementById('devPinInput');
+  var pin=el.value.trim();
+  if (!pin || pin.length<4) { showToast('⚠️ 4자리 이상으로 입력해주세요'); return; }
+  hashPin(pin).then(function(hash){
+    fsSet('meta','pinHash',{hash:hash}).then(function(){
+      el.value='';
+      showToast('✅ 가족 암호가 설정됐어요');
+    }).catch(function(){ showToast('⚠️ 저장 실패. 네트워크를 확인해주세요'); });
+  });
+}
 function addChildFromDevices() {
   var el=document.getElementById('devNewChildName');
   var name=el.value.trim();
@@ -1920,6 +1971,16 @@ function renderDevices() {
     +'<div class="f-label">👨‍👩‍👧 부모용 URL — 링크를 열어도 관리자 승인이 있어야 접속돼요</div>'
     +'<div style="background:var(--bg);border-radius:10px;padding:10px 12px;font-size:11px;color:var(--parent);word-break:break-all;margin-bottom:8px;font-weight:600">'+parentUrl+'</div>'
     +'<button class="f-btn p" onclick="showUrlPopupFn(\''+parentUrl+'\',\'parent\')" style="margin-top:0">📋 부모용 URL 복사</button></div>';
+
+  if (isAdmin) {
+    html+='<div class="sec-title">🔑 가족 암호 (빠른 참여)</div>';
+    html+='<div class="form-box">'
+      +'<div style="font-size:12px;color:var(--sub);margin-bottom:10px;line-height:1.6">'
+      +(state.pinConfigured?'현재 암호가 설정돼 있어요. 새 기기가 온보딩 화면에서 이 암호를 입력하면 승인 없이 바로 들어올 수 있어요.':'암호를 설정하면, 새 기기가 승인 대기 없이 이 암호만으로 바로 들어올 수 있어요. (기기가 자주 새로 등록되는 걸 줄여줘요)')
+      +'</div>'
+      +'<input class="m-field" id="devPinInput" type="text" inputmode="numeric" placeholder="새 암호 (숫자 4~6자리 추천)">'
+      +'<button class="f-btn p" onclick="setFamilyPin()">'+(state.pinConfigured?'🔑 암호 변경':'🔑 암호 설정')+'</button></div>';
+  }
 
   html+='<div class="sec-title">👨‍👩‍👧‍👦 자녀 관리</div>';
   html+='<div class="form-box">';
