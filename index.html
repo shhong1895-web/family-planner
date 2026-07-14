@@ -594,7 +594,7 @@ body.parent-device .mode-pills { visibility:hidden; }
 .toast {
   position:fixed; top:72px; left:50%; transform:translateX(-50%);
   background:var(--text); color:#fff; padding:10px 20px; border-radius:20px;
-  font-size:13px; font-weight:600; z-index:300; opacity:0; transition:opacity .25s;
+  font-size:13px; font-weight:600; z-index:10000; opacity:0; transition:opacity .25s;
   pointer-events:none; white-space:nowrap; box-shadow:0 4px 16px rgba(0,0,0,.2);
 }
 .toast.show { opacity:1; }
@@ -1415,6 +1415,7 @@ function setDeviceRole(role, skipRegister) {
           }).catch(function(){
             // 암호가 틀렸거나 아직 설정되지 않음 -> 평소처럼 승인 대기로
             localStorage.removeItem('fp_pin_attempt');
+            showToast('❌ 암호가 맞지 않거나 아직 설정 안 됨 - 승인 요청으로 전환했어요');
             if (!mine) {
               fsSet('devices', uid, { uid:uid, code:did, role:role, label:label, status:'pending', isAdmin:false, registeredAt:Date.now() });
             }
