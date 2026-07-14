@@ -70,7 +70,6 @@ body {
   padding: 40px 24px; text-align: center;
 }
 
-/* APP WRAPPER */
 #appWrapper {
   display: none; flex-direction: column;
   flex: 1; min-height: 0; height: 100%;
@@ -101,6 +100,38 @@ body {
   font-family:inherit; font-size:13px; font-weight:700; color:var(--text); cursor:pointer; white-space:nowrap;
 }
 .child-switch-btn.active { background:var(--parent); border-color:var(--parent); color:#fff; }
+
+/* WELCOME */
+.welcome-overlay {
+  position:fixed; top:0; left:0; width:100%; height:100%; height:100dvh;
+  z-index:9998; display:none; flex-direction:column; align-items:center; justify-content:center;
+  text-align:center; padding:40px 24px; overflow:hidden; cursor:pointer;
+  background:linear-gradient(160deg,#FDE68A,#FCA5A5);
+}
+.welcome-overlay.parent { background:linear-gradient(160deg,#BFDBFE,#C7D2FE); }
+.welcome-emoji { font-size:88px; display:inline-block; animation:welcomeBounce 1s ease-in-out infinite; }
+@keyframes welcomeBounce {
+  0%,100% { transform:translateY(0) rotate(-8deg); }
+  50% { transform:translateY(-18px) rotate(8deg); }
+}
+.welcome-greeting {
+  margin-top:22px; font-size:21px; font-weight:800; color:#1E293B; line-height:1.6;
+  max-width:320px; animation:welcomeFadeIn .6s ease-out both;
+}
+@keyframes welcomeFadeIn {
+  0% { opacity:0; transform:translateY(12px); }
+  100% { opacity:1; transform:translateY(0); }
+}
+.welcome-hint { margin-top:26px; font-size:12px; color:rgba(30,41,59,.6); }
+.welcome-particles { position:absolute; inset:0; pointer-events:none; }
+.welcome-particle {
+  position:absolute; font-size:22px; opacity:0; animation:welcomeFloat 2.2s ease-in forwards;
+}
+@keyframes welcomeFloat {
+  0% { transform:translateY(0) scale(.6); opacity:0; }
+  15% { opacity:1; }
+  100% { transform:translateY(-150px) scale(1.15); opacity:0; }
+}
 
 /* SYNC BAR */
 .sync-bar {
@@ -717,6 +748,15 @@ body.parent-device .mode-pills { visibility:hidden; }
   <div id="childPickList" style="display:flex;flex-direction:column;gap:12px;width:100%;max-width:320px"></div>
 </div>
 
+<!-- WELCOME (재방문 시 짧게 뜨는 환영 화면) -->
+<div id="welcomeOverlay" class="welcome-overlay" onclick="finishWelcome()">
+  <div class="welcome-particles" id="welcomeParticles"></div>
+  <span id="welcomeEmoji" class="welcome-emoji">👋</span>
+  <div id="welcomeGreeting" class="welcome-greeting"></div>
+  <div class="welcome-hint">탭하면 바로 시작해요</div>
+</div>
+
+
 <!-- APP -->
 <div id="appWrapper">
   <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중...</div>
@@ -943,6 +983,18 @@ var state = {
   tasks: [], sharedEvents: [], messages: [], schoolSchedule: [], workbooks: [], children: [], pinConfigured:false
 };
 var devicesState = [];
+
+// 폰이 백그라운드에 오래 있다가 돌아왔을 때, 그 사이의 실시간 업데이트를
+// 놓쳤을 수 있으니 화면이 다시 보이는 시점에 기기 목록을 확실하게 한 번 다시 받아온다.
+document.addEventListener('visibilitychange', function(){
+  if (document.visibilityState==='visible' && getAuthUid()) {
+    db.collection('devices').get().then(function(snap){
+      devicesState = snap.docs.map(function(d){ return d.data(); });
+      updatePendingBadge(devicesState.filter(function(d){ return d.status==='pending'; }).length);
+      render();
+    }).catch(function(){});
+  }
+});
 
 // ── UTILS ──
 function fmt(d) {
@@ -1418,10 +1470,72 @@ function showApp() {
 }
 function completeShowApp() {
   document.getElementById('childPickOverlay').style.display='none';
-  document.getElementById('appWrapper').style.display='flex';
   setupFamilyListeners();
   applyMode(localStorage.getItem(ROLE_KEY)==='parent' ? 'parent' : 'child');
   render();
+  maybeShowWelcome(function(){
+    document.getElementById('appWrapper').style.display='flex';
+  });
+}
+
+// ── 웰컴 화면 (재방문 시 하루 한 번, 역할/자녀에 맞는 멘트) ──
+var PARENT_WELCOME_LINES=[
+  '제 생활이 궁금하시죠? 잘 하고 있어요 😊',
+  '오늘도 우리 가족을 챙겨주셔서 감사해요 💛',
+  '우리 아이들, 오늘도 잘 지내고 있어요!'
+];
+var CHILD_WELCOME_LINES=[
+  '오늘 하루도 열심히 하자! 아자아자 화이팅 💪',
+  '네가 있어서 우리 집이 더 즐거워! ✨',
+  '오늘도 멋지게 하루를 시작해보자! 🌟'
+];
+var _welcomeDone=false;
+function maybeShowWelcome(onDone) {
+  var todayStr=fmt(new Date());
+  var key='welcome_shown_'+getDeviceId();
+  if (localStorage.getItem(key)===todayStr) { onDone(); return; }
+  localStorage.setItem(key, todayStr);
+  renderWelcomeOverlay();
+  var overlay=document.getElementById('welcomeOverlay');
+  overlay.style.display='flex';
+  _welcomeDone=false;
+  window._finishWelcomeCb=function(){
+    if (_welcomeDone) return;
+    _welcomeDone=true;
+    overlay.style.display='none';
+    onDone();
+  };
+  setTimeout(function(){ window._finishWelcomeCb && window._finishWelcomeCb(); }, 2200);
+}
+function finishWelcome() { window._finishWelcomeCb && window._finishWelcomeCb(); }
+function renderWelcomeOverlay() {
+  var role=localStorage.getItem(ROLE_KEY)==='parent' ? 'parent' : 'child';
+  var overlay=document.getElementById('welcomeOverlay');
+  var emoji, name, line, particles;
+  if (role==='child') {
+    var c=state.children.find(function(x){ return x.id===myChildId(); });
+    emoji = c ? (c.emoji||'🧒') : '🧒';
+    name = c ? c.name : '';
+    line = CHILD_WELCOME_LINES[Math.floor(Math.random()*CHILD_WELCOME_LINES.length)];
+    overlay.className='welcome-overlay child';
+    particles=['🎈','⭐','✨','🎉'];
+  } else {
+    emoji='👋';
+    var mine=devicesState.find(function(d){ return d.uid===getAuthUid(); });
+    name = mine && mine.label ? mine.label.replace(/\s*(폰|기기)\s*/g,'').trim() : '';
+    line = PARENT_WELCOME_LINES[Math.floor(Math.random()*PARENT_WELCOME_LINES.length)];
+    overlay.className='welcome-overlay parent';
+    particles=['💛','✨','🌸','💫'];
+  }
+  document.getElementById('welcomeEmoji').textContent=emoji;
+  document.getElementById('welcomeGreeting').textContent=(name?name+', ':'')+line;
+  var box=document.getElementById('welcomeParticles');
+  var html='';
+  for (var i=0;i<10;i++) {
+    html+='<div class="welcome-particle" style="left:'+(5+Math.random()*90)+'%;top:'+(50+Math.random()*40)+'%;animation-delay:'+(Math.random()*1.2)+'s">'
+      +particles[i%particles.length]+'</div>';
+  }
+  box.innerHTML=html;
 }
 
 // ── 다자녀 지원 ──
