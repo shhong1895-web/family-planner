@@ -2162,7 +2162,7 @@ function renderDevices() {
     html+='<div style="font-size:13px;color:var(--sub);margin-bottom:10px">아직 등록된 자녀가 없어요. 자녀 기기가 처음 접속하면 자동으로 등록돼요.</div>';
   } else {
     html+='<div class="wb-chips" style="margin-bottom:10px">'+state.children.map(function(c){
-      return '<span class="wb-chip">'+esc(c.emoji||'🧒')+' '+esc(c.name)+' <b onclick="deleteChildProfile(\''+c.id+'\',\''+esc(c.name).replace(/'/g,"\\'")+'\')" style="cursor:pointer;color:var(--sub);font-weight:900;padding:2px 4px">×</b></span>';
+      return '<span class="wb-chip">'+esc(c.emoji||'🧒')+' '+esc(c.name)+' <span style="font-size:10px;color:var(--sub)">('+(c.createdAt?new Date(c.createdAt).toLocaleDateString('ko',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'')+')</span> <b onclick="deleteChildProfile(\''+c.id+'\',\''+esc(c.name).replace(/'/g,"\\'")+'\')" style="cursor:pointer;color:var(--sub);font-weight:900;padding:2px 4px">×</b></span>';
     }).join('')+'</div>'
     +'<div style="font-size:11px;color:var(--sub);margin-bottom:10px">중복되거나 잘못 만들어진 자녀는 ×로 지울 수 있어요. 실제로 쓰는 기기가 연결된 자녀는 지우기 전에 기기 목록에서 먼저 확인해주세요.</div>';
   }
@@ -2202,6 +2202,10 @@ function renderDevices() {
         ? (d.isAdmin
             ? (!isMe || adminCount>1 ? '<div style="font-size:12px;color:var(--sub);margin-top:6px">🔽 <a href="javascript:void(0)" onclick="demoteAdmin(\''+d.uid+'\')" style="color:var(--sub);text-decoration:underline">관리자 해제</a></div>' : '')
             : '<div style="font-size:12px;color:var(--sub);margin-top:6px">👑 <a href="javascript:void(0)" onclick="promoteToAdmin(\''+d.uid+'\')" style="color:var(--parent);text-decoration:underline">관리자로 지정</a></div>')
+        : '')
+      +(d.role==='child' && state.children.length
+        ? '<div style="font-size:12px;color:var(--sub);margin-top:6px">연결된 자녀: <b>'+(d.childId?esc(childLabel(d.childId)):'없음')+'</b>'
+          +(isAdmin?' · <a href="javascript:void(0)" onclick="relinkDeviceChild(\''+d.uid+'\')" style="color:var(--sub);text-decoration:underline">🔗 다시 연결</a>':'')+'</div>'
         : '')
       +'</div>'
       +(!isMe && isAdmin && !d.isAdmin?'<button class="dev-revoke" onclick="revokeDevice(\''+d.uid+'\')">취소</button>':'')
@@ -2742,6 +2746,21 @@ function amIAdmin() {
   var myId=getAuthUid();
   var mine=devicesState.find(function(d){ return d.uid===myId; });
   return !!(mine && mine.isAdmin);
+}
+function relinkDeviceChild(uid) {
+  if (!amIAdmin()) { showToast('🔒 관리자만 변경할 수 있어요'); return; }
+  if (!state.children.length) { showToast('⚠️ 등록된 자녀가 없어요'); return; }
+  var list=state.children.map(function(c,i){ return (i+1)+'. '+(c.emoji||'🧒')+' '+c.name+' (id: '+c.id+')'; }).join('\n');
+  var ans=prompt('연결할 자녀의 번호를 입력하세요:\n'+list);
+  if (ans===null) return;
+  var idx=parseInt(ans,10)-1;
+  if (isNaN(idx) || idx<0 || idx>=state.children.length) { showToast('⚠️ 올바른 번호를 입력해주세요'); return; }
+  var child=state.children[idx];
+  var d=devicesState.find(function(x){ return x.uid===uid; });
+  if (!d) return;
+  fsSet('devices', uid, Object.assign({}, d, {childId:child.id})).then(function(){
+    showToast('✅ '+(child.emoji||'🧒')+' '+child.name+'로 연결했어요');
+  }).catch(function(){ showToast('⚠️ 저장 실패. 네트워크를 확인해주세요'); });
 }
 function renameDevice(uid) {
   if (!amIAdmin()) { showToast('🔒 관리자만 변경할 수 있어요'); return; }
