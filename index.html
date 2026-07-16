@@ -731,12 +731,13 @@ body.parent-device .mode-pills { visibility:hidden; }
 
 <!-- APPROVAL WAITING -->
 <div id="approvalOverlay">
-  <div style="font-size:56px;margin-bottom:16px">⏳</div>
-  <div style="font-size:22px;font-weight:800;color:#0F172A;margin-bottom:8px">승인 대기 중</div>
-  <div style="font-size:14px;color:#64748B;line-height:1.7;margin-bottom:20px">관리자가 이 기기를 승인하면<br>앱을 사용할 수 있어요.<br>관리자 기기에서 승인 요청을 확인해 주세요.</div>
+  <div id="approvalEmoji" style="font-size:56px;margin-bottom:16px">⏳</div>
+  <div id="approvalTitle" style="font-size:22px;font-weight:800;color:#0F172A;margin-bottom:8px">승인 대기 중</div>
+  <div id="approvalDesc" style="font-size:14px;color:#64748B;line-height:1.7;margin-bottom:20px">관리자가 이 기기를 승인하면<br>앱을 사용할 수 있어요.<br>관리자 기기에서 승인 요청을 확인해 주세요.</div>
   <div id="approvalDeviceId" style="background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:12px 20px;font-size:14px;font-weight:700;color:var(--child);letter-spacing:2px;margin-bottom:24px"></div>
-  <div style="width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--child);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px"></div>
-  <div style="font-size:12px;color:var(--sub)">승인되면 자동으로 화면이 전환돼요</div>
+  <div id="approvalSpinner" style="width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--child);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px"></div>
+  <div id="approvalHint" style="font-size:12px;color:var(--sub)">승인되면 자동으로 화면이 전환돼요</div>
+  <button id="approvalRetryBtn" onclick="retryRegistration()" style="display:none;margin-top:20px;padding:12px 28px;border-radius:20px;border:none;background:var(--child);color:#fff;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer">🔄 다시 시도</button>
   <button onclick="checkApprovalNow()" style="margin-top:20px;padding:10px 24px;border-radius:20px;border:1.5px solid var(--border);background:transparent;font-family:inherit;font-size:14px;cursor:pointer;color:var(--sub)">🔄 새로고침</button>
 </div>
 
@@ -1382,10 +1383,9 @@ function setDeviceRole(role, skipRegister) {
           showToast('👑 이 기기가 관리자로 등록됐어요');
         }).catch(function(){
           // 트랜잭션 도중 다른 기기가 먼저 관리자가 된 경우 -> 승인 대기로 전환
-          if (!mine) {
-            fsSet('devices', uid, { uid:uid, code:did, role:role, label: label, status:'pending', isAdmin:false, registeredAt:Date.now() });
-          }
-          showApprovalWait(uid, did);
+          var write = mine ? Promise.resolve() : fsSet('devices', uid, { uid:uid, code:did, role:role, label: label, status:'pending', isAdmin:false, registeredAt:Date.now() });
+          write.then(function(){ showApprovalWait(uid, did); })
+            .catch(function(){ showRegisterError(); });
         });
         return;
       }
@@ -1416,10 +1416,9 @@ function setDeviceRole(role, skipRegister) {
             // 암호가 틀렸거나 아직 설정되지 않음 -> 평소처럼 승인 대기로
             localStorage.removeItem('fp_pin_attempt');
             showToast('❌ 암호가 맞지 않거나 아직 설정 안 됨 - 승인 요청으로 전환했어요');
-            if (!mine) {
-              fsSet('devices', uid, { uid:uid, code:did, role:role, label:label, status:'pending', isAdmin:false, registeredAt:Date.now() });
-            }
-            showApprovalWait(uid, did);
+            var write = mine ? Promise.resolve() : fsSet('devices', uid, { uid:uid, code:did, role:role, label:label, status:'pending', isAdmin:false, registeredAt:Date.now() });
+            write.then(function(){ showApprovalWait(uid, did); })
+              .catch(function(){ showRegisterError(); });
           });
         });
         return;
@@ -1429,7 +1428,9 @@ function setDeviceRole(role, skipRegister) {
           uid:uid, code:did, role:role,
           label: label,
           status:'pending', isAdmin:false, registeredAt:Date.now()
-        });
+        }).then(function(){ showApprovalWait(uid, did); })
+          .catch(function(){ showRegisterError(); });
+        return;
       }
       showApprovalWait(uid, did);
     }).catch(function(){ showApprovalWait(uid, did); });
@@ -1439,6 +1440,12 @@ function setDeviceRole(role, skipRegister) {
 function showApprovalWait(uid, did) {
   document.getElementById('approvalOverlay').style.display='flex';
   document.getElementById('appWrapper').style.display='none';
+  document.getElementById('approvalEmoji').textContent='⏳';
+  document.getElementById('approvalTitle').textContent='승인 대기 중';
+  document.getElementById('approvalDesc').innerHTML='관리자가 이 기기를 승인하면<br>앱을 사용할 수 있어요.<br>관리자 기기에서 승인 요청을 확인해 주세요.';
+  document.getElementById('approvalSpinner').style.display='';
+  document.getElementById('approvalHint').style.display='';
+  document.getElementById('approvalRetryBtn').style.display='none';
   document.getElementById('approvalDeviceId').textContent='기기 코드: '+did;
   if (approvalUnsub) approvalUnsub();
   approvalUnsub=db.collection('devices').doc(uid).onSnapshot(function(snap) {
@@ -1451,6 +1458,23 @@ function showApprovalWait(uid, did) {
       showToast('✅ 승인됐어요! 환영해요 😊');
     }
   });
+}
+var _lastRegisterRole=null;
+function showRegisterError() {
+  _lastRegisterRole = localStorage.getItem(ROLE_KEY);
+  document.getElementById('approvalOverlay').style.display='flex';
+  document.getElementById('appWrapper').style.display='none';
+  document.getElementById('approvalEmoji').textContent='⚠️';
+  document.getElementById('approvalTitle').textContent='등록에 실패했어요';
+  document.getElementById('approvalDesc').innerHTML='네트워크 연결을 확인하고<br>다시 시도해주세요.';
+  document.getElementById('approvalDeviceId').textContent='';
+  document.getElementById('approvalSpinner').style.display='none';
+  document.getElementById('approvalHint').style.display='none';
+  document.getElementById('approvalRetryBtn').style.display='inline-block';
+}
+function retryRegistration() {
+  document.getElementById('approvalRetryBtn').style.display='none';
+  setDeviceRole(_lastRegisterRole || 'child');
 }
 
 function showApp() {
