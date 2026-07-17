@@ -3412,6 +3412,12 @@ function editSharedAnywhere(id) {
 // ── INIT ──
 // Firestore 보안 규칙에서 로그인(익명 로그인 포함) 여부를 확인하도록 잠글 것이므로,
 // 로그인이 끝난 뒤에만 앱 데이터를 불러오도록 순서를 맞춘다.
+// 브라우저에게 이 사이트 데이터(로그인 정보 등)를 함부로 지우지 말아달라고 요청.
+// 안드로이드 일부 기기는 저장공간이 부족하거나 배터리 절약 모드일 때 안 쓰는 사이트의
+// 데이터를 자동으로 정리하는데, 이 요청이 승인되면 그럴 가능성이 줄어든다 (완전히 막지는 못함).
+if (navigator.storage && navigator.storage.persist) {
+  navigator.storage.persist().catch(function(){});
+}
 var _appInited=false;
 function startApp() {
   if (_appInited) return;
