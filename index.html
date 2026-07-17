@@ -915,6 +915,31 @@ body.parent-device .mode-pills { visibility:hidden; }
   </div>
 </div>
 
+<!-- 학교/학원 개별 날짜 예외(휴강/이동) 수정 모달 -->
+<div class="modal-overlay" id="excModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-body">
+      <div class="modal-h" id="excModalTitle">일정 수정</div>
+      <div id="excChoiceWrap">
+        <button class="f-btn" style="background:#FEE2E2;color:#DC2626;margin-bottom:10px" onclick="excChooseCancel()">🚫 이 날만 휴강으로 표시</button>
+        <button class="f-btn p" style="margin-bottom:10px" onclick="excChooseReschedule()">📅 다른 날짜로 이동</button>
+        <button class="f-btn" id="excRevertBtn" style="background:#F1F5F9;color:var(--text);display:none;margin-bottom:10px" onclick="excChooseRevert()">↩️ 원래대로 되돌리기</button>
+      </div>
+      <div id="excRescheduleWrap" style="display:none">
+        <div class="m-label">옮길 날짜</div>
+        <input type="date" class="m-field" id="excNewDate">
+        <div class="m-label">시작 시간</div>
+        <input type="time" class="m-field" id="excNewStart">
+        <div class="m-label">종료 시간</div>
+        <input type="time" class="m-field" id="excNewEnd">
+        <button class="f-btn p" onclick="excSaveReschedule()" style="margin-bottom:10px">💾 이동 저장하기</button>
+      </div>
+      <button class="f-btn" style="background:#F1F5F9;color:var(--text)" onclick="closeExcModal()">닫기</button>
+    </div>
+  </div>
+</div>
+
 <!-- DRUM BOTTOM SHEET -->
 <div class="drum-sheet-overlay" id="drumSheetOverlay" onclick="closeDrumSheet(event)">
   <div class="drum-sheet">
@@ -1857,41 +1882,60 @@ function taskCard(t, ds) {
     +'</div>';
 }
 
-function editSchoolOccurrence(schoolId, ds) {
+var _excSchoolId=null, _excDate=null;
+function openExcModal(schoolId, ds) {
   if (state.mode!=='parent') { showToast('🔒 부모만 수정할 수 있어요'); return; }
   var s=state.schoolSchedule.find(function(x){ return String(x.id)===String(schoolId); });
   if (!s) return;
-  var exceptions=Object.assign({}, s.exceptions||{});
-  var exc=exceptions[ds];
-  var menu='"'+s.name+'" '+koDateShort(ds)+'\n\n어떻게 할까요?\n1: 이 날만 휴강으로 표시\n2: 다른 날짜로 이동'
-    +(exc?'\n3: 원래대로 되돌리기':'')+'\n\n번호를 입력하세요 (취소하려면 취소 버튼)';
-  var choice=prompt(menu);
-  if (choice===null) return;
-  choice=choice.trim();
-  if (choice==='1') {
-    exceptions[ds]={type:'cancel'};
-  } else if (choice==='2') {
-    var newDate=prompt('옮길 날짜를 입력하세요 (예: 2026-07-25)');
-    if (newDate===null) return;
-    newDate=newDate.trim();
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(newDate)) { showToast('⚠️ 날짜 형식이 올바르지 않아요 (예: 2026-07-25)'); return; }
-    var newStart=prompt('시작 시간 (예: 15:00) — 비워두면 기존과 동일('+s.startTime+')');
-    if (newStart===null) return;
-    var newEnd=prompt('종료 시간 (예: 16:00) — 비워두면 기존과 동일('+s.endTime+')');
-    if (newEnd===null) return;
-    exceptions[ds]={
-      type:'reschedule', newDate:newDate,
-      startTime:(newStart.trim())||s.startTime,
-      endTime:(newEnd.trim())||s.endTime
-    };
-  } else if (choice==='3' && exc) {
-    delete exceptions[ds];
-  } else {
-    showToast('⚠️ 올바른 번호를 입력해주세요'); return;
-  }
+  _excSchoolId=schoolId; _excDate=ds;
+  var exc=(s.exceptions||{})[ds];
+  document.getElementById('excModalTitle').textContent='"'+s.name+'" · '+koDateShort(ds);
+  document.getElementById('excChoiceWrap').style.display='';
+  document.getElementById('excRescheduleWrap').style.display='none';
+  document.getElementById('excRevertBtn').style.display=exc?'':'none';
+  document.getElementById('excNewDate').value=(exc&&exc.type==='reschedule')?exc.newDate:ds;
+  document.getElementById('excNewStart').value=(exc&&exc.type==='reschedule')?exc.startTime:s.startTime;
+  document.getElementById('excNewEnd').value=(exc&&exc.type==='reschedule')?exc.endTime:s.endTime;
+  document.getElementById('excModal').classList.add('open');
+}
+function closeExcModal() { document.getElementById('excModal').classList.remove('open'); }
+function _excSaveExceptions(exceptions, msg) {
+  var s=state.schoolSchedule.find(function(x){ return String(x.id)===String(_excSchoolId); });
+  if (!s) return;
   fsSet('schoolSchedule', s.id, Object.assign({}, s, {exceptions:exceptions})).then(function(){
-    showToast('✅ 반영됐어요');
+    showToast(msg); closeExcModal();
   }).catch(function(){ showToast('⚠️ 저장 실패. 네트워크를 확인해주세요'); });
+}
+function excChooseCancel() {
+  var s=state.schoolSchedule.find(function(x){ return String(x.id)===String(_excSchoolId); });
+  if (!s) return;
+  var exceptions=Object.assign({}, s.exceptions||{});
+  exceptions[_excDate]={type:'cancel'};
+  _excSaveExceptions(exceptions, '✅ 휴강으로 표시했어요');
+}
+function excChooseReschedule() {
+  document.getElementById('excChoiceWrap').style.display='none';
+  document.getElementById('excRescheduleWrap').style.display='';
+}
+function excSaveReschedule() {
+  var newDate=document.getElementById('excNewDate').value;
+  var newStart=document.getElementById('excNewStart').value;
+  var newEnd=document.getElementById('excNewEnd').value;
+  if (!newDate) { showToast('⚠️ 날짜를 선택해주세요'); return; }
+  if (!newStart || !newEnd) { showToast('⚠️ 시간을 입력해주세요'); return; }
+  if (newEnd<=newStart) { showToast('⚠️ 종료 시간이 시작보다 빨라요'); return; }
+  var s=state.schoolSchedule.find(function(x){ return String(x.id)===String(_excSchoolId); });
+  if (!s) return;
+  var exceptions=Object.assign({}, s.exceptions||{});
+  exceptions[_excDate]={type:'reschedule', newDate:newDate, startTime:newStart, endTime:newEnd};
+  _excSaveExceptions(exceptions, '✅ 일정이 이동됐어요');
+}
+function excChooseRevert() {
+  var s=state.schoolSchedule.find(function(x){ return String(x.id)===String(_excSchoolId); });
+  if (!s) return;
+  var exceptions=Object.assign({}, s.exceptions||{});
+  delete exceptions[_excDate];
+  _excSaveExceptions(exceptions, '✅ 원래대로 되돌렸어요');
 }
 
 function sharedCard(e, showDel) {
@@ -1901,7 +1945,7 @@ function sharedCard(e, showDel) {
     +'<div class="shared-icon">'+(e.icon||'📅')+'</div>'
     +'<div class="shared-body"><div class="shared-title">'+esc(e.name)+(e.isSchool?' <span style="font-size:10px;font-weight:600;color:var(--sub)">· 학교/학원</span>':'')+'</div>'
     +'<div class="shared-meta">'+timeStr+(e.desc?' · '+esc(e.desc):'')+'</div></div>'
-    +(isP&&e.isSchool?'<button class="task-edit" onclick="editSchoolOccurrence(\''+e._schoolId+'\',\''+e._origDate+'\');event.stopPropagation()">✏️</button>':'')
+    +(isP&&e.isSchool?'<button class="task-edit" onclick="openExcModal(\''+e._schoolId+'\',\''+e._origDate+'\');event.stopPropagation()">✏️</button>':'')
     +(showDel&&!e.isSchool?'<button class="task-del" onclick="deleteShared('+e.id+');event.stopPropagation()">🗑</button>':'')
     +'</div>';
 }
@@ -3378,6 +3422,7 @@ function saveTask() {
 }
 
 document.getElementById('addModal').addEventListener('click', function(e){ if(e.target===this) closeModal(); });
+document.getElementById('excModal').addEventListener('click', function(e){ if(e.target===this) closeExcModal(); });
 
 // ── NAV ──
 function shiftDay(n) { state.selectedDate=new Date(state.selectedDate); state.selectedDate.setDate(state.selectedDate.getDate()+n); render(); }
