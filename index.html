@@ -1896,6 +1896,7 @@ function editSchoolOccurrence(schoolId, ds) {
 
 function sharedCard(e, showDel) {
   var isP=state.mode==='parent';
+  var timeStr=e.allday?'하루종일':(e.time?'🕐 '+prettyTime(e.time):'');
   return '<div class="shared-card'+(e._cancelled?' cancelled':'')+'"'+(isP&&!e.isSchool?' data-dbtap="shared:'+e.id+'"':'')+'>'
     +'<div class="shared-icon">'+(e.icon||'📅')+'</div>'
     +'<div class="shared-body"><div class="shared-title">'+esc(e.name)+(e.isSchool?' <span style="font-size:10px;font-weight:600;color:var(--sub)">· 학교/학원</span>':'')+'</div>'
