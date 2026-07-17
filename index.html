@@ -332,6 +332,8 @@ body.parent-device .mode-pills { visibility:hidden; }
 .shared-body { flex:1; }
 .shared-title { font-size:15px; font-weight:700; }
 .shared-meta { font-size:12px; color:var(--sub); margin-top:3px; }
+.shared-card.cancelled { opacity:.6; border-left-color:var(--sub); }
+.shared-card.cancelled .shared-title { text-decoration:line-through; }
 
 /* WEEK */
 .week-grid { display:flex; align-items:stretch; gap:4px; margin-bottom:10px; }
@@ -1109,12 +1111,35 @@ function tasksForDate(ds) {
 }
 function schoolForDate(ds) {
   var dow=parseDate(ds).getDay();
-  return state.schoolSchedule.filter(function(s){
-    if (!isForActiveChild(s)) return false;
-    if ((s.weekdays||[]).indexOf(dow)<0) return false;
-    if (s.repeatEnd && ds>s.repeatEnd) return false; // 종료일 이후는 달력에서 제외
-    return true;
+  var out=[];
+  state.schoolSchedule.forEach(function(s){
+    if (!isForActiveChild(s)) return;
+    if (s.repeatEnd && ds>s.repeatEnd) return; // 종료일 이후는 달력에서 제외
+    var exceptions = s.exceptions || {};
+    var isNormalDay = (s.weekdays||[]).indexOf(dow)>=0;
+    if (isNormalDay) {
+      var exc = exceptions[ds];
+      if (!exc) {
+        out.push(Object.assign({}, s, {_origDate:ds}));
+      } else if (exc.type==='cancel') {
+        out.push(Object.assign({}, s, {_origDate:ds, _cancelled:true, _note:exc.note||''}));
+      } else if (exc.type==='reschedule') {
+        out.push(Object.assign({}, s, {_origDate:ds, _movedAway:true, _movedTo:exc.newDate}));
+      }
+    }
+    // 다른 날짜에서 이 날짜로 옮겨온 일정
+    Object.keys(exceptions).forEach(function(origDate){
+      var exc=exceptions[origDate];
+      if (exc.type==='reschedule' && exc.newDate===ds) {
+        out.push(Object.assign({}, s, {
+          _origDate:origDate, _movedIn:true,
+          startTime: exc.startTime||s.startTime,
+          endTime: exc.endTime||s.endTime
+        }));
+      }
+    });
   });
+  return out;
 }
 function isSharedForActiveChild(item) {
   if (state.children.length<2) return true;
@@ -1129,10 +1154,15 @@ function sharedForDate(ds) {
     return ds>=start && ds<=end;
   });
   var school=schoolForDate(ds).map(function(s){
+    var name=s.name, icon=s.cat==='학원'?'✏️':'🏫', desc='';
+    if (s._cancelled) { icon='🚫'; desc='휴강'+(s._note?' · '+s._note:''); }
+    else if (s._movedAway) { icon='➡️'; desc=koDateShort(s._movedTo)+'로 이동됨'; }
+    else if (s._movedIn) { icon='📌'; desc=koDateShort(s._origDate)+'에서 옮겨옴'; }
     return {
-      id:'school_'+s.id, name:s.name, date:ds, dateEnd:ds,
+      id:'school_'+s.id, name:name, date:ds, dateEnd:ds,
       time:s.startTime+'~'+s.endTime, allday:false,
-      icon: s.cat==='학원'?'✏️':'🏫', desc:'', isSchool:true
+      icon:icon, desc:desc, isSchool:true,
+      _cancelled:!!s._cancelled, _schoolId:s.id, _origDate:s._origDate
     };
   });
   return real.concat(school).sort(function(a,b){
@@ -1827,13 +1857,50 @@ function taskCard(t, ds) {
     +'</div>';
 }
 
+function editSchoolOccurrence(schoolId, ds) {
+  if (state.mode!=='parent') { showToast('🔒 부모만 수정할 수 있어요'); return; }
+  var s=state.schoolSchedule.find(function(x){ return String(x.id)===String(schoolId); });
+  if (!s) return;
+  var exceptions=Object.assign({}, s.exceptions||{});
+  var exc=exceptions[ds];
+  var menu='"'+s.name+'" '+koDateShort(ds)+'\n\n어떻게 할까요?\n1: 이 날만 휴강으로 표시\n2: 다른 날짜로 이동'
+    +(exc?'\n3: 원래대로 되돌리기':'')+'\n\n번호를 입력하세요 (취소하려면 취소 버튼)';
+  var choice=prompt(menu);
+  if (choice===null) return;
+  choice=choice.trim();
+  if (choice==='1') {
+    exceptions[ds]={type:'cancel'};
+  } else if (choice==='2') {
+    var newDate=prompt('옮길 날짜를 입력하세요 (예: 2026-07-25)');
+    if (newDate===null) return;
+    newDate=newDate.trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(newDate)) { showToast('⚠️ 날짜 형식이 올바르지 않아요 (예: 2026-07-25)'); return; }
+    var newStart=prompt('시작 시간 (예: 15:00) — 비워두면 기존과 동일('+s.startTime+')');
+    if (newStart===null) return;
+    var newEnd=prompt('종료 시간 (예: 16:00) — 비워두면 기존과 동일('+s.endTime+')');
+    if (newEnd===null) return;
+    exceptions[ds]={
+      type:'reschedule', newDate:newDate,
+      startTime:(newStart.trim())||s.startTime,
+      endTime:(newEnd.trim())||s.endTime
+    };
+  } else if (choice==='3' && exc) {
+    delete exceptions[ds];
+  } else {
+    showToast('⚠️ 올바른 번호를 입력해주세요'); return;
+  }
+  fsSet('schoolSchedule', s.id, Object.assign({}, s, {exceptions:exceptions})).then(function(){
+    showToast('✅ 반영됐어요');
+  }).catch(function(){ showToast('⚠️ 저장 실패. 네트워크를 확인해주세요'); });
+}
+
 function sharedCard(e, showDel) {
   var isP=state.mode==='parent';
-  var timeStr=e.allday?'하루종일':(e.time?'🕐 '+prettyTime(e.time):'');
-  return '<div class="shared-card"'+(isP&&!e.isSchool?' data-dbtap="shared:'+e.id+'"':'')+'>'
+  return '<div class="shared-card'+(e._cancelled?' cancelled':'')+'"'+(isP&&!e.isSchool?' data-dbtap="shared:'+e.id+'"':'')+'>'
     +'<div class="shared-icon">'+(e.icon||'📅')+'</div>'
     +'<div class="shared-body"><div class="shared-title">'+esc(e.name)+(e.isSchool?' <span style="font-size:10px;font-weight:600;color:var(--sub)">· 학교/학원</span>':'')+'</div>'
     +'<div class="shared-meta">'+timeStr+(e.desc?' · '+esc(e.desc):'')+'</div></div>'
+    +(isP&&e.isSchool?'<button class="task-edit" onclick="editSchoolOccurrence(\''+e._schoolId+'\',\''+e._origDate+'\');event.stopPropagation()">✏️</button>':'')
     +(showDel&&!e.isSchool?'<button class="task-del" onclick="deleteShared('+e.id+');event.stopPropagation()">🗑</button>':'')
     +'</div>';
 }
@@ -2316,7 +2383,8 @@ function saveSchoolItem() {
     id: editId || Date.now(),
     name:name, cat:document.getElementById('sch-cat').value,
     weekdays:days, startTime:ts, endTime:te, repeatEnd:repeatEnd,
-    childId: existing.childId || activeChildId()
+    childId: existing.childId || activeChildId(),
+    exceptions: existing.exceptions || {}
   };
   fsSet('schoolSchedule', item.id, item).then(function(){
     showToast(editId?'✏️ 수정됐어요':'✅ 시간표가 추가됐어요');
