@@ -35,15 +35,15 @@
   --r: 16px; --sh: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html { height: 100%; height: -webkit-fill-available; overscroll-behavior: none; }
+html { height: 100%; overscroll-behavior: none; }
 body {
   font-family: 'Noto Sans KR', sans-serif;
   background: var(--bg); color: var(--text);
   max-width: 430px; margin: 0 auto;
-  height: 100vh; height: 100dvh; height: -webkit-fill-available;
+  height: 100vh; height: 100dvh;
   display: flex; flex-direction: column;
   position: relative; overflow: hidden; overscroll-behavior: none;
-  padding-top: max(8px, env(safe-area-inset-top));
+  padding-top: env(safe-area-inset-top);
 }
 
 /* ONBOARDING */
@@ -954,22 +954,6 @@ body {
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <script>
-// ── 모바일 브라우저 주소창이 접혔다 펼쳐졌다 할 때 CSS의 100dvh가
-// 실제 화면 높이를 한 박자 늦게 따라가서, 화면 맨 아래에 빈 여백이
-// 생기는 문제가 있다. 그래서 실제 픽셀 높이를 JS로 직접 재서
-// body 높이에 강제로 맞춰준다 (dvh보다 훨씬 정확하고 즉각적이다).
-function setAppHeight() {
-  var h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
-  document.body.style.height = h + 'px';
-}
-setAppHeight();
-setTimeout(setAppHeight, 300); // iOS 홈화면 앱은 처음 켜질 때 잠깐 잘못된 높이를 보고하는 경우가 있어 한 번 더 보정
-window.addEventListener('resize', setAppHeight);
-window.addEventListener('orientationchange', function(){ setTimeout(setAppHeight, 100); });
-window.addEventListener('pageshow', setAppHeight); // 다른 앱에 갔다가 돌아왔을 때도 다시 보정
-document.addEventListener('visibilitychange', function(){ if (document.visibilityState==='visible') setAppHeight(); });
-if (window.visualViewport) window.visualViewport.addEventListener('resize', setAppHeight);
-
 // ── FIREBASE ──
 var firebaseConfig = {
   apiKey: "AIzaSyDPoY4Wle9V6PWWoHWoNBN7zIkUdusJzzo",
