@@ -1139,6 +1139,7 @@ function schoolForDate(ds) {
   var out=[];
   state.schoolSchedule.forEach(function(s){
     if (!isForActiveChild(s)) return;
+    if (s.repeatStart && ds<s.repeatStart) return; // 시작일 이전은 달력에서 제외
     if (s.repeatEnd && ds>s.repeatEnd) return; // 종료일 이후는 달력에서 제외
     var exceptions = s.exceptions || {};
     var isNormalDay = (s.weekdays||[]).indexOf(dow)>=0;
@@ -1742,7 +1743,7 @@ function setView(v) {
 // 실제로 화면(view/mode)이 바뀐 게 아니라 다른 기기의 변경사항 때문에 재렌더링되는 경우엔
 // 입력 중이던 값과 포커스를 스냅샷했다가 그대로 복원한다.
 var _prevRenderedView=null, _prevRenderedMode=null, _prevRenderedDate=null;
-var STICKY_FIELDS=['msgInput','msgReplyInput','se-name','se-desc','se-allday','se-icon','se-editId','se-dateStart','se-dateEnd','sch-name','sch-cat','sch-editId','sch-repeatEnd','devNewChildName','devPinInput'];
+var STICKY_FIELDS=['msgInput','msgReplyInput','se-name','se-desc','se-allday','se-icon','se-editId','se-dateStart','se-dateEnd','sch-name','sch-cat','sch-editId','sch-repeatStart','sch-repeatEnd','devNewChildName','devPinInput'];
 
 function snapshotStickyFields(sa) {
   var snap={};
@@ -1793,6 +1794,7 @@ function restoreStickyFields(snap) {
     var ssb=document.getElementById('sch-submitBtn'); if(ssb) ssb.textContent='✏️ 수정하기';
     var scb=document.getElementById('sch-cancelBtn'); if(scb) scb.style.display='';
   }
+  if (document.getElementById('sch-repeatStart')) onRepeatStartDateChange('sch-repeatStart','sch-btnRepeatStart');
   if (document.getElementById('sch-repeatEnd')) onRepeatEndDateChange('sch-repeatEnd','sch-btnRepeatEnd');
   if (snap.__activeId) {
     var el3=document.getElementById(snap.__activeId);
@@ -2368,6 +2370,12 @@ function renderSchool() {
         +'<button type="button" class="wd-preset-btn" onclick="setWeekdayPreset(\'weekday\',\'schWeekdayWrap\')">평일만</button>'
         +'<button type="button" class="wd-preset-btn" onclick="setWeekdayPreset(\'weekend\',\'schWeekdayWrap\')">주말만</button>'
       +'</div>'
+      +'<div class="f-label">시작일 (선택)</div>'
+      +'<div style="display:flex;gap:8px;align-items:center;margin-bottom:14px">'
+        +'<button class="repeat-end-btn" id="sch-btnRepeatStart" onclick="focusRepeatStartDate(\'sch-repeatStart\')" style="flex:1">'+koDateShort(fmt(new Date()))+'부터</button>'
+        +'<button type="button" class="wd-preset-btn" onclick="clearRepeatStart(\'sch-repeatStart\',\'sch-btnRepeatStart\')">해제</button>'
+      +'</div>'
+      +'<input type="date" id="sch-repeatStart" value="'+fmt(new Date())+'" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" onchange="onRepeatStartDateChange(\'sch-repeatStart\',\'sch-btnRepeatStart\')">'
       +'<div class="f-label">종료일 (선택)</div>'
       +'<div style="display:flex;gap:8px;align-items:center;margin-bottom:14px">'
         +'<button class="repeat-end-btn" id="sch-btnRepeatEnd" onclick="focusRepeatEndDate(\'sch-repeatEnd\')" style="flex:1">종료일 설정 안 함 (계속 반복)</button>'
@@ -2406,7 +2414,7 @@ function renderSchool() {
       +'<div class="shared-icon">'+(s.cat==='학원'?'✏️':'🏫')+'</div>'
       +'<div class="shared-body">'
       +'<div class="shared-title">'+esc(s.name)+'</div>'
-      +'<div class="shared-meta">'+schoolWeekdaySummary(s.weekdays)+' · 🕐 '+prettyTime(s.startTime)+'~'+prettyTime(s.endTime)+(s.repeatEnd?' · '+koDateShort(s.repeatEnd)+'까지':'')+(state.children.length>1 && s.childId?' · '+childLabel(s.childId):'')+'</div></div>'
+      +'<div class="shared-meta">'+schoolWeekdaySummary(s.weekdays)+' · 🕐 '+prettyTime(s.startTime)+'~'+prettyTime(s.endTime)+(s.repeatStart?' · '+koDateShort(s.repeatStart)+'부터':'')+(s.repeatEnd?' · '+koDateShort(s.repeatEnd)+'까지':'')+(state.children.length>1 && s.childId?' · '+childLabel(s.childId):'')+'</div></div>'
       +(isP?'<button class="task-edit" onclick="openEditSchool(\''+s.id+'\')">✏️</button><button class="task-del" onclick="deleteSchoolItem(\''+s.id+'\')">🗑</button>':'')
       +'</div>';
   });
@@ -2422,12 +2430,13 @@ function saveSchoolItem() {
   var ts=drumState['schStart']||'09:00', te=drumState['schEnd']||'10:00';
   if (te<=ts) { showToast('⚠️ 종료 시간이 시작보다 빨라요'); return; }
   var editId=document.getElementById('sch-editId').value;
+  var repeatStart=document.getElementById('sch-repeatStart').value||'';
   var repeatEnd=document.getElementById('sch-repeatEnd').value||'';
   var existing=editId ? (state.schoolSchedule.find(function(x){ return String(x.id)===String(editId); })||{}) : {};
   var item={
     id: editId || Date.now(),
     name:name, cat:document.getElementById('sch-cat').value,
-    weekdays:days, startTime:ts, endTime:te, repeatEnd:repeatEnd,
+    weekdays:days, startTime:ts, endTime:te, repeatStart:repeatStart, repeatEnd:repeatEnd,
     childId: existing.childId || activeChildId(),
     exceptions: existing.exceptions || {}
   };
@@ -2444,6 +2453,8 @@ function openEditSchool(id) {
   document.getElementById('sch-cat').value=s.cat;
   setSelectedWeekdays(s.weekdays,'schWeekdayWrap');
   initTimeBtns('schStart','schEnd','sch-btnStart','sch-btnEnd',s.startTime,s.endTime);
+  document.getElementById('sch-repeatStart').value=s.repeatStart||'';
+  onRepeatStartDateChange('sch-repeatStart','sch-btnRepeatStart');
   document.getElementById('sch-repeatEnd').value=s.repeatEnd||'';
   onRepeatEndDateChange('sch-repeatEnd','sch-btnRepeatEnd');
   document.getElementById('sch-formTitle').textContent='시간표 수정';
@@ -2456,6 +2467,8 @@ function cancelEditSchool() {
   var editIdEl=document.getElementById('sch-editId'); if(editIdEl) editIdEl.value='';
   var nameEl=document.getElementById('sch-name'); if(nameEl) nameEl.value='';
   setSelectedWeekdays([],'schWeekdayWrap');
+  document.getElementById('sch-repeatStart').value=fmt(new Date());
+  onRepeatStartDateChange('sch-repeatStart','sch-btnRepeatStart');
   clearRepeatEnd('sch-repeatEnd','sch-btnRepeatEnd');
   var now=new Date(); var h=now.getHours(), hE=h+1<24?h+1:23;
   initTimeBtns('schStart','schEnd','sch-btnStart','sch-btnEnd',
@@ -3181,6 +3194,20 @@ function setSelectedWeekdays(days, containerId) {
   document.querySelectorAll('#'+containerId+' .wd-btn').forEach(function(b){
     b.classList.toggle('active', days.indexOf(parseInt(b.dataset.day,10))>=0);
   });
+}
+function focusRepeatStartDate(inputId) {
+  openHiddenDatePicker(document.getElementById(inputId||'sch-repeatStart'));
+}
+function onRepeatStartDateChange(inputId, btnId) {
+  inputId = inputId||'sch-repeatStart'; btnId = btnId||'sch-btnRepeatStart';
+  var v=document.getElementById(inputId).value;
+  var btn=document.getElementById(btnId);
+  if (btn) btn.textContent = v ? (koDateShort(v)+'부터') : '시작일 설정 안 함 (제한 없음)';
+}
+function clearRepeatStart(inputId, btnId) {
+  inputId = inputId||'sch-repeatStart'; btnId = btnId||'sch-btnRepeatStart';
+  document.getElementById(inputId).value='';
+  document.getElementById(btnId).textContent='시작일 설정 안 함 (제한 없음)';
 }
 function focusRepeatEndDate(inputId) {
   openHiddenDatePicker(document.getElementById(inputId||'mRepeatEnd'));
