@@ -953,6 +953,19 @@ body {
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <script>
+// ── 모바일 브라우저 주소창이 접혔다 펼쳐졌다 할 때 CSS의 100dvh가
+// 실제 화면 높이를 한 박자 늦게 따라가서, 화면 맨 아래에 빈 여백이
+// 생기는 문제가 있다. 그래서 실제 픽셀 높이를 JS로 직접 재서
+// body 높이에 강제로 맞춰준다 (dvh보다 훨씬 정확하고 즉각적이다).
+function setAppHeight() {
+  var h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+  document.body.style.height = h + 'px';
+}
+setAppHeight();
+window.addEventListener('resize', setAppHeight);
+window.addEventListener('orientationchange', function(){ setTimeout(setAppHeight, 100); });
+if (window.visualViewport) window.visualViewport.addEventListener('resize', setAppHeight);
+
 // ── FIREBASE ──
 var firebaseConfig = {
   apiKey: "AIzaSyDPoY4Wle9V6PWWoHWoNBN7zIkUdusJzzo",
