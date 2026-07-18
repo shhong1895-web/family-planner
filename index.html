@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="우리가족 플래너">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -92,12 +92,12 @@ body {
 .child-pick-name { font-size:16px; font-weight:800; color:var(--text); }
 .child-pick-new { border-style:dashed; justify-content:center; color:var(--sub); font-weight:700; }
 
-/* CHILD SWITCH BAR (부모 모드에서 자녀 전환) */
-.child-switch-bar { display:none; gap:8px; padding:10px 16px; overflow-x:auto; background:#fff; border-bottom:1px solid var(--border); }
+/* CHILD SWITCH BAR (부모 모드에서 자녀 전환, 앱 이름 옆에 나란히) */
+.child-switch-bar { display:none; gap:6px; overflow-x:auto; flex:1; min-width:0; }
 .child-switch-btn {
-  flex-shrink:0; display:flex; align-items:center; gap:6px; padding:8px 14px;
-  border-radius:20px; border:1.5px solid var(--border); background:var(--bg);
-  font-family:inherit; font-size:13px; font-weight:700; color:var(--text); cursor:pointer; white-space:nowrap;
+  flex-shrink:0; display:flex; align-items:center; gap:4px; padding:5px 11px;
+  border-radius:16px; border:1.5px solid var(--border); background:var(--bg);
+  font-family:inherit; font-size:12px; font-weight:700; color:var(--text); cursor:pointer; white-space:nowrap;
 }
 .child-switch-btn.active { background:var(--parent); border-color:var(--parent); color:#fff; }
 
@@ -147,33 +147,10 @@ body {
 /* HEADER */
 .app-header {
   background: var(--card); border-bottom: 1px solid var(--border);
-  padding: 12px 16px 0; flex-shrink: 0;
+  padding: 12px 16px; flex-shrink: 0;
 }
-.header-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
-.app-logo { font-size:17px; font-weight:800; color:var(--child); }
-.mode-pills { display:flex; background:var(--bg); border-radius:20px; padding:3px; gap:2px; }
-.mode-pill {
-  padding:5px 14px; border-radius:16px; border:none;
-  font-family:inherit; font-size:13px; font-weight:600;
-  cursor:pointer; color:var(--sub); background:transparent; transition:all .2s;
-}
-.mode-pill.active-child { background:var(--child); color:#fff; }
-.mode-pill.active-parent { background:var(--parent); color:#fff; }
-.view-tabs { display:flex; border-bottom:2px solid var(--border); margin:0 -16px; padding:0 16px; overflow-x:auto; }
-.view-tab {
-  padding:8px 14px; border:none; background:transparent;
-  font-family:inherit; font-size:13px; font-weight:600;
-  color:var(--sub); cursor:pointer; position:relative; white-space:nowrap;
-}
-.view-tab.active { color:var(--child); }
-.view-tab.active::after {
-  content:''; position:absolute; bottom:-2px; left:0; right:0;
-  height:2px; background:var(--child); border-radius:2px 2px 0 0;
-}
-.view-tab.p-active { color:var(--parent); }
-.view-tab.p-active::after { background:var(--parent); }
-body.child-device .mode-pills { visibility:hidden; }
-body.parent-device .mode-pills { visibility:hidden; }
+.header-top { display:flex; align-items:center; gap:10px; }
+.app-logo { font-size:16px; font-weight:800; color:var(--child); flex-shrink:0; white-space:nowrap; }
 
 /* SCROLL */
 .scroll-area { flex:1; overflow-y:auto; padding:16px 16px 100px; min-height:0; -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain; }
@@ -480,15 +457,17 @@ body.parent-device .mode-pills { visibility:hidden; }
 /* BOTTOM NAV */
 .bottom-nav {
   flex-shrink:0; background:var(--card); border-top:1px solid var(--border);
-  display:flex; padding:6px 0; z-index:50;
+  display:flex; padding:8px 4px calc(12px + env(safe-area-inset-bottom)); z-index:50;
+  border-radius:18px 18px 0 0;
 }
 .nav-item {
   flex:1; display:flex; flex-direction:column; align-items:center;
-  gap:2px; padding:6px 0; border:none; background:transparent;
+  gap:2px; padding:6px 0; border:none; background:transparent; border-radius:14px;
   cursor:pointer; font-family:inherit; font-size:10px; font-weight:600; color:var(--sub);
+  transition:background .15s;
 }
-.nav-item.active { color:var(--child); }
-.nav-item.p-active { color:var(--parent); }
+.nav-item.active { color:var(--child); background:color-mix(in srgb, var(--child) 12%, transparent); }
+.nav-item.p-active { color:var(--parent); background:color-mix(in srgb, var(--parent) 12%, transparent); }
 .nav-icon { font-size:22px; }
 
 /* MODAL */
@@ -766,21 +745,9 @@ body.parent-device .mode-pills { visibility:hidden; }
   <div class="app-header">
     <div class="header-top">
       <div class="app-logo">🏠 우리가족 플래너</div>
-      <div class="mode-pills">
-        <button class="mode-pill active-child" id="pill-child" onclick="setMode('child')">자녀</button>
-        <button class="mode-pill" id="pill-parent" onclick="setMode('parent')">부모</button>
-      </div>
-    </div>
-    <div class="view-tabs" id="viewTabs">
-      <button class="view-tab active" data-v="day" onclick="setView('day')">오늘</button>
-      <button class="view-tab" data-v="week" onclick="setView('week')">주간</button>
-      <button class="view-tab" data-v="month" onclick="setView('month')">월간</button>
-      <button class="view-tab" data-v="shared" onclick="setView('shared')">공유일정</button>
-      <button class="view-tab" data-v="school" onclick="setView('school')">학교/학원</button>
-      <button class="view-tab" data-v="devices" id="tabDevices" style="display:none" onclick="setView('devices')">기기관리</button>
+      <div class="child-switch-bar" id="childSwitchBar"></div>
     </div>
   </div>
-  <div class="child-switch-bar" id="childSwitchBar"></div>
   <div class="scroll-area" id="scrollArea"></div>
   <div class="done-anim-layer" id="doneAnimLayer"></div>
   <button class="fab" id="fab" onclick="openModal()">+</button>
@@ -788,8 +755,9 @@ body.parent-device .mode-pills { visibility:hidden; }
     <button class="nav-item active" id="nav-day" onclick="setView('day')"><span class="nav-icon">📋</span>오늘</button>
     <button class="nav-item" id="nav-week" onclick="setView('week')"><span class="nav-icon">📅</span>주간</button>
     <button class="nav-item" id="nav-month" onclick="setView('month')"><span class="nav-icon">🗓️</span>월간</button>
-    <button class="nav-item" id="nav-shared" onclick="setView('shared')"><span class="nav-icon">👨‍👩‍👧</span>공유</button>
+    <button class="nav-item" id="nav-shared" onclick="setView('shared')"><span class="nav-icon">🎉</span>공유</button>
     <button class="nav-item" id="nav-school" onclick="setView('school')"><span class="nav-icon">🏫</span>학교</button>
+    <button class="nav-item" id="nav-devices" style="display:none" onclick="setView('devices')"><span class="nav-icon">🔐</span>기기</button>
   </div>
 </div>
 
@@ -1701,13 +1669,10 @@ function checkApprovalNow() {
 // ── MODE ──
 function applyMode(m) {
   state.mode=m;
-  document.getElementById('pill-child').className='mode-pill'+(m==='child'?' active-child':'');
-  document.getElementById('pill-parent').className='mode-pill'+(m==='parent'?' active-parent':'');
-  document.querySelectorAll('.view-tab').forEach(function(el){ el.classList.toggle('p-active', m==='parent' && el.classList.contains('active')); });
   document.querySelectorAll('.nav-item').forEach(function(el){ el.classList.toggle('p-active', m==='parent' && el.classList.contains('active')); });
   document.getElementById('fab').className='fab'+(m==='parent'?' p':'');
-  var dt=document.getElementById('tabDevices');
-  if (dt) dt.style.display=m==='parent'?'':'none';
+  var nd=document.getElementById('nav-devices');
+  if (nd) nd.style.display=m==='parent'?'':'none';
   document.body.className=m===localStorage.getItem(ROLE_KEY)?m+'-device':'';
 }
 
@@ -1725,11 +1690,6 @@ function setView(v) {
   if (v==='day') state.selectedDate=new Date(TODAY);
   else if (v==='week') state.weekStart=getWeekStart(TODAY);
   else if (v==='month') state.month=new Date(TODAY.getFullYear(), TODAY.getMonth(), 1);
-  document.querySelectorAll('.view-tab').forEach(function(el){
-    var isActive=el.dataset.v===v;
-    el.classList.toggle('active',isActive&&state.mode!=='parent');
-    el.classList.toggle('p-active',isActive&&state.mode==='parent');
-  });
   document.querySelectorAll('.nav-item').forEach(function(el){
     el.classList.toggle('active',el.id==='nav-'+v&&state.mode!=='parent');
     el.classList.toggle('p-active',el.id==='nav-'+v&&state.mode==='parent');
@@ -3480,7 +3440,7 @@ document.getElementById('urlPopup').addEventListener('click',function(e){ if(e.t
 
 // ── PENDING BADGE ──
 function updatePendingBadge(count) {
-  var nav=document.getElementById('nav-shared');
+  var nav=document.getElementById('nav-devices');
   var ex=nav?nav.querySelector('.pending-badge'):null;
   if (ex) ex.remove();
   if (count>0&&nav) {
