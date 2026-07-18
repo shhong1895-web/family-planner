@@ -458,8 +458,7 @@ body {
 /* BOTTOM NAV */
 .bottom-nav {
   flex-shrink:0; background:var(--card); border-top:1px solid var(--border);
-  display:flex; padding:8px 4px calc(12px + env(safe-area-inset-bottom)); z-index:50;
-  border-radius:18px 18px 0 0;
+  display:flex; padding:6px 4px calc(6px + env(safe-area-inset-bottom)); z-index:50;
 }
 .nav-item {
   flex:1; display:flex; flex-direction:column; align-items:center;
@@ -756,7 +755,7 @@ body {
     <button class="nav-item active" id="nav-day" onclick="setView('day')"><span class="nav-icon">📋</span>오늘</button>
     <button class="nav-item" id="nav-week" onclick="setView('week')"><span class="nav-icon">📅</span>주간</button>
     <button class="nav-item" id="nav-month" onclick="setView('month')"><span class="nav-icon">🗓️</span>월간</button>
-    <button class="nav-item" id="nav-shared" onclick="setView('shared')"><span class="nav-icon">🎈</span>공유</button>
+    <button class="nav-item" id="nav-shared" onclick="setView('shared')"><span class="nav-icon">📌</span>공유</button>
     <button class="nav-item" id="nav-school" onclick="setView('school')"><span class="nav-icon">🏫</span>학교</button>
     <button class="nav-item" id="nav-devices" style="display:none" onclick="setView('devices')"><span class="nav-icon">🔐</span>기기</button>
   </div>
