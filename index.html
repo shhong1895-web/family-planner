@@ -42,6 +42,7 @@ body {
   max-width: 430px; margin: 0 auto;
   height: 100vh; height: 100dvh; display: flex; flex-direction: column;
   position: relative; overflow: hidden; overscroll-behavior: none;
+  padding-top: max(8px, env(safe-area-inset-top));
 }
 
 /* ONBOARDING */
@@ -755,7 +756,7 @@ body {
     <button class="nav-item active" id="nav-day" onclick="setView('day')"><span class="nav-icon">📋</span>오늘</button>
     <button class="nav-item" id="nav-week" onclick="setView('week')"><span class="nav-icon">📅</span>주간</button>
     <button class="nav-item" id="nav-month" onclick="setView('month')"><span class="nav-icon">🗓️</span>월간</button>
-    <button class="nav-item" id="nav-shared" onclick="setView('shared')"><span class="nav-icon">🎉</span>공유</button>
+    <button class="nav-item" id="nav-shared" onclick="setView('shared')"><span class="nav-icon">🎈</span>공유</button>
     <button class="nav-item" id="nav-school" onclick="setView('school')"><span class="nav-icon">🏫</span>학교</button>
     <button class="nav-item" id="nav-devices" style="display:none" onclick="setView('devices')"><span class="nav-icon">🔐</span>기기</button>
   </div>
