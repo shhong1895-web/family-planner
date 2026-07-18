@@ -35,12 +35,13 @@
   --r: 16px; --sh: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html { height: 100%; overscroll-behavior: none; }
+html { height: 100%; height: -webkit-fill-available; overscroll-behavior: none; }
 body {
   font-family: 'Noto Sans KR', sans-serif;
   background: var(--bg); color: var(--text);
   max-width: 430px; margin: 0 auto;
-  height: 100vh; height: 100dvh; display: flex; flex-direction: column;
+  height: 100vh; height: 100dvh; height: -webkit-fill-available;
+  display: flex; flex-direction: column;
   position: relative; overflow: hidden; overscroll-behavior: none;
   padding-top: max(8px, env(safe-area-inset-top));
 }
@@ -962,8 +963,11 @@ function setAppHeight() {
   document.body.style.height = h + 'px';
 }
 setAppHeight();
+setTimeout(setAppHeight, 300); // iOS 홈화면 앱은 처음 켜질 때 잠깐 잘못된 높이를 보고하는 경우가 있어 한 번 더 보정
 window.addEventListener('resize', setAppHeight);
 window.addEventListener('orientationchange', function(){ setTimeout(setAppHeight, 100); });
+window.addEventListener('pageshow', setAppHeight); // 다른 앱에 갔다가 돌아왔을 때도 다시 보정
+document.addEventListener('visibilitychange', function(){ if (document.visibilityState==='visible') setAppHeight(); });
 if (window.visualViewport) window.visualViewport.addEventListener('resize', setAppHeight);
 
 // ── FIREBASE ──
