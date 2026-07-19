@@ -40,10 +40,8 @@ body {
   font-family: 'Noto Sans KR', sans-serif;
   background: var(--bg); color: var(--text);
   max-width: 430px; margin: 0 auto;
-  position: fixed; inset: 0;
-  display: flex; flex-direction: column;
-  overflow: hidden; overscroll-behavior: none;
-  padding-top: env(safe-area-inset-top);
+  height: 100vh; height: 100dvh; display: flex; flex-direction: column;
+  position: relative; overflow: hidden; overscroll-behavior: none;
 }
 
 /* ONBOARDING */
@@ -459,7 +457,7 @@ body {
 /* BOTTOM NAV */
 .bottom-nav {
   flex-shrink:0; background:var(--card); border-top:1px solid var(--border);
-  display:flex; padding:6px 4px; z-index:50;
+  display:flex; padding:6px 0; z-index:50;
 }
 .nav-item {
   flex:1; display:flex; flex-direction:column; align-items:center;
