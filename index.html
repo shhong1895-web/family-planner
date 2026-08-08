@@ -692,7 +692,7 @@ body {
   <div style="font-size:24px;font-weight:800;color:#0F172A;margin-bottom:8px">우리가족 플래너</div>
   <div id="obIntro" style="font-size:14px;color:#64748B;margin-bottom:20px;line-height:1.7">이 기기를 사용하는 사람이 누구인가요?<br>한 번만 선택하면 다음부터 자동으로 열려요.</div>
   <input id="deviceNickname" placeholder="이 기기 이름 (예: 엄마 폰, 첫째 아이패드)" style="width:100%;max-width:320px;padding:12px 14px;border-radius:12px;border:1.5px solid #E2E8F0;font-family:inherit;font-size:14px;margin-bottom:10px;text-align:center;background:#fff">
-  <input id="devicePin" placeholder="가족 암호 (알고 있으면 입력 — 없으면 비워두세요)" style="width:100%;max-width:320px;padding:12px 14px;border-radius:12px;border:1.5px solid #E2E8F0;font-family:inherit;font-size:14px;margin-bottom:16px;text-align:center;background:#fff">
+  <input id="devicePin" type="password" autocomplete="off" placeholder="가족 암호 (알고 있으면 입력 — 없으면 비워두세요)" style="width:100%;max-width:320px;padding:12px 14px;border-radius:12px;border:1.5px solid #E2E8F0;font-family:inherit;font-size:14px;margin-bottom:16px;text-align:center;background:#fff">
   <div id="roleCardsWrap" style="display:flex;gap:16px;width:100%;max-width:320px">
     <div class="ob-card" onclick="chooseRole('child')">
       <span style="font-size:48px;line-height:1">👦</span>
@@ -965,9 +965,111 @@ var firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 var db = firebase.firestore();
 
-function fsSet(col, id, data) { return db.collection(col).doc(String(id)).set(data); }
+// ── FAMILY CONTEXT (v0.2.1) ──
+// 모든 가족 데이터는 familyId를 기준으로 분리한다.
+var FAMILY_ID_KEY='fp_family_id';
+var FAMILY_CODE_KEY='fp_family_code';
+var FAMILY_ID=null;
+var FAMILY_CODE=null;
+var _pendingPinAttempt='';
+
+function makeFamilyId() {
+  var chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return 'fam_'+Array.from({length:12},function(){return chars[Math.floor(Math.random()*chars.length)];}).join('');
+}
+function makeFamilyCode() {
+  var chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({length:6},function(){return chars[Math.floor(Math.random()*chars.length)];}).join('');
+}
+function getFamilyMetaDoc(id) { return db.collection('meta').doc(String(id)+'_'+FAMILY_ID); }
+function familyData(data) {
+  var out=Object.assign({},data||{});
+  if (FAMILY_ID) out.familyId=FAMILY_ID;
+  return out;
+}
+function fsSet(col, id, data) {
+  return db.collection(col).doc(String(id)).set(familyData(data));
+}
 function fsUpdate(col, id, data) { return db.collection(col).doc(String(id)).update(data); }
 function fsDel(col, id) { return db.collection(col).doc(String(id)).delete(); }
+
+function requestedFamilyId() {
+  var params=new URLSearchParams(location.search);
+  return params.get('family') || localStorage.getItem(FAMILY_ID_KEY) || null;
+}
+function requestedFamilyCode() {
+  var params=new URLSearchParams(location.search);
+  return params.get('code') || localStorage.getItem(FAMILY_CODE_KEY) || null;
+}
+function saveFamilyContext(id, code) {
+  FAMILY_ID=id;
+  FAMILY_CODE=code||FAMILY_CODE||null;
+  if (id) localStorage.setItem(FAMILY_ID_KEY,id);
+  if (code) localStorage.setItem(FAMILY_CODE_KEY,code);
+}
+
+// 기존 단일 가족 데이터와의 호환을 위해 최초 1회 가족 식별자를 준비한다.
+async function ensureFamilyContext() {
+  var requested=requestedFamilyId();
+  var code=requestedFamilyCode();
+  if (requested) {
+    saveFamilyContext(requested,code);
+    return true;
+  }
+  var uid=getAuthUid();
+  if (!uid) return false;
+
+  try {
+    var mine=await db.collection('devices').doc(uid).get();
+    if (mine.exists && mine.data().familyId) {
+      saveFamilyContext(mine.data().familyId,mine.data().familyCode||null);
+      return true;
+    }
+  } catch(e) {}
+
+  // 기존 버전의 관리자 기기에서 가족을 이어받고, 기존 데이터를 1회 가족에 귀속한다.
+  try {
+    var admins=await db.collection('devices').where('isAdmin','==',true).where('status','==','approved').limit(1).get();
+    if (!admins.empty) {
+      var a=admins.docs[0].data();
+      var fid=a.familyId || makeFamilyId();
+      var fcode=a.familyCode || makeFamilyCode();
+      saveFamilyContext(fid,fcode);
+      await migrateLegacyFamilyDataForBootstrap();
+      return true;
+    }
+  } catch(e) {}
+
+  // 첫 부모 기기에서만 새 가족을 만든다.
+  var role=localStorage.getItem(ROLE_KEY);
+  if (role==='parent') {
+    saveFamilyContext(makeFamilyId(),makeFamilyCode());
+    return true;
+  }
+  return false;
+}
+
+async function migrateLegacyFamilyDataForBootstrap() {
+  if (!FAMILY_ID) return;
+  var cols=['devices','tasks','sharedEvents','messages','schoolSchedule','children'];
+  for (var i=0;i<cols.length;i++) {
+    try {
+      var snap=await db.collection(cols[i]).get();
+      var batch=db.batch(); var count=0;
+      snap.docs.forEach(function(d){
+        if (!d.data().familyId) {
+          batch.set(d.ref,{familyId:FAMILY_ID,familyCode:FAMILY_CODE},{merge:true});
+          count++;
+        }
+      });
+      if (count) await batch.commit();
+    } catch(e) {}
+  }
+  try {
+    await getFamilyMetaDoc('family').set({familyId:FAMILY_ID,familyCode:FAMILY_CODE,migratedAt:Date.now()},{merge:true});
+  } catch(e) {}
+}
+
 
 // ── STATE ──
 var DEFAULT_WORKBOOKS = ['기적의 계산법','디딤돌','쎈수학','수학의 정석','EBS 만점왕'];
@@ -985,7 +1087,7 @@ var devicesState = [];
 // 놓쳤을 수 있으니 화면이 다시 보이는 시점에 기기 목록을 확실하게 한 번 다시 받아온다.
 document.addEventListener('visibilitychange', function(){
   if (document.visibilityState==='visible' && getAuthUid()) {
-    db.collection('devices').get().then(function(snap){
+    db.collection('devices').where('familyId','==',FAMILY_ID).get().then(function(snap){
       devicesState = snap.docs.map(function(d){ return d.data(); });
       updatePendingBadge(devicesState.filter(function(d){ return d.status==='pending'; }).length);
       render();
@@ -1167,7 +1269,7 @@ function sharedForDate(ds) {
 
 // ── FIREBASE LISTENERS ──
 function setupListeners() {
-  db.collection('devices').onSnapshot(function(snap) {
+  db.collection('devices').where('familyId','==',FAMILY_ID).onSnapshot(function(snap) {
     devicesState = snap.docs.map(function(d){ return d.data(); });
     updatePendingBadge(devicesState.filter(function(d){ return d.status==='pending'; }).length);
     render();
@@ -1185,39 +1287,39 @@ function setupFamilyListeners() {
   if (_familyListenersStarted) return;
   _familyListenersStarted=true;
   var bar = document.getElementById('syncBar');
-  db.collection('tasks').onSnapshot(function(snap) {
+  db.collection('tasks').where('familyId','==',FAMILY_ID).onSnapshot(function(snap) {
     state.tasks = snap.docs.map(function(d){ return d.data(); });
     bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중';
     render();
   }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드'; });
-  db.collection('sharedEvents').onSnapshot(function(snap) {
+  db.collection('sharedEvents').where('familyId','==',FAMILY_ID).onSnapshot(function(snap) {
     state.sharedEvents = snap.docs.map(function(d){ return d.data(); }); render();
   });
-  db.collection('messages').onSnapshot(function(snap) {
+  db.collection('messages').where('familyId','==',FAMILY_ID).onSnapshot(function(snap) {
     state.messages = snap.docs.map(function(d){ return d.data(); }); render();
   });
-  db.collection('schoolSchedule').onSnapshot(function(snap) {
+  db.collection('schoolSchedule').where('familyId','==',FAMILY_ID).onSnapshot(function(snap) {
     state.schoolSchedule = snap.docs.map(function(d){ return d.data(); }); render();
   });
-  db.collection('children').onSnapshot(function(snap) {
+  db.collection('children').where('familyId','==',FAMILY_ID).onSnapshot(function(snap) {
     state.children = snap.docs.map(function(d){ return d.data(); }).sort(function(a,b){ return (a.createdAt||0)-(b.createdAt||0); });
     var cpo=document.getElementById('childPickOverlay');
     if (cpo && cpo.style.display!=='none') renderChildPickOverlay();
     render();
   });
   var _wbSeeded = false;
-  db.collection('meta').doc('workbooks').onSnapshot(function(snap) {
+  getFamilyMetaDoc('workbooks').onSnapshot(function(snap) {
     if (snap.exists) {
       state.workbooks = snap.data().list || [];
     } else {
       state.workbooks = DEFAULT_WORKBOOKS.slice();
-      if (!_wbSeeded) { _wbSeeded = true; db.collection('meta').doc('workbooks').set({list: DEFAULT_WORKBOOKS.slice()}).catch(function(){}); }
+      if (!_wbSeeded) { _wbSeeded = true; getFamilyMetaDoc('workbooks').set({list: DEFAULT_WORKBOOKS.slice(), familyId:FAMILY_ID}).catch(function(){}); }
     }
     renderWorkbookSelect();
     var panel = document.getElementById('wbManagePanel');
     if (panel && panel.style.display !== 'none') renderWorkbookChips();
   });
-  db.collection('meta').doc('pinHash').onSnapshot(function(snap) {
+  getFamilyMetaDoc('pinHash').onSnapshot(function(snap) {
     state.pinConfigured = snap.exists;
     render();
   });
@@ -1228,9 +1330,9 @@ function setupFamilyListeners() {
 function seedIfEmpty() {
   setTimeout(function() {
     if (state.tasks.length!==0) return;
-    db.collection('meta').doc('seed').get().then(function(snap){
+    getFamilyMetaDoc('seed').get().then(function(snap){
       if (snap.exists) return; // 이미 한 번 시딩된 적 있음 → 지금 비어있는 건 실제로 다 지운 것이므로 다시 채우지 않음
-      db.collection('meta').doc('seed').set({seededAt:Date.now()});
+      getFamilyMetaDoc('seed').set({seededAt:Date.now(), familyId:FAMILY_ID});
       var ds=fmt(TODAY);
       var seed=[
         {id:1,name:'수학 문제집 5페이지',date:ds,time:'09:00',allday:false,cat:'학습',desc:'3단원 분수',done:false,fromParent:false,repeat:'none'},
@@ -1326,15 +1428,16 @@ function chooseRole(role) {
   var nickEl=document.getElementById('deviceNickname');
   if (nickEl) localStorage.setItem('fp_nickname', nickEl.value.trim());
   var pinEl=document.getElementById('devicePin');
-  if (pinEl && pinEl.value.trim()) localStorage.setItem('fp_pin_attempt', pinEl.value.trim());
-  if (getAuthUid()) { setDeviceRole(role); return; }
+  _pendingPinAttempt = pinEl ? pinEl.value.trim() : '';
+  if (pinEl) pinEl.value='';
+  if (getAuthUid()) { setDeviceRole(role, _pendingPinAttempt); return; }
   document.getElementById('onboardOverlay').style.display='none';
   document.getElementById('approvalOverlay').style.display='flex';
   document.getElementById('approvalDeviceId').textContent='연결 중...';
   var tries=0;
   var iv=setInterval(function(){
     tries++;
-    if (getAuthUid()) { clearInterval(iv); setDeviceRole(role); }
+    if (getAuthUid()) { clearInterval(iv); setDeviceRole(role, _pendingPinAttempt); }
     else if (tries>100) { clearInterval(iv); showToast('⚠️ 연결에 실패했어요. 새로고침 해주세요'); }
   }, 100);
 }
@@ -1349,17 +1452,17 @@ function migrateLegacyAdminIfNeeded(did, uid) {
     return db.collection('devices').doc(uid).get().then(function(newSnap){
       if (newSnap.exists) return; // 이미 옮겨짐
       return db.collection('devices').doc(uid).set({
-        uid:uid, code:did, role:'parent', label:'부모 기기(관리자)', status:'approved', isAdmin:true, registeredAt: legacy.registeredAt||Date.now()
+        uid:uid, code:did, familyId:FAMILY_ID, familyCode:FAMILY_CODE, role:'parent', label:'부모 기기(관리자)', status:'approved', isAdmin:true, registeredAt: legacy.registeredAt||Date.now()
       }).then(function(){
-        return db.collection('meta').doc('admin').get().then(function(adminSnap){
-          if (!adminSnap.exists) return db.collection('meta').doc('admin').set({ registeredAt: Date.now() });
+        return getFamilyMetaDoc('admin').get().then(function(adminSnap){
+          if (!adminSnap.exists) return getFamilyMetaDoc('admin').set({ registeredAt: Date.now(), familyId:FAMILY_ID });
         });
       });
     });
   }).catch(function(){});
 }
 
-function setDeviceRole(role, skipRegister) {
+function setDeviceRole(role, pinAttempt) {
   var uid=getAuthUid();        // 실제 권한 판단 기준 (로그인 식별자)
   if (!uid) { chooseRole(role); return; } // 로그인이 아직 안 끝난 채 호출된 경우를 위한 방어막
   localStorage.setItem(ROLE_KEY, role);
@@ -1374,13 +1477,17 @@ function setDeviceRole(role, skipRegister) {
 
     // 이 브라우저에서 이미 승인받은 적 있으면 바로 진입하고, 승인이 취소됐는지는 뒤에서 조용히 재확인
     if (localStorage.getItem(APPROVED_KEY)==='1') {
-      showApp();
       db.collection('devices').doc(uid).get().then(function(snap) {
-        if (snap.exists && snap.data().status!=='approved') {
+        if (snap.exists && snap.data().status==='approved' && snap.data().familyId===FAMILY_ID) {
+          showApp();
+        } else {
           localStorage.removeItem(APPROVED_KEY);
           showApprovalWait(uid, did);
         }
-      }).catch(function(){});
+      }).catch(function(){
+        localStorage.removeItem(APPROVED_KEY);
+        showApprovalWait(uid, did);
+      });
       return;
     }
 
@@ -1393,22 +1500,21 @@ function setDeviceRole(role, skipRegister) {
         // 아직 관리자가 없는 상태에서 '부모예요'로 들어옴 -> 이 기기가 우리집 관리자가 된다.
         // meta/admin 문서 존재 여부와 트랜잭션으로 함께 묶어서, 여러 기기가 동시에 최초 진입해도
         // 관리자가 단 하나만 만들어지도록 한다 (보안 규칙에서도 meta/admin 존재 여부로 다시 확인함)
-        var adminRef = db.collection('meta').doc('admin');
+        var adminRef = getFamilyMetaDoc('admin');
         var deviceRef = db.collection('devices').doc(uid);
         db.runTransaction(function(tx){
           return tx.get(adminRef).then(function(adminDoc){
             if (adminDoc.exists) throw new Error('admin-already-exists');
-            tx.set(adminRef, { registeredAt: Date.now() });
-            tx.set(deviceRef, { uid:uid, code:did, role:'parent', label: nick || '부모 기기(관리자)', status:'approved', isAdmin:true, registeredAt: Date.now() });
+            tx.set(adminRef, { registeredAt: Date.now(), familyId:FAMILY_ID, familyCode:FAMILY_CODE });
+            tx.set(deviceRef, { uid:uid, code:did, familyId:FAMILY_ID, familyCode:FAMILY_CODE, role:'parent', label: nick || '부모 기기(관리자)', status:'approved', isAdmin:true, registeredAt: Date.now() });
           });
         }).then(function(){
           localStorage.setItem(APPROVED_KEY,'1');
-          localStorage.removeItem('fp_pin_attempt');
-          showApp();
+                    showApp();
           showToast('👑 이 기기가 관리자로 등록됐어요');
         }).catch(function(){
           // 트랜잭션 도중 다른 기기가 먼저 관리자가 된 경우 -> 승인 대기로 전환
-          var write = mine ? Promise.resolve() : fsSet('devices', uid, { uid:uid, code:did, role:role, label: label, status:'pending', isAdmin:false, registeredAt:Date.now() });
+          var write = mine ? Promise.resolve() : fsSet('devices', uid, { uid:uid, code:did, familyId:FAMILY_ID, familyCode:FAMILY_CODE, role:role, label: label, status:'pending', isAdmin:false, registeredAt:Date.now() });
           write.then(function(){ showApprovalWait(uid, did); })
             .catch(function(){ showRegisterError(); });
         });
@@ -1423,34 +1529,30 @@ function setDeviceRole(role, skipRegister) {
       // mine이 없는 최초 접속이든, 예전에 만들어진 '대기중' 문서가 이미 있든 상관없이
       // 암호를 입력했다면 항상 먼저 시도해본다 (예전엔 이미 대기중 문서가 있으면
       // 암호 확인 자체를 건너뛰고 곧장 대기 화면으로 가버리는 문제가 있었다)
-      var pinAttempt=(localStorage.getItem('fp_pin_attempt')||'').trim();
+      var pinAttempt=(pinAttempt||_pendingPinAttempt||'').trim();
+      _pendingPinAttempt='';
       if (pinAttempt) {
         hashPin(pinAttempt).then(function(hash){
-          var base = mine ? mine.data() : { uid:uid, code:did, role:role, registeredAt:Date.now() };
-          var quickDoc=Object.assign({}, base, { label:label, status:'approved', isAdmin:false, pinHash:hash });
-          var writeOp = mine
-            ? db.collection('devices').doc(uid).update(quickDoc)
-            : db.collection('devices').doc(uid).set(quickDoc);
-          writeOp.then(function(){
-            localStorage.removeItem('fp_pin_attempt');
-            db.collection('devices').doc(uid).update({ pinHash: firebase.firestore.FieldValue.delete() }).catch(function(){});
-            localStorage.setItem(APPROVED_KEY,'1');
-            showApp();
-            showToast('✅ 가족 암호로 바로 연결됐어요!');
-          }).catch(function(){
-            // 암호가 틀렸거나 아직 설정되지 않음 -> 평소처럼 승인 대기로
-            localStorage.removeItem('fp_pin_attempt');
-            showToast('❌ 암호가 맞지 않거나 아직 설정 안 됨 - 승인 요청으로 전환했어요');
-            var write = mine ? Promise.resolve() : fsSet('devices', uid, { uid:uid, code:did, role:role, label:label, status:'pending', isAdmin:false, registeredAt:Date.now() });
-            write.then(function(){ showApprovalWait(uid, did); })
-              .catch(function(){ showRegisterError(); });
+          return getFamilyMetaDoc('pinHash').get().then(function(pinSnap){
+            if (!pinSnap.exists || pinSnap.data().hash!==hash) throw new Error('pin-mismatch');
+            return db.collection('devices').doc(uid).set({
+              uid:uid, code:did, familyId:FAMILY_ID, familyCode:FAMILY_CODE, role:role, label:label, status:'approved', isAdmin:false, registeredAt:(mine&&mine.data().registeredAt)||Date.now()
+            }, {merge:true});
           });
+        }).then(function(){
+          localStorage.setItem(APPROVED_KEY,'1');
+          showApp();
+          showToast('✅ 가족 암호로 연결됐어요!');
+        }).catch(function(){
+          showToast('❌ 가족 암호가 맞지 않아요. 승인 요청으로 전환했어요');
+          var write = mine ? Promise.resolve() : fsSet('devices', uid, { uid:uid, code:did, familyId:FAMILY_ID, familyCode:FAMILY_CODE, role:role, label:label, status:'pending', isAdmin:false, registeredAt:Date.now() });
+          write.then(function(){ showApprovalWait(uid, did); }).catch(function(){ showRegisterError(); });
         });
         return;
       }
       if (!mine) {
         fsSet('devices', uid, {
-          uid:uid, code:did, role:role,
+          uid:uid, code:did, familyId:FAMILY_ID, familyCode:FAMILY_CODE, role:role,
           label: label,
           status:'pending', isAdmin:false, registeredAt:Date.now()
         }).then(function(){ showApprovalWait(uid, did); })
@@ -2170,7 +2272,7 @@ function setFamilyPin() {
   var pin=el.value.trim();
   if (!pin || pin.length<4) { showToast('⚠️ 4자리 이상으로 입력해주세요'); return; }
   hashPin(pin).then(function(hash){
-    fsSet('meta','pinHash',{hash:hash}).then(function(){
+    getFamilyMetaDoc('pinHash').set({hash:hash, familyId:FAMILY_ID}).then(function(){
       el.value='';
       showToast('✅ 가족 암호가 설정됐어요');
     }).catch(function(){ showToast('⚠️ 저장 실패. 네트워크를 확인해주세요'); });
@@ -2196,8 +2298,8 @@ function addChildFromDevices() {
 }
 function renderDevices() {
   var baseUrl=location.origin+location.pathname;
-  var childUrl=baseUrl+'?role=child';
-  var parentUrl=baseUrl+'?role=parent';
+  var childUrl=baseUrl+'?role=child&family='+encodeURIComponent(FAMILY_ID||'')+'&code='+encodeURIComponent(FAMILY_CODE||'');
+  var parentUrl=baseUrl+'?role=parent&family='+encodeURIComponent(FAMILY_ID||'')+'&code='+encodeURIComponent(FAMILY_CODE||'');
   var pending=devicesState.filter(function(d){ return d.status==='pending'; });
   var approved=devicesState.filter(function(d){ return d.status==='approved'; });
   var myId=getAuthUid();
@@ -2210,6 +2312,8 @@ function renderDevices() {
     +'<div><div class="pc-big">'+pending.length+'</div><div class="pc-unit">대기중</div></div></div></div>';
 
   // URL Share
+  html+='<div class="sec-title">가족 정보</div>';
+  html+='<div class="form-box" style="text-align:center"><div class="f-label">가족 코드</div><div style="font-size:28px;font-weight:900;letter-spacing:4px;color:var(--parent);margin:8px 0">'+esc(FAMILY_CODE||'-')+'</div><div style="font-size:11px;color:var(--sub)">초대 링크에는 이 가족 정보가 포함됩니다.</div></div>';
   html+='<div class="sec-title">초대 URL 공유</div>';
   html+='<div class="form-box">'
     +'<div class="f-label">👦 자녀용 URL — 자녀에게 이 링크만 전송하세요</div>'
@@ -3217,14 +3321,14 @@ function addWorkbookToList() {
   var list = currentWorkbookList().slice();
   if (list.indexOf(name) >= 0) { showToast('⚠️ 이미 있는 문제집이에요'); return; }
   list.push(name);
-  fsSet('meta','workbooks',{list:list}).then(function(){
+  getFamilyMetaDoc('workbooks').set({list:list, familyId:FAMILY_ID}).then(function(){
     inp.value = '';
     showToast('✅ 추가됐어요');
   }).catch(function(){ showToast('⚠️ 저장 실패. 네트워크를 확인해주세요'); });
 }
 function removeWorkbookFromList(name) {
   var list = currentWorkbookList().filter(function(w){ return w!==name; });
-  fsSet('meta','workbooks',{list:list}).then(function(){ showToast('🗑 삭제됐어요'); })
+  getFamilyMetaDoc('workbooks').set({list:list, familyId:FAMILY_ID}).then(function(){ showToast('🗑 삭제됐어요'); })
     .catch(function(){ showToast('⚠️ 삭제 실패. 네트워크를 확인해주세요'); });
 }
 var _taskType = 'etc';
@@ -3519,10 +3623,16 @@ function editSharedAnywhere(id) {
 if (navigator.storage && navigator.storage.persist) {
   navigator.storage.persist().catch(function(){});
 }
+
 var _appInited=false;
-function startApp() {
+async function startApp() {
   if (_appInited) return;
   _appInited=true;
+  var familyReady=await ensureFamilyContext();
+  if (!familyReady) {
+    showOnboard(localStorage.getItem(ROLE_KEY)||null);
+    return;
+  }
   setupListeners();
   initDeviceRole();
 }
