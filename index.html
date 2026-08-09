@@ -966,17 +966,22 @@ firebase.initializeApp(firebaseConfig);
 var db = firebase.firestore();
 
 var FAMILY_DATA_COLLECTIONS = ['children','tasks','sharedEvents','messages','schoolSchedule'];
+var BUILD_VERSION = 'Build 014';
+// Build 014: 가족별 데이터 전환 완료. 기존 최상위 가족 데이터는 앱에서 더 이상 읽거나 쓰지 않습니다.
 function getFamilyCode() {
   var uid = getAuthUid && getAuthUid();
   var mine = uid ? devicesState.find(function(d){ return d.uid===uid; }) : null;
-  return (mine && mine.familyCode) || localStorage.getItem('fp_familyCode') || null;
+  return (mine && mine.familyCode) || null;
 }
 function familyCollection(col) {
-  var code = getFamilyCode();
-  if (code && FAMILY_DATA_COLLECTIONS.indexOf(col)>=0) {
-    return db.collection('families').doc(String(code)).collection(col);
+  if (FAMILY_DATA_COLLECTIONS.indexOf(col) < 0) {
+    return db.collection(col);
   }
-  return db.collection(col);
+  var code = getFamilyCode();
+  if (!code) {
+    throw new Error('FAMILY_CODE_REQUIRED');
+  }
+  return db.collection('families').doc(String(code)).collection(col);
 }
 function fsSet(col, id, data) { return familyCollection(col).doc(String(id)).set(data); }
 function fsUpdate(col, id, data) { return familyCollection(col).doc(String(id)).update(data); }
@@ -1196,41 +1201,23 @@ function setupListeners() {
 // 승인이 확인된 뒤에야 리스너를 켠다 (승인 전에 켜면 permission-denied로 리스너가 죽어서
 // 나중에 승인돼도 새로고침 전까지 데이터가 안 보이는 문제가 생긴다)
 var _familyListenersStarted=false;
-function syncLegacyCollectionToFamily(code, col) {
-  var legacy = db.collection(col);
-  var target = db.collection('families').doc(String(code)).collection(col);
-  return Promise.all([legacy.get(), target.get()]).then(function(results){
-    var legacySnap=results[0], targetSnap=results[1];
-    var existing={};
-    targetSnap.forEach(function(d){ existing[d.id]=true; });
-    var writes=[];
-    legacySnap.forEach(function(d){
-      if (!existing[d.id]) writes.push(target.doc(d.id).set(d.data()));
-    });
-    return Promise.all(writes);
-  });
-}
-function syncLegacyDataToFamily(code) {
-  return Promise.all(FAMILY_DATA_COLLECTIONS.map(function(col){
-    return syncLegacyCollectionToFamily(code,col).catch(function(err){
-      console.warn('legacy sync failed:',col,err);
-    });
-  }));
-}
 function setupFamilyListeners() {
   if (_familyListenersStarted) return;
   var uid=getAuthUid();
   if (!uid) return;
   db.collection('devices').doc(uid).get().then(function(devSnap){
     var dev=devSnap.exists?devSnap.data():{};
-    var code=dev.familyCode || localStorage.getItem('fp_familyCode') || null;
-    if (code) localStorage.setItem('fp_familyCode',code);
+    var code=dev.familyCode || null;
+    if (!code) {
+      _familyListenersStarted=false;
+      var noFamilyBar=document.getElementById('syncBar');
+      if (noFamilyBar) { noFamilyBar.className='sync-bar error'; noFamilyBar.innerHTML='<div class="sync-dot"></div> 가족 연결이 필요합니다'; }
+      return;
+    }
+    localStorage.setItem('fp_familyCode',code);
     _familyListenersStarted=true;
     var bar = document.getElementById('syncBar');
-    function col(name){ return code ? db.collection('families').doc(String(code)).collection(name) : db.collection(name); }
-    // 가족 코드가 있는 경우 기존 최상위 데이터 중 아직 복사되지 않은 문서만 먼저 보완한다.
-    var ready=code ? syncLegacyDataToFamily(code) : Promise.resolve();
-    ready.then(function(){
+    function col(name){ return db.collection('families').doc(String(code)).collection(name); }
       col('tasks').onSnapshot(function(snap) {
         state.tasks = snap.docs.map(function(d){ return d.data(); });
         bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중';
@@ -1258,11 +1245,6 @@ function setupFamilyListeners() {
       });
       db.collection('meta').doc('pinHash').onSnapshot(function(snap) { state.pinConfigured = snap.exists; render(); });
       seedIfEmpty();
-    }).catch(function(err){
-      console.error('family data initialization failed:',err);
-      _familyListenersStarted=false;
-      bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 가족 데이터 연결 실패';
-    });
   }).catch(function(err){
     console.error('device lookup failed:',err);
     _familyListenersStarted=false;
