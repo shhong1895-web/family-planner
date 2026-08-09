@@ -692,6 +692,13 @@ body {
   align-self:center; font-size:20px; font-weight:700; color:var(--sub);
   padding-top:26px; flex-shrink:0; width:16px; text-align:center;
 }
+
+#pairOverlay { display:none; position:fixed; inset:0; z-index:10050; background:rgba(248,250,252,.98); align-items:center; justify-content:center; padding:24px; }
+.pair-box { width:100%; max-width:340px; background:#fff; border:1.5px solid var(--border); border-radius:20px; padding:28px 22px; box-shadow:0 16px 40px rgba(15,23,42,.12); text-align:center; }
+.pair-code { font-size:32px; font-weight:900; letter-spacing:7px; color:#1E40AF; background:#EFF6FF; border:1.5px solid #BFDBFE; border-radius:14px; padding:14px 8px; margin:14px 0; }
+.pair-input { width:100%; padding:14px; border:1.5px solid #CBD5E1; border-radius:12px; text-align:center; font-size:20px; font-weight:800; letter-spacing:5px; text-transform:uppercase; font-family:inherit; outline:none; }
+.pair-input:focus { border-color:#4F46E5; box-shadow:0 0 0 3px rgba(79,70,229,.1); }
+
 </style>
 </head>
 <body>
@@ -745,6 +752,19 @@ body {
   </div>
 </div>
 
+<!-- PWA APP PAIRING -->
+<div id="pairOverlay">
+  <div class="pair-box">
+    <div style="font-size:50px;margin-bottom:10px">📱</div>
+    <div style="font-size:22px;font-weight:800;color:#0F172A;margin-bottom:8px">앱 연결</div>
+    <div id="pairIntro" style="font-size:14px;color:#64748B;line-height:1.7;margin-bottom:18px">브라우저에서 등록한 가족 기기를 이 앱에 연결합니다.</div>
+    <input id="pairCodeInput" class="pair-input" maxlength="8" autocomplete="one-time-code" inputmode="text" placeholder="연결 코드 8자리">
+    <button id="pairConnectBtn" onclick="connectWithPairCode()" style="width:100%;padding:15px;border-radius:14px;border:none;background:#4F46E5;color:#fff;font-family:inherit;font-size:16px;font-weight:800;cursor:pointer;margin-top:14px">이 앱에 연결하기</button>
+    <div id="pairErrorText" style="display:none;color:#DC2626;font-size:13px;font-weight:700;margin-top:14px;line-height:1.5"></div>
+    <div style="font-size:11px;color:#94A3B8;margin-top:18px;line-height:1.6">연결 코드는 5분 후 만료되며 한 번만 사용할 수 있습니다.</div>
+  </div>
+</div>
+
 <!-- CHILD PICK (다자녀 지원) -->
 <div id="childPickOverlay">
   <div style="font-size:52px;margin-bottom:14px">🧒</div>
@@ -768,6 +788,7 @@ body {
   <div class="app-header">
     <div class="header-top">
       <div class="app-logo">🏠 우리가족 플래너</div>
+      <button id="appPairBtn" onclick="createAppPairFromCurrentDevice()" style="display:none;margin-left:auto;border:1.5px solid #BFDBFE;background:#EFF6FF;color:#1D4ED8;border-radius:12px;padding:7px 9px;font-family:inherit;font-size:11px;font-weight:800;cursor:pointer">📱 앱 연결</button>
       <div class="child-switch-bar" id="childSwitchBar"></div>
     </div>
   </div>
@@ -989,7 +1010,7 @@ firebase.initializeApp(firebaseConfig);
 var db = firebase.firestore();
 
 var FAMILY_DATA_COLLECTIONS = ['children','tasks','sharedEvents','messages','schoolSchedule'];
-var BUILD_VERSION = 'Build 017';
+var BUILD_VERSION = 'Build 018';
 function getFamilyCode() {
   var uid = getAuthUid && getAuthUid();
   var mine = uid ? devicesState.find(function(d){ return d.uid===uid; }) : null;
@@ -1381,19 +1402,7 @@ function isIOSSafariBrowser(){
 }
 function registerWithInvite(){
   if(!_inviteToken||!_inviteData){return;}
-  // iOS Safari에서 먼저 등록하면 Safari와 홈 화면 PWA가 별도의 저장공간을 사용할 수 있어
-  // 홈 화면 앱이 새 기기로 인식될 수 있다. 따라서 iPhone/iPad는 초대 링크를 홈 화면 앱에서
-  // 한 번 실행해 등록하도록 안내한다. 이미 설치된 앱을 사용하는 경우에는 앱에서 같은 링크를
-  // 열 수 있는 환경에서 등록해야 한다.
-  if (isIOSSafariBrowser()) {
-    var roleText=_inviteData.role==='parent'?'부모':'자녀';
-    document.getElementById('inviteRoleText').textContent='📱 아이폰/아이패드 앱 등록 안내';
-    document.getElementById('inviteDeviceText').innerHTML='<b>'+esc(roleText+' · '+(_inviteData.targetLabel||'새 기기'))+'</b><br><br>이 링크를 Safari에서 바로 등록하지 말고, 이 페이지를 홈 화면에 추가한 뒤 <b>홈 화면의 우리가족 플래너</b>에서 같은 초대 링크로 등록하세요.<br><br>이미 설치된 앱이라면 관리자에게 초대 링크를 다시 받아 앱에서 열어주세요.';
-    document.getElementById('inviteRegisterBtn').textContent='Safari에서는 등록하지 않기';
-    document.getElementById('inviteRegisterBtn').disabled=true;
-    document.getElementById('inviteRegisterBtn').style.opacity='.6';
-    return;
-  }
+  // 모바일 브라우저에서 먼저 등록한 뒤, 홈 화면 앱과는 5분짜리 1회용 연결 코드로 연결합니다.
   var uid=getAuthUid(); if(!uid){showToast('⚠️ 인증 준비 중입니다. 잠시 후 다시 눌러주세요');return;}
   var btn=document.getElementById('inviteRegisterBtn'); btn.disabled=true; btn.textContent='등록 중...';
   var did=getDeviceId();
@@ -1418,6 +1427,7 @@ function registerWithInvite(){
     if(_inviteData.familyCode) localStorage.setItem('fp_familyCode',_inviteData.familyCode);
     document.getElementById('inviteOverlay').style.display='none';
     showApp();
+    createAppPairFromRegisteredDevice(_inviteData,uid).catch(function(err){ console.error('app pair create:',err); });
     showToast('✅ 가족 기기로 등록되었습니다');
   }).catch(function(err){
     console.error('invite registration:',err);
@@ -1442,6 +1452,101 @@ function createOneTimeInvite(){
       var e=document.getElementById('inviteLabelInput'); if(e)e.value='';
     });
   }).catch(function(err){console.error(err);showToast('⚠️ 초대 링크 생성에 실패했어요');});
+}
+
+
+function randomPairCode(){
+  var chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  var out='';
+  for(var i=0;i<8;i++) out+=chars[Math.floor(Math.random()*chars.length)];
+  return out;
+}
+function isMobileBrowser(){
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent||'') && !isStandaloneApp();
+}
+function showPairCreated(code, role, label){
+  document.getElementById('appWrapper').style.display='none';
+  document.getElementById('inviteOverlay').style.display='flex';
+  document.getElementById('inviteRoleText').textContent='📱 앱 연결 코드가 만들어졌습니다';
+  document.getElementById('inviteDeviceText').innerHTML='<b>'+esc(role==='parent'?'부모':'자녀')+' · '+esc(label||'새 기기')+'</b><br><br>홈 화면의 <b>우리가족 플래너</b>를 실행한 뒤 아래 코드를 입력하세요.';
+  document.getElementById('inviteExpireText').textContent='연결 코드: '+code+' · 5분 유효 · 1회 사용';
+  var btn=document.getElementById('inviteRegisterBtn');
+  btn.textContent='연결 코드 복사';
+  btn.disabled=false; btn.style.opacity='1';
+  btn.onclick=function(){
+    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(code).then(function(){showToast('📋 연결 코드가 복사됐어요');}).catch(function(){showToast('연결 코드: '+code);}); }
+    else showToast('연결 코드: '+code);
+  };
+}
+function createAppPairFromRegisteredDevice(inv, sourceUid){
+  if(!isMobileBrowser()) return Promise.resolve();
+  var code=randomPairCode();
+  var expires=new Date(Date.now()+5*60*1000);
+  return db.collection('appPairs').doc(code).set({
+    code:code, sourceUid:sourceUid, familyCode:inv.familyCode, role:inv.role||'child',
+    targetLabel:inv.targetLabel||'새 기기', createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+    expiresAt:firebase.firestore.Timestamp.fromDate(expires), used:false
+  }).then(function(){
+    if(isMobileBrowser()) showPairCreated(code,inv.role||'child',inv.targetLabel||'새 기기');
+  });
+}
+function createAppPairFromCurrentDevice(){
+  if(!isMobileBrowser()){showToast('이 기능은 휴대폰 브라우저에서 사용합니다.');return;}
+  var uid=getAuthUid(); if(!uid){showToast('⚠️ 인증 준비 중입니다.');return;}
+  db.collection('devices').doc(uid).get().then(function(snap){
+    if(!snap.exists || snap.data().status!=='approved') throw new Error('not-approved');
+    var d=snap.data();
+    return createAppPairFromRegisteredDevice({familyCode:d.familyCode,role:d.role||'child',targetLabel:d.label||deviceInfoLabel()},uid);
+  }).catch(function(err){
+    console.error('current app pair:',err);
+    showToast('⚠️ 앱 연결 코드를 만들지 못했어요');
+  });
+}
+
+function showPairRequired(){
+  document.getElementById('onboardOverlay').style.display='none';
+  document.getElementById('approvalOverlay').style.display='none';
+  document.getElementById('inviteOverlay').style.display='none';
+  document.getElementById('appWrapper').style.display='none';
+  document.getElementById('pairOverlay').style.display='flex';
+  var inp=document.getElementById('pairCodeInput'); if(inp){inp.value=''; setTimeout(function(){inp.focus();},100);}
+}
+function connectWithPairCode(){
+  var uid=getAuthUid();
+  var code=((document.getElementById('pairCodeInput')||{}).value||'').trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
+  var errEl=document.getElementById('pairErrorText');
+  if(errEl){errEl.style.display='none';errEl.textContent='';}
+  if(!uid){showToast('⚠️ 인증 준비 중입니다. 잠시 후 다시 시도해주세요');return;}
+  if(code.length!==8){if(errEl){errEl.textContent='연결 코드 8자리를 입력해주세요.';errEl.style.display='block';}return;}
+  var btn=document.getElementById('pairConnectBtn'); btn.disabled=true; btn.textContent='연결 중...';
+  var pairRef=db.collection('appPairs').doc(code), deviceRef=db.collection('devices').doc(uid);
+  Promise.all([pairRef.get(),deviceRef.get()]).then(function(res){
+    var pairSnap=res[0], deviceSnap=res[1];
+    if(!pairSnap.exists) throw new Error('invalid');
+    var pair=pairSnap.data();
+    if(pair.used) throw new Error('used');
+    if(!pair.expiresAt || pair.expiresAt.toMillis()<=Date.now()) throw new Error('expired');
+    if(deviceSnap.exists && deviceSnap.data().status==='approved') throw new Error('already-approved');
+    var did=getDeviceId();
+    var data={uid:uid,code:did,role:pair.role||'child',label:pair.targetLabel||deviceInfoLabel(),status:'approved',isAdmin:false,
+      familyCode:pair.familyCode,pairCode:code,registeredAt:Date.now(),deviceType:deviceInfoLabel()};
+    var batch=db.batch();
+    batch.set(deviceRef,data,{merge:true});
+    batch.update(pairRef,{used:true,usedBy:uid,usedAt:firebase.firestore.FieldValue.serverTimestamp()});
+    return batch.commit().then(function(){return pair;});
+  }).then(function(pair){
+    localStorage.setItem(ROLE_KEY,pair.role||'child');
+    localStorage.setItem('device_approved_'+getDeviceId(),'1');
+    if(pair.familyCode) localStorage.setItem('fp_familyCode',pair.familyCode);
+    document.getElementById('pairOverlay').style.display='none';
+    showApp(); showToast('✅ 가족 앱 연결이 완료되었습니다');
+  }).catch(function(err){
+    console.error('pair connection:',err);
+    btn.disabled=false; btn.textContent='이 앱에 연결하기';
+    var msg=err.message==='used'?'이미 사용된 연결 코드입니다.':(err.message==='expired'?'연결 코드가 만료되었습니다.':'유효하지 않은 연결 코드입니다.');
+    if(err.message==='already-approved') msg='이 기기는 이미 등록되어 있습니다.';
+    if(errEl){errEl.textContent=msg;errEl.style.display='block';}
+  });
 }
 
 function initDeviceRole() {
@@ -1473,6 +1578,9 @@ function initDeviceRole() {
         showApp();
         return;
       }
+      // 설치형 PWA는 Safari/Chrome 브라우저와 저장공간이 분리될 수 있으므로
+      // 신규 PWA는 가족 브라우저에서 생성한 1회용 연결 코드로 연결한다.
+      if (isStandaloneApp()) { showPairRequired(); return; }
       // 등록되지 않은 새 기기만 일반 온보딩으로 보낸다.
       var urlRole=params.get('role');
       if (urlRole==='child'||urlRole==='parent') localStorage.setItem(ROLE_KEY,urlRole);
@@ -1490,6 +1598,7 @@ function initDeviceRole() {
     return;
   }
   if (role && localStorage.getItem('device_approved_'+did)==='1') { setDeviceRole(role); return; }
+  if (isStandaloneApp()) { showPairRequired(); return; }
   var urlRole=params.get('role');
   if (urlRole==='child'||urlRole==='parent') localStorage.setItem(ROLE_KEY,urlRole);
   role=localStorage.getItem(ROLE_KEY);
@@ -1747,6 +1856,8 @@ function showApp() {
 }
 function completeShowApp() {
   document.getElementById('childPickOverlay').style.display='none';
+  var pairBtn=document.getElementById('appPairBtn');
+  if(pairBtn) pairBtn.style.display=isMobileBrowser()?'inline-block':'none';
   setupFamilyListeners();
   applyMode(localStorage.getItem(ROLE_KEY)==='parent' ? 'parent' : 'child');
   render();

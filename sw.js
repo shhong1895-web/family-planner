@@ -1,4 +1,4 @@
-const CACHE = 'family-planner-build017';
+const CACHE = 'family-planner-build018';
 const APP_SHELL = ['./index.html', './manifest.json'];
 
 self.addEventListener('install', event => {
