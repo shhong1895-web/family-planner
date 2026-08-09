@@ -1276,18 +1276,31 @@ function getMyFamilyCode() {
   var mine=devicesState.find(function(d){ return d.uid===uid; });
   return mine && mine.familyCode ? String(mine.familyCode).toUpperCase() : '';
 }
-function ensureAdminFamilyCode() {
+function ensureFamilyCodeForParent() {
   var uid=getAuthUid();
-  if (!uid || !amIAdmin()) return Promise.resolve(getMyFamilyCode());
-  var current=getMyFamilyCode();
-  if (current) return Promise.resolve(current);
-  var code=generateFamilyCode();
+  if (!uid || localStorage.getItem(ROLE_KEY)!=='parent') return Promise.resolve('');
   var mine=devicesState.find(function(d){ return d.uid===uid; });
-  if (!mine) return Promise.resolve('');
-  return fsSet('devices',uid,Object.assign({},mine,{familyCode:code})).then(function(){
-    showToast('🔑 가족 코드가 생성됐어요: '+code);
+  if (!mine || mine.status!=='approved') return Promise.resolve('');
+  var current=mine.familyCode ? String(mine.familyCode).toUpperCase() : '';
+  if (current) return Promise.resolve(current);
+
+  // 기존 승인 기기 중 이미 가족 코드가 있으면 그것을 그대로 사용합니다.
+  var existing=devicesState.find(function(d){
+    return d.status==='approved' && d.familyCode;
+  });
+  var code=existing ? String(existing.familyCode).toUpperCase() : generateFamilyCode();
+
+  // 자기 기기의 familyCode만 보완합니다. 기존 status/role/isAdmin/uid는 변경하지 않습니다.
+  return db.collection('devices').doc(uid).update({familyCode:code}).then(function(){
+    var idx=devicesState.findIndex(function(d){ return d.uid===uid; });
+    if (idx>=0) devicesState[idx]=Object.assign({},devicesState[idx],{familyCode:code});
     return code;
   }).catch(function(){ return ''; });
+}
+
+// 관리자 전용 코드는 기존 함수명과의 호환을 위해 유지합니다.
+function ensureAdminFamilyCode() {
+  return ensureFamilyCodeForParent();
 }
 
 
@@ -2267,22 +2280,26 @@ function renderDevices() {
     +(isAdmin?'':'<div style="font-size:12px;color:var(--sub);margin-top:8px">※ 관리자만 다른 기기 승인/거절 및 가족 설정을 변경할 수 있습니다.</div>')
     +'</div>';
 
-  // 가족 코드: 기존 기기 승인 구조를 유지하면서 가족을 식별하는 6자리 코드를 추가합니다.
-  // 아직 데이터 전체를 families/{code}/...로 이전하지 않고, 이번 단계에서는 연결/승인 정보로만 사용합니다.
-  if (isAdmin) {
+  // 가족 코드는 관리자 여부와 분리해서 표시합니다.
+  // 현재 데이터에는 '승인된 부모이지만 isAdmin=false'인 기존 기기가 있을 수 있으므로,
+  // 코드 확인 자체가 관리자 판정에 막히지 않도록 합니다.
+  if (localStorage.getItem(ROLE_KEY)==='parent' && myDevice && myDevice.status==='approved') {
     var fc=getMyFamilyCode();
     html+='<div class="sec-title">🔑 가족 코드</div>';
     html+='<div class="form-box">'
       +'<div style="font-size:12px;color:var(--sub);line-height:1.6;margin-bottom:10px">'
-      +'가족 구성원이 같은 코드를 입력하면 이 가족에 연결 요청을 보낼 수 있어요.<br>현재 단계에서는 기존 승인 절차와 함께 사용합니다.'
+      +'이 코드는 우리 가족을 연결할 때 사용하는 6자리 코드입니다.<br>기존 가족 코드가 있으면 그대로 사용하고, 없으면 현재 부모 기기에 새로 생성합니다.'
       +'</div>'
       +'<div style="display:flex;align-items:center;justify-content:center;gap:10px;background:#F8FAFC;border-radius:14px;padding:16px;margin-bottom:10px">'
       +'<span id="familyCodeDisplay" style="font-size:25px;font-weight:900;letter-spacing:5px;color:var(--parent)">'+esc(fc||'생성 중')+'</span>'
       +'</div>'
       +'<button class="f-btn p" onclick="copyFamilyCode()" style="margin-top:0">📋 가족 코드 복사</button>'
-      +'<div style="font-size:11px;color:#94A3B8;margin-top:8px;text-align:center">※ 가족 코드는 다른 가족에게 공유하지 마세요.</div>'
+      +'<div style="font-size:11px;color:#94A3B8;margin-top:8px;text-align:center">※ 가족 코드는 가족 구성원에게만 공유하세요.</div>'
       +'</div>';
-    if (!fc) ensureAdminFamilyCode().then(function(){ render(); });
+    if (!fc) ensureFamilyCodeForParent().then(function(){ render(); });
+    if (!isAdmin) {
+      html+='<div style="font-size:12px;color:#B45309;background:#FFFBEB;border-radius:12px;padding:10px 12px;margin-top:8px">⚠️ 현재 기기는 부모 기기로 승인되어 있지만 관리자 권한이 없습니다. 가족 코드는 사용할 수 있지만 기기 승인/설정 변경은 관리자 권한 복구 후 가능합니다.</div>';
+    }
   }
 
   // URL Share
