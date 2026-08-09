@@ -14,7 +14,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- Build 003: family-aware data + legacy migration + secure family queries -->
+<!-- Build 004: family-aware data + legacy migration + reliable admin device menu -->
 <title>우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
@@ -1201,6 +1201,11 @@ function setupListeners() {
   db.collection('devices').where('familyId','==',getFamilyId()).onSnapshot(function(snap) {
     devicesState = snap.docs.map(function(d){ return d.data(); });
     updatePendingBadge(devicesState.filter(function(d){ return d.status==='pending'; }).length);
+    // 기기 목록이 비동기로 도착한 뒤에도 관리자 메뉴가 즉시 나타나도록
+    // 현재 역할을 다시 적용합니다. Build 003에서는 이 재적용이 없어
+    // 관리자여도 '기기' 메뉴가 숨겨진 채 남을 수 있었습니다.
+    var role = localStorage.getItem(ROLE_KEY)==='parent' ? 'parent' : 'child';
+    applyMode(role);
     render();
   }, function(err){
     console.error('devices listener:',err);
@@ -1676,7 +1681,7 @@ function applyMode(m) {
   document.querySelectorAll('.nav-item').forEach(function(el){ el.classList.toggle('p-active', m==='parent' && el.classList.contains('active')); });
   document.getElementById('fab').className='fab'+(m==='parent'?' p':'');
   var nd=document.getElementById('nav-devices');
-  if (nd) nd.style.display=(m==='parent' && amIAdmin())?'':'none';
+  if (nd) nd.style.display=(m==='parent' && getFamilyId() && amIAdmin())?'':'none';
   document.body.className=m===localStorage.getItem(ROLE_KEY)?m+'-device':'';
 }
 
