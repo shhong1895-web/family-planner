@@ -14,7 +14,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- Build 004: family-aware data + legacy migration + reliable admin device menu -->
+<!-- Build 003: family-aware data + legacy migration + secure family queries -->
 <title>우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
@@ -1018,6 +1018,7 @@ document.addEventListener('visibilitychange', function(){
   }).then(function(snap){
     if(!snap) return;
     devicesState=snap.docs.map(function(d){return d.data();});
+    applyMode(state.mode);
     updatePendingBadge(devicesState.filter(function(d){return d.status==='pending';}).length);
     render();
   }).catch(function(){});
@@ -1200,12 +1201,8 @@ function setupListeners() {
   if(!getFamilyId()) return;
   db.collection('devices').where('familyId','==',getFamilyId()).onSnapshot(function(snap) {
     devicesState = snap.docs.map(function(d){ return d.data(); });
+    applyMode(state.mode);
     updatePendingBadge(devicesState.filter(function(d){ return d.status==='pending'; }).length);
-    // 기기 목록이 비동기로 도착한 뒤에도 관리자 메뉴가 즉시 나타나도록
-    // 현재 역할을 다시 적용합니다. Build 003에서는 이 재적용이 없어
-    // 관리자여도 '기기' 메뉴가 숨겨진 채 남을 수 있었습니다.
-    var role = localStorage.getItem(ROLE_KEY)==='parent' ? 'parent' : 'child';
-    applyMode(role);
     render();
   }, function(err){
     console.error('devices listener:',err);
@@ -1454,7 +1451,10 @@ function setDeviceRole(role){
     return mineRef.get().then(function(snap){
       var mine=snap.exists?snap.data():null;
       if(mine&&mine.status==='approved'){
-        localStorage.setItem(APPROVED_KEY,'1'); if(mine.isAdmin) setupListeners(); showApp(); return;
+        localStorage.setItem(APPROVED_KEY,'1');
+        localStorage.setItem('fp_is_admin', mine.isAdmin===true ? '1' : '0');
+        if(mine.isAdmin) setupListeners();
+        showApp(); return;
       }
       if(mine&&mine.status==='pending'){showApprovalWait(uid,did);return;}
       if(mine&&mine.status==='rejected'){showToast('❌ 관리자에게 거절된 기기예요');showApprovalWait(uid,did);return;}
@@ -1489,6 +1489,7 @@ function showApprovalWait(uid, did) {
     if (d.status==='approved') {
       localStorage.setItem('device_approved_'+did,'1');
       if (approvalUnsub) { approvalUnsub(); approvalUnsub=null; }
+      localStorage.setItem('fp_is_admin', d.isAdmin===true ? '1' : '0');
       if(d.isAdmin) setupListeners();
       showApp();
       showToast('✅ 승인됐어요! 환영해요 😊');
@@ -1681,7 +1682,7 @@ function applyMode(m) {
   document.querySelectorAll('.nav-item').forEach(function(el){ el.classList.toggle('p-active', m==='parent' && el.classList.contains('active')); });
   document.getElementById('fab').className='fab'+(m==='parent'?' p':'');
   var nd=document.getElementById('nav-devices');
-  if (nd) nd.style.display=(m==='parent' && getFamilyId() && amIAdmin())?'':'none';
+  if (nd) nd.style.display=(m==='parent' && amIAdmin())?'':'none';
   document.body.className=m===localStorage.getItem(ROLE_KEY)?m+'-device':'';
 }
 
@@ -2827,7 +2828,7 @@ function sendReply(parentId, ds) {
 function amIAdmin() {
   var myId=getAuthUid();
   var mine=devicesState.find(function(d){ return d.uid===myId; });
-  return !!(mine && mine.isAdmin);
+  return !!(mine && mine.isAdmin) || localStorage.getItem('fp_is_admin')==='1';
 }
 function relinkDeviceChild(uid) {
   if (!amIAdmin()) { showToast('🔒 관리자만 변경할 수 있어요'); return; }
