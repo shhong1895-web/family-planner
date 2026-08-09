@@ -957,6 +957,12 @@ function fsSet(col, id, data) { return db.collection(col).doc(String(id)).set(da
 function fsUpdate(col, id, data) { return db.collection(col).doc(String(id)).update(data); }
 function fsDel(col, id) { return db.collection(col).doc(String(id)).delete(); }
 
+// Firebase Authentication UID helper
+function getAuthUid() {
+  var u = firebase.auth().currentUser;
+  return u ? u.uid : null;
+}
+
 // ── STATE ──
 var DEFAULT_WORKBOOKS = ['기적의 계산법','디딤돌','쎈수학','수학의 정석','EBS 만점왕'];
 var TODAY = new Date(); TODAY.setHours(0,0,0,0);
