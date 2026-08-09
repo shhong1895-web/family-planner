@@ -1297,6 +1297,37 @@ function loadInviteAndShow() {
     localStorage.setItem(INVITE_KEY,token); showInviteOnboard(inv);
   }).catch(function(){ pendingInvite=null; localStorage.removeItem(INVITE_KEY); clearInviteUrl(); showOnboard(); showToast('⚠️ 유효하지 않거나 만료된 초대 링크입니다.'); });
 }
+function findLegacyDevice(uid) {
+  // 이전 버전에서는 devices 문서 ID가 기기 코드(did)였고,
+  // 문서 내부의 uid 필드가 Firebase 익명 UID였습니다.
+  // 새 버전에서는 문서 ID를 uid로 통일합니다.
+  return db.collection('devices').where('uid','==',uid).limit(1).get().then(function(snap){
+    if (snap.empty) return null;
+    var doc=snap.docs[0];
+    if (doc.id===uid) return {id:doc.id,data:doc.data()};
+    return {id:doc.id,data:doc.data()};
+  });
+}
+
+function migrateLegacyDevice(uid, did) {
+  return findLegacyDevice(uid).then(function(found){
+    if (!found || found.id===uid) return found;
+    var legacy=found.data || {};
+    if (legacy.uid !== uid || legacy.status !== 'approved') return found;
+    var targetRef=db.collection('devices').doc(uid);
+    var sourceRef=db.collection('devices').doc(found.id);
+    var copy={};
+    Object.keys(legacy).forEach(function(k){ copy[k]=legacy[k]; });
+    copy.uid=uid;
+    copy.code=legacy.code || did;
+    copy.migratedFrom=found.id;
+    copy.migratedAt=Date.now();
+    return targetRef.set(copy).then(function(){
+      return {id:uid,data:copy};
+    });
+  }).catch(function(){ return null; });
+}
+
 function initDeviceRole() {
   var params=new URLSearchParams(location.search);
   if (params.has('reset')) {
@@ -1304,30 +1335,40 @@ function initDeviceRole() {
     Object.keys(localStorage).forEach(function(k){ if(k.indexOf('device_approved_')===0) localStorage.removeItem(k); });
   }
   var uid=getAuthUid(), did=getDeviceId();
+  if (!uid) { showOnboard(); return; }
+
+  // 1) 새 구조(doc ID = Firebase UID)를 먼저 확인합니다.
   db.collection('devices').doc(uid).get().then(function(snap){
     if (snap.exists && snap.data().status==='approved') {
-      var d=snap.data(); localStorage.setItem(ROLE_KEY,d.role||'child');
+      return {id:uid,data:snap.data()};
+    }
+    // 2) 이전 Build의 구조(doc ID = 6자리 기기코드)를 UID 기준으로 찾아 마이그레이션합니다.
+    return migrateLegacyDevice(uid,did);
+  }).then(function(found){
+    if (found && found.data && found.data.status==='approved') {
+      var d=found.data;
+      localStorage.setItem(ROLE_KEY,d.role||'child');
+      if (d.familyCode) localStorage.setItem('fp_familyCode',d.familyCode);
       localStorage.setItem('device_approved_'+did,'1');
-      // standalone 앱은 별도 연결 완료 여부를 확인한다.
-      if (isStandaloneApp() && localStorage.getItem(PAIR_KEY)!=='1') { showAppPairScreen(); return; }
-      showApp(); return;
+      // 설치형 앱은 브라우저 등록과 앱 연결을 별도로 취급합니다.
+      if (isStandaloneApp() && localStorage.getItem(PAIR_KEY)!=='1' && !d.appPaired) {
+        showAppPairScreen();
+        return;
+      }
+      showApp();
+      return;
     }
-    // 설치형 PWA는 브라우저와 Firebase 익명 UID/저장공간이 달라질 수 있습니다.
-    // 초대 URL이 없는 최초 PWA 실행이라면 일반 온보딩이 아니라
-    // 브라우저에서 생성한 8자리 앱 연결 코드를 받도록 합니다.
-    var hasInvite = !!currentInviteToken();
-    if (isStandaloneApp() && !hasInvite) {
-      showAppPairScreen();
-    } else {
-      loadInviteAndShow();
-    }
-  }).catch(function(){
-    var hasInvite = !!currentInviteToken();
-    if (isStandaloneApp() && !hasInvite) {
-      showAppPairScreen();
-    } else {
-      loadInviteAndShow();
-    }
+
+    // 3) 신규 브라우저는 초대 링크가 있어야 등록됩니다.
+    // 설치형 PWA는 브라우저와 별도 저장공간일 수 있으므로 연결 코드로 연결합니다.
+    var hasInvite=!!currentInviteToken();
+    if (isStandaloneApp() && !hasInvite) { showAppPairScreen(); return; }
+    loadInviteAndShow();
+  }).catch(function(err){
+    console.error('device init:',err);
+    var hasInvite=!!currentInviteToken();
+    if (isStandaloneApp() && !hasInvite) { showAppPairScreen(); return; }
+    loadInviteAndShow();
   });
 }
 function continueWithInvite() {
