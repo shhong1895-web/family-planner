@@ -1,17 +1,15 @@
-const CACHE = 'family-planner-build018';
-const APP_SHELL = ['./index.html', './manifest.json'];
+const CACHE = 'family-planner-build021-v1';
+const APP_SHELL = './index.html';
 
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE).then(cache => cache.addAll(APP_SHELL)).then(() => self.skipWaiting())
-  );
+  self.skipWaiting();
+  event.waitUntil(caches.open(CACHE).then(cache => cache.add(APP_SHELL)).catch(() => {}));
 });
 
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys => Promise.all(
-      keys.filter(k => k !== CACHE).map(k => caches.delete(k))
-    )).then(() => self.clients.claim())
+    caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
   );
 });
 
@@ -19,32 +17,17 @@ self.addEventListener('fetch', event => {
   const req = event.request;
   if (req.method !== 'GET') return;
 
-  // HTML/navigation은 항상 최신 버전을 우선 사용합니다.
-  if (req.mode === 'navigate') {
+  // HTML은 항상 네트워크 우선으로 받아 새 Build가 바로 반영되도록 합니다.
+  if (req.mode === 'navigate' || new URL(req.url).pathname.endsWith('/index.html')) {
     event.respondWith(
-      fetch(req, { cache: 'no-store' })
-        .then(res => {
-          const copy = res.clone();
-          caches.open(CACHE).then(cache => cache.put('./index.html', copy)).catch(() => {});
-          return res;
-        })
-        .catch(() => caches.match('./index.html'))
+      fetch(req).then(res => {
+        const copy = res.clone();
+        caches.open(CACHE).then(cache => cache.put(APP_SHELL, copy)).catch(() => {});
+        return res;
+      }).catch(() => caches.match(APP_SHELL))
     );
     return;
   }
 
-  // 앱 셸은 네트워크 우선, 실패하면 캐시를 사용합니다.
-  if (new URL(req.url).origin === self.location.origin) {
-    event.respondWith(
-      fetch(req, { cache: 'no-store' })
-        .then(res => {
-          if (res.ok) {
-            const copy = res.clone();
-            caches.open(CACHE).then(cache => cache.put(req, copy)).catch(() => {});
-          }
-          return res;
-        })
-        .catch(() => caches.match(req))
-    );
-  }
+  event.respondWith(fetch(req).catch(() => caches.match(req)));
 });

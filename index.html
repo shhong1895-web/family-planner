@@ -1312,8 +1312,23 @@ function initDeviceRole() {
       if (isStandaloneApp() && localStorage.getItem(PAIR_KEY)!=='1') { showAppPairScreen(); return; }
       showApp(); return;
     }
-    loadInviteAndShow();
-  }).catch(function(){ loadInviteAndShow(); });
+    // 설치형 PWA는 브라우저와 Firebase 익명 UID/저장공간이 달라질 수 있습니다.
+    // 초대 URL이 없는 최초 PWA 실행이라면 일반 온보딩이 아니라
+    // 브라우저에서 생성한 8자리 앱 연결 코드를 받도록 합니다.
+    var hasInvite = !!currentInviteToken();
+    if (isStandaloneApp() && !hasInvite) {
+      showAppPairScreen();
+    } else {
+      loadInviteAndShow();
+    }
+  }).catch(function(){
+    var hasInvite = !!currentInviteToken();
+    if (isStandaloneApp() && !hasInvite) {
+      showAppPairScreen();
+    } else {
+      loadInviteAndShow();
+    }
+  });
 }
 function continueWithInvite() {
   var token=localStorage.getItem(INVITE_KEY); if (!token || !pendingInvite) { loadInviteAndShow(); return; }
