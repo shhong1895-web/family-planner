@@ -966,9 +966,27 @@ var firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 var db = firebase.firestore();
 
-function fsSet(col, id, data) { return db.collection(col).doc(String(id)).set(data); }
-function fsUpdate(col, id, data) { return db.collection(col).doc(String(id)).update(data); }
-function fsDel(col, id) { return db.collection(col).doc(String(id)).delete(); }
+// ── FAMILY DATA ACCESS (BUILD 012) ──
+// 가족 코드가 있는 승인 기기는 가족별 공간을 사용합니다.
+// 가족 코드가 아직 없는 상태에서는 기존 최상위 컬렉션을 fallback으로 사용합니다.
+function familyDataCollection(col) {
+  var code=getMyFamilyCode();
+  if (code && code.length===6) return db.collection('families').doc(code).collection(col);
+  return db.collection(col);
+}
+function fsSet(col, id, data) {
+  var payload=Object.assign({},data);
+  var code=getMyFamilyCode();
+  if (code && code.length===6) payload.familyCode=code;
+  return familyDataCollection(col).doc(String(id)).set(payload);
+}
+function fsUpdate(col, id, data) {
+  var payload=Object.assign({},data);
+  var code=getMyFamilyCode();
+  if (code && code.length===6) payload.familyCode=code;
+  return familyDataCollection(col).doc(String(id)).update(payload);
+}
+function fsDel(col, id) { return familyDataCollection(col).doc(String(id)).delete(); }
 
 // ── STATE ──
 var DEFAULT_WORKBOOKS = ['기적의 계산법','디딤돌','쎈수학','수학의 정석','EBS 만점왕'];
@@ -1186,21 +1204,24 @@ function setupFamilyListeners() {
   if (_familyListenersStarted) return;
   _familyListenersStarted=true;
   var bar = document.getElementById('syncBar');
-  db.collection('tasks').onSnapshot(function(snap) {
+  var familyCode=getMyFamilyCode();
+  var dataPath = familyCode ? 'families/'+familyCode : '기존 공간';
+  if (bar) bar.innerHTML='<div class="sync-dot"></div> '+(familyCode ? '가족별 데이터 동기화 중' : '실시간 동기화 중');
+  familyDataCollection('tasks').onSnapshot(function(snap) {
     state.tasks = snap.docs.map(function(d){ return d.data(); });
-    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중';
+    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> '+(familyCode ? '가족별 데이터 동기화 중' : '실시간 동기화 중');
     render();
   }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드'; });
-  db.collection('sharedEvents').onSnapshot(function(snap) {
+  familyDataCollection('sharedEvents').onSnapshot(function(snap) {
     state.sharedEvents = snap.docs.map(function(d){ return d.data(); }); render();
   });
-  db.collection('messages').onSnapshot(function(snap) {
+  familyDataCollection('messages').onSnapshot(function(snap) {
     state.messages = snap.docs.map(function(d){ return d.data(); }); render();
   });
-  db.collection('schoolSchedule').onSnapshot(function(snap) {
+  familyDataCollection('schoolSchedule').onSnapshot(function(snap) {
     state.schoolSchedule = snap.docs.map(function(d){ return d.data(); }); render();
   });
-  db.collection('children').onSnapshot(function(snap) {
+  familyDataCollection('children').onSnapshot(function(snap) {
     state.children = snap.docs.map(function(d){ return d.data(); }).sort(function(a,b){ return (a.createdAt||0)-(b.createdAt||0); });
     var cpo=document.getElementById('childPickOverlay');
     if (cpo && cpo.style.display!=='none') renderChildPickOverlay();
@@ -1228,6 +1249,9 @@ function setupFamilyListeners() {
 // ── SEED DATA ──
 function seedIfEmpty() {
   setTimeout(function() {
+    // Build 012부터 가족별 데이터가 실제 저장소입니다.
+    // 가족 코드가 있는 기기에서는 기존 글로벌 seed를 다시 생성하지 않습니다.
+    if (getMyFamilyCode()) return;
     if (state.tasks.length!==0) return;
     db.collection('meta').doc('seed').get().then(function(snap){
       if (snap.exists) return; // 이미 한 번 시딩된 적 있음 → 지금 비어있는 건 실제로 다 지운 것이므로 다시 채우지 않음
@@ -2352,7 +2376,8 @@ function migrateCurrentDataToFamily() {
       familyCode:code,
       updatedAt:Date.now(),
       preparedAt:Date.now(),
-      schemaVersion:1
+      schemaVersion:1,
+      dataMode:'family'
     });
 
     approvedParents.forEach(function(d){
