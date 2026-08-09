@@ -2310,6 +2310,77 @@ function recoverAdminRole() {
   });
 }
 
+
+// ── BUILD 011: 가족 데이터 준비 ──
+// 기존 최상위 컬렉션의 데이터를 가족별 공간으로 복사합니다.
+// 원본 데이터는 삭제하지 않으므로 기존 앱 기능과 데이터를 안전하게 보존합니다.
+function familyDataMigrationTarget(code) {
+  return db.collection('families').doc(String(code).toUpperCase());
+}
+
+function migrateCurrentDataToFamily() {
+  if (!amIAdmin()) {
+    showToast('🔒 가족 관리자만 실행할 수 있어요');
+    return;
+  }
+  var code=getMyFamilyCode();
+  if (!code || code.length!==6) {
+    showToast('⚠️ 가족 코드를 먼저 확인해주세요');
+    return;
+  }
+  if (!confirm('현재 가족의 데이터를 가족별 공간으로 준비할까요?\n\n기존 데이터는 삭제하지 않습니다.\n처음 실행하거나 다시 실행해도 기존 데이터를 덮어쓰는 방식으로 안전하게 준비합니다.')) return;
+
+  var collections=['tasks','sharedEvents','messages','schoolSchedule','children'];
+  var familyRef=familyDataMigrationTarget(code);
+  var statusEl=document.getElementById('familyMigrationStatus');
+  if(statusEl) statusEl.innerHTML='⏳ 가족 데이터를 준비하고 있어요...';
+
+  Promise.all(collections.map(function(col){
+    return db.collection(col).get().then(function(snap){
+      return {col:col,docs:snap.docs};
+    });
+  })).then(function(results){
+    var approvedParents=devicesState.filter(function(d){
+      return d.status==='approved' && d.role==='parent' && String(d.familyCode||'').toUpperCase()===code;
+    });
+    var batches=[];
+    var batch=db.batch(), count=0;
+    function add(ref,data){
+      batch.set(ref,data,{merge:true}); count++; if(count>=450){batches.push(batch);batch=db.batch();count=0;} }
+
+    add(familyRef.collection('info').doc('main'),{
+      familyCode:code,
+      updatedAt:Date.now(),
+      preparedAt:Date.now(),
+      schemaVersion:1
+    });
+
+    approvedParents.forEach(function(d){
+      add(familyRef.collection('parents').doc(String(d.uid)),Object.assign({},d,{familyCode:code}));
+    });
+
+    results.forEach(function(r){
+      var target=(r.col==='sharedEvents')?'schedules':r.col;
+      r.docs.forEach(function(docSnap){
+        var data=docSnap.data()||{};
+        add(familyRef.collection(target).doc(String(docSnap.id)),Object.assign({},data,{familyCode:code}));
+      });
+    });
+
+    return Promise.all(batches.map(function(b){return b.commit();})).then(function(){
+      if(count>0) return batch.commit();
+    }).then(function(){
+      var total=results.reduce(function(n,r){return n+r.docs.length;},0);
+      if(statusEl) statusEl.innerHTML='✅ 가족별 데이터 준비 완료 · '+total+'개 데이터 복사됨<br><span style="font-size:11px;color:var(--sub)">기존 데이터는 그대로 보존되어 있습니다.</span>';
+      showToast('✅ 가족 데이터 준비가 완료됐어요');
+    });
+  }).catch(function(err){
+    console.error('family migration error',err);
+    if(statusEl) statusEl.innerHTML='⚠️ 준비에 실패했어요. Firestore 보안 규칙을 확인해주세요.';
+    showToast('⚠️ 가족 데이터 준비 실패');
+  });
+}
+
 function renderDevices() {
   var baseUrl=location.origin+location.pathname;
   var childUrl=baseUrl+'?role=child';
@@ -2339,6 +2410,15 @@ function renderDevices() {
       +'</div>';
     if (!fc) ensureFamilyCodeForParent().then(function(){ render(); });
     if (!isAdmin) html+='<div style="font-size:12px;color:#B45309;background:#FFFBEB;border-radius:12px;padding:10px 12px;margin-top:8px">⚠️ 현재 기기는 부모 기기로 승인되어 있지만 관리자 권한이 없습니다. 가족 코드는 사용할 수 있지만 기기 승인/설정 변경은 관리자 권한이 필요합니다.</div>';
+  }
+  // 가족별 데이터 준비: 관리자만 실행 가능하며 원본은 삭제하지 않습니다.
+  if (isAdmin && fc) {
+    html+='<div class="sec-title">🗂️ 가족 데이터 준비</div>';
+    html+='<div class="form-box">'
+      +'<div style="font-size:12px;color:var(--sub);line-height:1.7;margin-bottom:10px">현재 사용 중인 데이터를 <b>가족 코드 '+esc(fc)+'</b> 전용 공간으로 복사해 다음 단계의 가족별 데이터 분리를 준비합니다.<br>기존 데이터는 삭제하지 않습니다.</div>'
+      +'<button class="f-btn p" onclick="migrateCurrentDataToFamily()" style="margin-top:0">🗂️ 가족 데이터 준비 시작</button>'
+      +'<div id="familyMigrationStatus" style="font-size:12px;color:var(--sub);line-height:1.6;margin-top:10px;text-align:center"></div>'
+      +'</div>';
   }
   if (!isAdmin && localStorage.getItem(ROLE_KEY)==='parent' && myDevice && myDevice.status==='approved' && adminCount===0) {
     html+='<div class="sec-title">👑 관리자 권한 복구</div>';
