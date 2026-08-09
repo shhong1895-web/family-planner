@@ -14,7 +14,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20260705 -->
+<!-- Build 017 -->
 <title>우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
@@ -988,9 +988,22 @@ var firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 var db = firebase.firestore();
 
-function fsSet(col, id, data) { return db.collection(col).doc(String(id)).set(data); }
-function fsUpdate(col, id, data) { return db.collection(col).doc(String(id)).update(data); }
-function fsDel(col, id) { return db.collection(col).doc(String(id)).delete(); }
+var FAMILY_DATA_COLLECTIONS = ['children','tasks','sharedEvents','messages','schoolSchedule'];
+var BUILD_VERSION = 'Build 017';
+function getFamilyCode() {
+  var uid = getAuthUid && getAuthUid();
+  var mine = uid ? devicesState.find(function(d){ return d.uid===uid; }) : null;
+  return (mine && mine.familyCode) || localStorage.getItem('fp_familyCode') || null;
+}
+function familyCollection(col) {
+  if (FAMILY_DATA_COLLECTIONS.indexOf(col) < 0) return db.collection(col);
+  var code = getFamilyCode();
+  if (!code) throw new Error('FAMILY_CODE_REQUIRED');
+  return db.collection('families').doc(String(code)).collection(col);
+}
+function fsSet(col, id, data) { return familyCollection(col).doc(String(id)).set(data); }
+function fsUpdate(col, id, data) { return familyCollection(col).doc(String(id)).update(data); }
+function fsDel(col, id) { return familyCollection(col).doc(String(id)).delete(); }
 
 // ── STATE ──
 var DEFAULT_WORKBOOKS = ['기적의 계산법','디딤돌','쎈수학','수학의 정석','EBS 만점왕'];
@@ -1217,45 +1230,52 @@ function setupListeners() {
 var _familyListenersStarted=false;
 function setupFamilyListeners() {
   if (_familyListenersStarted) return;
-  _familyListenersStarted=true;
-  var bar = document.getElementById('syncBar');
-  db.collection('tasks').onSnapshot(function(snap) {
-    state.tasks = snap.docs.map(function(d){ return d.data(); });
-    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중';
-    render();
-  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드'; });
-  db.collection('sharedEvents').onSnapshot(function(snap) {
-    state.sharedEvents = snap.docs.map(function(d){ return d.data(); }); render();
-  });
-  db.collection('messages').onSnapshot(function(snap) {
-    state.messages = snap.docs.map(function(d){ return d.data(); }); render();
-  });
-  db.collection('schoolSchedule').onSnapshot(function(snap) {
-    state.schoolSchedule = snap.docs.map(function(d){ return d.data(); }); render();
-  });
-  db.collection('children').onSnapshot(function(snap) {
-    state.children = snap.docs.map(function(d){ return d.data(); }).sort(function(a,b){ return (a.createdAt||0)-(b.createdAt||0); });
-    var cpo=document.getElementById('childPickOverlay');
-    if (cpo && cpo.style.display!=='none') renderChildPickOverlay();
-    render();
-  });
-  var _wbSeeded = false;
-  db.collection('meta').doc('workbooks').onSnapshot(function(snap) {
-    if (snap.exists) {
-      state.workbooks = snap.data().list || [];
-    } else {
-      state.workbooks = DEFAULT_WORKBOOKS.slice();
-      if (!_wbSeeded) { _wbSeeded = true; db.collection('meta').doc('workbooks').set({list: DEFAULT_WORKBOOKS.slice()}).catch(function(){}); }
+  var uid=getAuthUid();
+  if (!uid) return;
+  db.collection('devices').doc(uid).get().then(function(devSnap){
+    var dev=devSnap.exists?devSnap.data():{};
+    var code=dev.familyCode || localStorage.getItem('fp_familyCode') || null;
+    if (!code) {
+      _familyListenersStarted=false;
+      var noFamilyBar=document.getElementById('syncBar');
+      if (noFamilyBar) { noFamilyBar.className='sync-bar error'; noFamilyBar.innerHTML='<div class="sync-dot"></div> 가족 연결 정보가 없습니다'; }
+      return;
     }
-    renderWorkbookSelect();
-    var panel = document.getElementById('wbManagePanel');
-    if (panel && panel.style.display !== 'none') renderWorkbookChips();
+    localStorage.setItem('fp_familyCode',code);
+    _familyListenersStarted=true;
+    var bar = document.getElementById('syncBar');
+    function col(name){ return db.collection('families').doc(String(code)).collection(name); }
+    col('tasks').onSnapshot(function(snap) {
+      state.tasks = snap.docs.map(function(d){ return d.data(); });
+      bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중';
+      render();
+    }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드'; });
+    col('sharedEvents').onSnapshot(function(snap) { state.sharedEvents = snap.docs.map(function(d){ return d.data(); }); render(); });
+    col('messages').onSnapshot(function(snap) { state.messages = snap.docs.map(function(d){ return d.data(); }); render(); });
+    col('schoolSchedule').onSnapshot(function(snap) { state.schoolSchedule = snap.docs.map(function(d){ return d.data(); }); render(); });
+    col('children').onSnapshot(function(snap) {
+      state.children = snap.docs.map(function(d){ return d.data(); }).sort(function(a,b){ return (a.createdAt||0)-(b.createdAt||0); });
+      var cpo=document.getElementById('childPickOverlay');
+      if (cpo && cpo.style.display!=='none') renderChildPickOverlay();
+      render();
+    });
+    var _wbSeeded = false;
+    db.collection('meta').doc('workbooks').onSnapshot(function(snap) {
+      if (snap.exists) { state.workbooks = snap.data().list || []; }
+      else {
+        state.workbooks = DEFAULT_WORKBOOKS.slice();
+        if (!_wbSeeded) { _wbSeeded = true; db.collection('meta').doc('workbooks').set({list: DEFAULT_WORKBOOKS.slice()}).catch(function(){}); }
+      }
+      renderWorkbookSelect();
+      var panel = document.getElementById('wbManagePanel');
+      if (panel && panel.style.display !== 'none') renderWorkbookChips();
+    });
+    db.collection('meta').doc('pinHash').onSnapshot(function(snap) { state.pinConfigured = snap.exists; render(); });
+    seedIfEmpty();
+  }).catch(function(err){
+    console.error('device lookup failed:',err);
+    _familyListenersStarted=false;
   });
-  db.collection('meta').doc('pinHash').onSnapshot(function(snap) {
-    state.pinConfigured = snap.exists;
-    render();
-  });
-  seedIfEmpty();
 }
 
 // ── SEED DATA ──
@@ -1352,8 +1372,28 @@ function showInviteLanding(token){
     document.getElementById('inviteExpireText').textContent='관리자에게 새 초대 링크를 요청해 주세요.';
   });
 }
+function isStandaloneApp(){
+  return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+}
+function isIOSSafariBrowser(){
+  var ua=navigator.userAgent||'';
+  return /iPhone|iPad|iPod/i.test(ua) && /Safari/i.test(ua) && !/CriOS|FxiOS|EdgiOS/i.test(ua) && !isStandaloneApp();
+}
 function registerWithInvite(){
   if(!_inviteToken||!_inviteData){return;}
+  // iOS Safari에서 먼저 등록하면 Safari와 홈 화면 PWA가 별도의 저장공간을 사용할 수 있어
+  // 홈 화면 앱이 새 기기로 인식될 수 있다. 따라서 iPhone/iPad는 초대 링크를 홈 화면 앱에서
+  // 한 번 실행해 등록하도록 안내한다. 이미 설치된 앱을 사용하는 경우에는 앱에서 같은 링크를
+  // 열 수 있는 환경에서 등록해야 한다.
+  if (isIOSSafariBrowser()) {
+    var roleText=_inviteData.role==='parent'?'부모':'자녀';
+    document.getElementById('inviteRoleText').textContent='📱 아이폰/아이패드 앱 등록 안내';
+    document.getElementById('inviteDeviceText').innerHTML='<b>'+esc(roleText+' · '+(_inviteData.targetLabel||'새 기기'))+'</b><br><br>이 링크를 Safari에서 바로 등록하지 말고, 이 페이지를 홈 화면에 추가한 뒤 <b>홈 화면의 우리가족 플래너</b>에서 같은 초대 링크로 등록하세요.<br><br>이미 설치된 앱이라면 관리자에게 초대 링크를 다시 받아 앱에서 열어주세요.';
+    document.getElementById('inviteRegisterBtn').textContent='Safari에서는 등록하지 않기';
+    document.getElementById('inviteRegisterBtn').disabled=true;
+    document.getElementById('inviteRegisterBtn').style.opacity='.6';
+    return;
+  }
   var uid=getAuthUid(); if(!uid){showToast('⚠️ 인증 준비 중입니다. 잠시 후 다시 눌러주세요');return;}
   var btn=document.getElementById('inviteRegisterBtn'); btn.disabled=true; btn.textContent='등록 중...';
   var did=getDeviceId();
@@ -1414,19 +1454,46 @@ function initDeviceRole() {
       if (k.indexOf('device_approved_')===0) localStorage.removeItem(k);
     });
   }
-  var urlRole=params.get('role');
-  if (urlRole==='child'||urlRole==='parent') { localStorage.setItem(ROLE_KEY,urlRole); }
+
   var role=localStorage.getItem(ROLE_KEY);
-  if (!role) { showOnboard(); return; }
-  // 이미 승인받은 적 있는 기기면 암호 입력 화면 없이 조용히 바로 들어간다 (매번 귀찮지 않도록)
   var did=getDeviceId();
-  if (localStorage.getItem('device_approved_'+did)==='1') {
-    setDeviceRole(role);
+  var uid=getAuthUid();
+
+  // 이미 등록된 기기는 역할 선택/로그인 화면을 다시 보여주지 않는다.
+  // localStorage가 남아 있는 경우뿐 아니라 Firebase의 실제 devices 문서도 확인한다.
+  // 이 검사가 Build 017의 핵심: 앱을 다시 실행해도 초대 링크를 다시 요구하지 않는다.
+  if (uid) {
+    db.collection('devices').doc(uid).get().then(function(snap){
+      if (snap.exists && snap.data().status==='approved') {
+        var d=snap.data();
+        var savedRole=d.role || role || 'child';
+        localStorage.setItem(ROLE_KEY,savedRole);
+        localStorage.setItem('device_approved_'+did,'1');
+        if (d.familyCode) localStorage.setItem('fp_familyCode',d.familyCode);
+        showApp();
+        return;
+      }
+      // 등록되지 않은 새 기기만 일반 온보딩으로 보낸다.
+      var urlRole=params.get('role');
+      if (urlRole==='child'||urlRole==='parent') localStorage.setItem(ROLE_KEY,urlRole);
+      role=localStorage.getItem(ROLE_KEY);
+      if (!role) { showOnboard(); return; }
+      showOnboard(role);
+    }).catch(function(){
+      // Firestore 확인 실패 시에만 기존 로컬 승인 표시를 사용한다.
+      if (role && localStorage.getItem('device_approved_'+did)==='1') { setDeviceRole(role); return; }
+      var urlRole=params.get('role');
+      if (urlRole==='child'||urlRole==='parent') localStorage.setItem(ROLE_KEY,urlRole);
+      role=localStorage.getItem(ROLE_KEY);
+      if (!role) showOnboard(); else showOnboard(role);
+    });
     return;
   }
-  // 아직 등록/승인 전이면, URL로 역할이 자동 정해진 경우에도 암호를 입력할 기회를 준다
-  // (자녀용/부모용 링크로 바로 들어오면 카드 선택 화면 자체가 생략되기 때문에,
-  //  여기서 암호 입력 기회를 안 주면 암호 기능을 쓸 방법이 없어진다)
+  if (role && localStorage.getItem('device_approved_'+did)==='1') { setDeviceRole(role); return; }
+  var urlRole=params.get('role');
+  if (urlRole==='child'||urlRole==='parent') localStorage.setItem(ROLE_KEY,urlRole);
+  role=localStorage.getItem(ROLE_KEY);
+  if (!role) { showOnboard(); return; }
   showOnboard(role);
 }
 
@@ -1509,7 +1576,7 @@ function migrateLegacyAdminIfNeeded(did, uid) {
     return db.collection('devices').doc(uid).get().then(function(newSnap){
       if (newSnap.exists) return; // 이미 옮겨짐
       return db.collection('devices').doc(uid).set({
-        uid:uid, code:did, role:'parent', label:'부모 기기(관리자)', status:'approved', isAdmin:true, registeredAt: legacy.registeredAt||Date.now()
+        uid:uid, code:did, role:'parent', label:'부모 기기(관리자)', status:'approved', isAdmin:true, familyCode:legacy.familyCode||makeFamilyCode(), registeredAt: legacy.registeredAt||Date.now()
       }).then(function(){
         return db.collection('meta').doc('admin').get().then(function(adminSnap){
           if (!adminSnap.exists) return db.collection('meta').doc('admin').set({ registeredAt: Date.now() });
@@ -1559,7 +1626,7 @@ function setDeviceRole(role, skipRegister) {
           return tx.get(adminRef).then(function(adminDoc){
             if (adminDoc.exists) throw new Error('admin-already-exists');
             tx.set(adminRef, { registeredAt: Date.now() });
-            tx.set(deviceRef, { uid:uid, code:did, role:'parent', label: nick || '부모 기기(관리자)', status:'approved', isAdmin:true, registeredAt: Date.now() });
+            tx.set(deviceRef, { uid:uid, code:did, role:'parent', label: nick || '부모 기기(관리자)', status:'approved', isAdmin:true, familyCode:makeFamilyCode(), registeredAt: Date.now() });
           });
         }).then(function(){
           localStorage.setItem(APPROVED_KEY,'1');
@@ -3711,7 +3778,7 @@ firebase.auth().signInAnonymously().catch(function(err){
 // 홈 화면에 추가했을 때 오프라인에서도 앱 화면이 뜨도록 서비스워커 등록
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('./sw.js').catch(function () {});
+    navigator.serviceWorker.register('./sw.js?v=017').catch(function () {});
   });
 }
 </script>
