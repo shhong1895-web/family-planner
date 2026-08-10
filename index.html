@@ -14,8 +14,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- Build 025 · legacy admin migration fix + one-time invite + PWA pairing -->
-<title>Build 025 · 우리가족 플래너</title>
+<!-- v20260705 -->
+<title>Build 026 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -685,18 +685,31 @@ body {
 </style>
 </head>
 <body>
+<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 026</div>
 
-<!-- ONBOARDING / INVITE -->
+<!-- ONBOARDING -->
 <div id="onboardOverlay">
   <div style="font-size:52px;margin-bottom:14px">🏠</div>
   <div style="font-size:24px;font-weight:800;color:#0F172A;margin-bottom:8px">우리가족 플래너</div>
-  <div id="obIntro" style="font-size:14px;color:#64748B;margin-bottom:20px;line-height:1.7">가족 관리자가 보낸 <b>1회용 초대 링크</b>로 접속해주세요.<br>부모/자녀 선택은 초대 정보로 자동 결정됩니다.</div>
-  <div id="inviteInfoBox" style="display:none;width:100%;max-width:320px;background:#F8FAFC;border-radius:14px;padding:14px;margin-bottom:14px;text-align:center"></div>
-  <input id="deviceNickname" placeholder="이 기기 이름 (예: 엄마 폰, 노트북)" style="width:100%;max-width:320px;padding:12px 14px;border-radius:12px;border:1.5px solid #E2E8F0;font-family:inherit;font-size:14px;margin-bottom:10px;text-align:center;background:#fff">
-  <button id="continueRoleBtn" onclick="continueWithInvite()" style="display:none;width:100%;max-width:320px;padding:16px;border-radius:14px;border:none;background:var(--child);color:#fff;font-family:inherit;font-size:16px;font-weight:800;cursor:pointer">이 기기로 등록하기</button>
-  <button id="setupFamilyBtn" onclick="createFirstFamilyAdmin()" style="display:none;width:100%;max-width:320px;padding:16px;border-radius:14px;border:none;background:var(--parent);color:#fff;font-family:inherit;font-size:16px;font-weight:800;cursor:pointer">👑 새 가족 만들기</button>
-  <div style="font-size:11px;color:#94A3B8;margin-top:28px;line-height:1.7">초대 링크가 없으면 가족 관리자에게 요청해주세요.</div>
+  <div id="obIntro" style="font-size:14px;color:#64748B;margin-bottom:20px;line-height:1.7">이 기기를 사용하는 사람이 누구인가요?<br>한 번만 선택하면 다음부터 자동으로 열려요.</div>
+  <input id="deviceNickname" placeholder="이 기기 이름 (예: 엄마 폰, 첫째 아이패드)" style="width:100%;max-width:320px;padding:12px 14px;border-radius:12px;border:1.5px solid #E2E8F0;font-family:inherit;font-size:14px;margin-bottom:10px;text-align:center;background:#fff">
+  <input id="devicePin" placeholder="가족 암호 (알고 있으면 입력 — 없으면 비워두세요)" style="width:100%;max-width:320px;padding:12px 14px;border-radius:12px;border:1.5px solid #E2E8F0;font-family:inherit;font-size:14px;margin-bottom:16px;text-align:center;background:#fff">
+  <div id="roleCardsWrap" style="display:flex;gap:16px;width:100%;max-width:320px">
+    <div class="ob-card" onclick="chooseRole('child')">
+      <span style="font-size:48px;line-height:1">👦</span>
+      <span style="font-size:17px;font-weight:800;color:#0F172A">자녀예요</span>
+      <span style="font-size:12px;color:#64748B;line-height:1.5">할일 확인하고<br>체크해요</span>
+    </div>
+    <div class="ob-card" onclick="chooseRole('parent')">
+      <span style="font-size:48px;line-height:1">👨‍👩‍👧</span>
+      <span style="font-size:17px;font-weight:800;color:#0F172A">부모예요</span>
+      <span style="font-size:12px;color:#64748B;line-height:1.5">자녀 일정을<br>관리해요</span>
+    </div>
+  </div>
+  <button id="continueRoleBtn" onclick="continueWithRole()" style="display:none;width:100%;max-width:320px;padding:16px;border-radius:14px;border:none;background:var(--child);color:#fff;font-family:inherit;font-size:16px;font-weight:800;cursor:pointer">계속하기</button>
+  <div style="font-size:11px;color:#94A3B8;margin-top:28px;line-height:1.7">설정을 변경하려면 주소창에 ?reset 을 붙여 접속하세요</div>
 </div>
+
 
 <!-- APPROVAL WAITING -->
 <div id="approvalOverlay">
@@ -730,11 +743,9 @@ body {
 <!-- APP -->
 <div id="appWrapper">
   <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중...</div>
-  <div id="buildBadge" style="font-size:10px;color:#94A3B8;text-align:center;margin:2px 0 8px">Build 025</div>
   <div class="app-header">
     <div class="header-top">
       <div class="app-logo">🏠 우리가족 플래너</div>
-      <button id="appPairBtn" onclick="createAppPairCode()" style="display:none;border:0;background:#EEF2FF;color:#4338CA;border-radius:10px;padding:7px 9px;font-size:11px;font-weight:800;cursor:pointer">📱 앱 연결</button>
       <div class="child-switch-bar" id="childSwitchBar"></div>
     </div>
   </div>
@@ -928,7 +939,7 @@ body {
 <div class="url-popup-overlay" id="urlPopup">
   <div style="background:#fff;border-radius:20px;padding:24px;width:100%;max-width:360px">
     <div id="urlPopupTitle" style="font-size:16px;font-weight:800;margin-bottom:12px"></div>
-    <div id="urlPopupDesc" style="font-size:12px;color:#64748B;margin-bottom:8px">아래 링크를 복사해서 가족에게 보내세요</div>
+    <div style="font-size:12px;color:#64748B;margin-bottom:8px">아래 URL을 길게 눌러 복사하거나 복사 버튼을 누르세요</div>
     <input id="urlInput" readonly onclick="this.select();this.setSelectionRange(0,99999)"
       style="width:100%;padding:10px;border:1.5px solid #E2E8F0;border-radius:10px;font-size:11px;color:#4F46E5;background:#F8FAFC;box-sizing:border-box">
     <div style="display:flex;gap:10px;margin-top:14px">
@@ -1237,220 +1248,438 @@ function seedIfEmpty() {
   }, 2500);
 }
 
-// ── DEVICE / INVITE REGISTRATION ──
+// ── DEVICE ROLE ──
 var ROLE_KEY='fp_role', DID_KEY='fp_did', REG_KEY='fp_reg';
-var INVITE_KEY='fp_invite', PAIR_KEY='fp_app_paired';
-var approvalUnsub=null, pendingInvite=null;
+var approvalUnsub=null;
 
+function sha256Hex(str) {
+  var enc=new TextEncoder().encode(str);
+  return crypto.subtle.digest('SHA-256', enc).then(function(buf){
+    return Array.prototype.map.call(new Uint8Array(buf), function(b){ return ('00'+b.toString(16)).slice(-2); }).join('');
+  });
+}
 function getDeviceId() {
   var id=localStorage.getItem(DID_KEY);
   if (!id) { var c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; id=Array.from({length:6},function(){ return c[Math.floor(Math.random()*c.length)]; }).join(''); localStorage.setItem(DID_KEY,id); }
   return id;
 }
-function randomCode(n) {
-  var c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  var out=''; for(var i=0;i<n;i++) out+=c[Math.floor(Math.random()*c.length)];
-  return out;
-}
-function isStandaloneApp() {
-  return !!((window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone===true);
-}
-function currentInviteToken() {
-  var p=new URLSearchParams(location.search); return p.get('invite') || localStorage.getItem(INVITE_KEY) || null;
-}
-function clearInviteUrl() {
-  try { var u=new URL(location.href); u.searchParams.delete('invite'); history.replaceState({},'',u.toString()); } catch(e){}
-}
-function showOnboard() {
-  document.getElementById('onboardOverlay').style.display='flex';
-  document.getElementById('approvalOverlay').style.display='none';
-  document.getElementById('appWrapper').style.display='none';
-  document.getElementById('inviteInfoBox').style.display='none';
-  document.getElementById('continueRoleBtn').style.display='none';
-  document.getElementById('setupFamilyBtn').style.display='none';
-  document.getElementById('obIntro').innerHTML='가족 관리자가 보낸 <b>1회용 초대 링크</b>로 접속해주세요.<br>부모/자녀 선택은 초대 정보로 자동 결정됩니다.';
-}
-function showInviteOnboard(invite) {
-  pendingInvite=invite;
-  document.getElementById('onboardOverlay').style.display='flex';
-  document.getElementById('approvalOverlay').style.display='none';
-  document.getElementById('appWrapper').style.display='none';
-  var who=invite.memberName || (invite.role==='parent'?'부모':'자녀');
-  var type=invite.role==='parent'?'부모':'자녀';
-  var box=document.getElementById('inviteInfoBox');
-  box.style.display='block';
-  box.innerHTML='<div style="font-size:24px;margin-bottom:6px">'+(invite.role==='parent'?'👨‍👩‍👧':'👦')+'</div><b>'+esc(who)+'</b> · '+type+'<br><span style="font-size:12px;color:#64748B">이 정보는 관리자 초대로 자동 지정됩니다.</span>';
-  document.getElementById('obIntro').innerHTML='관리자가 지정한 정보입니다.<br><b>부모/자녀를 직접 선택할 수 없습니다.</b>';
-  document.getElementById('continueRoleBtn').style.display='block';
-  document.getElementById('setupFamilyBtn').style.display='none';
-}
-function loadInviteAndShow() {
-  var token=currentInviteToken();
-  if (!token) { showOnboard(); return; }
-  db.collection('invites').doc(token).get().then(function(snap){
-    if(!snap.exists) throw new Error('invalid');
-    var inv=snap.data();
-    var exp=inv.expiresAt && inv.expiresAt.toMillis ? inv.expiresAt.toMillis() : inv.expiresAt;
-    if(inv.status!=='active' || !exp || exp<=Date.now()) throw new Error('expired');
-    localStorage.setItem(INVITE_KEY,token); showInviteOnboard(inv);
-  }).catch(function(){ pendingInvite=null; localStorage.removeItem(INVITE_KEY); clearInviteUrl(); showOnboard(); showToast('⚠️ 유효하지 않거나 만료된 초대 링크입니다.'); });
-}
-function continueWithInvite() {
-  var token=localStorage.getItem(INVITE_KEY) || currentInviteToken();
-  if (!token || !pendingInvite) { loadInviteAndShow(); return; }
-  registerFromInvite(token,pendingInvite);
-}
-function registerFromInvite(token, invite) {
-  var uid=getAuthUid(), did=getDeviceId();
-  if(!uid){showToast('⚠️ 연결 중입니다. 잠시 후 다시 눌러주세요');return;}
-  var nick=(document.getElementById('deviceNickname').value||'').trim();
-  document.getElementById('continueRoleBtn').disabled=true;
-  var label=nick || invite.deviceLabel || ((invite.memberName||'가족')+' 기기');
-  var data={uid:uid,code:did,role:invite.role,memberName:invite.memberName||'',childId:invite.childId||null,label:label,status:'approved',isAdmin:false,inviteId:token,registeredAt:Date.now()};
-  var deviceRef=db.collection('devices').doc(uid), inviteRef=db.collection('invites').doc(token);
-  db.runTransaction(function(tx){
-    return tx.get(inviteRef).then(function(isnap){
-      if(!isnap.exists) throw new Error('invite-missing');
-      var inv=isnap.data(), exp=inv.expiresAt&&inv.expiresAt.toMillis?inv.expiresAt.toMillis():inv.expiresAt;
-      if(inv.status!=='active'||!exp||exp<=Date.now()) throw new Error('invite-expired');
-      tx.set(deviceRef,data);
-      tx.update(inviteRef,{status:'used',usedBy:uid,usedAt:Date.now()});
-    });
-  }).then(function(){
-    localStorage.setItem(ROLE_KEY,invite.role);
-    localStorage.setItem('device_approved_'+did,'1');
-    localStorage.removeItem(INVITE_KEY); clearInviteUrl();
-    document.getElementById('continueRoleBtn').disabled=false;
-    if(isStandaloneApp()) localStorage.setItem(PAIR_KEY,'1');
-    showApp(); showToast('✅ '+(invite.memberName||'가족')+' 기기로 등록됐어요');
-  }).catch(function(err){
-    document.getElementById('continueRoleBtn').disabled=false;
-    showToast(err&&err.message==='invite-expired'?'⚠️ 초대 링크가 만료됐어요. 새 초대를 받아주세요':'⚠️ 등록에 실패했어요. 새 초대를 받아주세요');
-  });
-}
-function showAppPairScreen() {
-  document.getElementById('onboardOverlay').style.display='flex';
-  document.getElementById('approvalOverlay').style.display='none';
-  document.getElementById('appWrapper').style.display='none';
-  document.getElementById('inviteInfoBox').style.display='block';
-  document.getElementById('inviteInfoBox').innerHTML='<div style="font-size:26px">📱</div><b>이 홈 화면 앱을 가족 기기에 연결해주세요</b><br><span style="font-size:12px;color:#64748B">브라우저에서 만든 8자리 연결 코드를 입력하면 이 앱도 같은 가족/역할로 연결됩니다.</span>';
-  document.getElementById('obIntro').innerHTML='가족 관리자 또는 브라우저에서 <b>앱 연결 코드</b>를 만든 후 입력해주세요.';
-  document.getElementById('continueRoleBtn').style.display='block';
-  document.getElementById('continueRoleBtn').textContent='앱 연결하기';
-  var inp=document.getElementById('pairCodeInput');
-  if(!inp){
-    inp=document.createElement('input'); inp.id='pairCodeInput'; inp.maxLength=8; inp.inputMode='text'; inp.autocomplete='one-time-code'; inp.placeholder='8자리 연결 코드';
-    inp.style.cssText='width:100%;max-width:320px;padding:14px;border:1.5px solid #E2E8F0;border-radius:12px;font-family:inherit;font-size:20px;letter-spacing:3px;text-align:center;text-transform:uppercase;background:#fff;margin-bottom:10px';
-    var btn=document.getElementById('continueRoleBtn'); btn.parentNode.insertBefore(inp,btn);
-  }
-  document.getElementById('continueRoleBtn').onclick=function(){
-    var code=(document.getElementById('pairCodeInput').value||'').trim().toUpperCase();
-    if(code.length!==8){showToast('⚠️ 8자리 연결 코드를 입력해주세요');return;}
-    pairStandaloneApp(code);
-  };
-}
-function pairStandaloneApp(code) {
-  var uid=getAuthUid(); if(!uid)return;
-  var pairRef=db.collection('appPairs').doc(code);
-  db.runTransaction(function(tx){
-    return tx.get(pairRef).then(function(snap){
-      if(!snap.exists) throw new Error('bad');
-      var p=snap.data(), exp=p.expiresAt&&p.expiresAt.toMillis?p.expiresAt.toMillis():p.expiresAt;
-      if(p.status!=='active'||!exp||exp<=Date.now()) throw new Error('bad');
-      var data={uid:uid,code:getDeviceId(),role:p.role,memberName:p.memberName||'',childId:p.childId||null,label:p.deviceLabel||((p.memberName||'가족')+' 기기'),status:'approved',isAdmin:false,pairedFrom:code,registeredAt:Date.now(),appPaired:true};
-      tx.set(db.collection('devices').doc(uid),data);
-      tx.update(pairRef,{status:'used',usedBy:uid,usedAt:Date.now()});
-      return p.role;
-    });
-  }).then(function(role){
-    localStorage.setItem(PAIR_KEY,'1'); localStorage.setItem(ROLE_KEY,role);
-    showApp(); showToast('✅ 앱 연결이 완료됐어요');
-  }).catch(function(){showToast('❌ 연결 코드가 맞지 않거나 만료됐어요');});
-}
-function createAppPairCode() {
-  var uid=getAuthUid(); if(!uid)return;
-  db.collection('devices').doc(uid).get().then(function(snap){
-    if(!snap.exists||snap.data().status!=='approved')throw new Error('device');
-    var d=snap.data(), code=randomCode(8), now=Date.now();
-    return db.collection('appPairs').doc(code).set({role:d.role,memberName:d.memberName||'',childId:d.childId||null,deviceLabel:d.label||'가족 기기',status:'active',createdBy:uid,createdAt:now,expiresAt:now+5*60*1000}).then(function(){
-      showUrlPopupFn(code,'appPair'); showToast('✅ 5분짜리 앱 연결 코드가 만들어졌어요');
-    });
-  }).catch(function(){showToast('⚠️ 연결 코드 생성에 실패했어요');});
-}
-function createFirstFamilyAdmin() {
-  var uid=getAuthUid(), did=getDeviceId(); if(!uid)return;
-  var nick=(document.getElementById('deviceNickname').value||'').trim();
-  var adminRef=db.collection('meta').doc('admin'), deviceRef=db.collection('devices').doc(uid);
-  db.runTransaction(function(tx){
-    return tx.get(adminRef).then(function(adminDoc){
-      if(adminDoc.exists) throw new Error('admin-exists');
-      var now=Date.now();
-      tx.set(adminRef,{registeredAt:now});
-      tx.set(deviceRef,{uid:uid,code:did,role:'parent',label:nick||'부모 기기(관리자)',status:'approved',isAdmin:true,registeredAt:now});
-    });
-  }).then(function(){localStorage.setItem(ROLE_KEY,'parent');localStorage.setItem('device_approved_'+did,'1');showApp();showToast('👑 새 가족의 관리자로 등록됐어요');})
-    .catch(function(err){showToast(err&&err.message==='admin-exists'?'⚠️ 이미 가족 관리자가 있어요. 초대 링크를 받아주세요':'⚠️ 가족 생성에 실패했어요. 다시 시도해주세요');});
-}
+
 function initDeviceRole() {
   var params=new URLSearchParams(location.search);
-  if(params.has('reset')){
-    localStorage.removeItem(ROLE_KEY);localStorage.removeItem(REG_KEY);localStorage.removeItem(INVITE_KEY);localStorage.removeItem(PAIR_KEY);
-    Object.keys(localStorage).forEach(function(k){if(k.indexOf('device_approved_')===0)localStorage.removeItem(k);});
-  }
-  var uid=getAuthUid(), did=getDeviceId(); if(!uid){showOnboard();return;}
-  return migrateLegacyAdminIfNeeded(did,uid).then(function(){return db.collection('devices').doc(uid).get();}).then(function(snap){
-    if(snap.exists&&snap.data().status==='approved')return {data:snap.data()};
-    return null;
-  }).then(function(found){
-    if(found&&found.data){
-      var d=found.data; localStorage.setItem(ROLE_KEY,d.role||'child'); localStorage.setItem('device_approved_'+did,'1');
-      if(isStandaloneApp()&&localStorage.getItem(PAIR_KEY)!=='1'&&!d.appPaired){showAppPairScreen();return;}
-      showApp(); return;
-    }
-    if(isStandaloneApp()&&!currentInviteToken()){showAppPairScreen();return;}
-    if(currentInviteToken()){loadInviteAndShow();return;}
-    var setup=new URLSearchParams(location.search).get('setup');
-    if(setup==='1'){
-      showOnboard(); document.getElementById('obIntro').innerHTML='<b>새 가족을 만드는 첫 번째 관리자 기기입니다.</b><br>이 기기는 부모 관리자 권한으로 등록됩니다.'; document.getElementById('setupFamilyBtn').style.display='block'; document.getElementById('inviteInfoBox').style.display='block'; document.getElementById('inviteInfoBox').innerHTML='👑 이 주소는 <b>새 가족 만들기</b>용입니다.'; return;
-    }
-    showOnboard();
-  }).catch(function(err){console.error('device init:',err);if(isStandaloneApp()&&!currentInviteToken())showAppPairScreen();else if(currentInviteToken())loadInviteAndShow();else showOnboard();});
-}
-function migrateLegacyAdminIfNeeded(did,uid){
-  return db.collection('devices').doc(did).get().then(function(legacySnap){
-    if(!legacySnap.exists)return null; var legacy=legacySnap.data()||{};
-    if(!(legacy.isAdmin===true&&legacy.status==='approved'))return null;
-    if(legacy.uid&&legacy.uid!==uid)return null;
-    return db.collection('devices').doc(uid).get().then(function(newSnap){
-      if(newSnap.exists)return newSnap.data();
-      var copy=Object.assign({},legacy,{uid:uid,code:legacy.code||did,role:'parent',isAdmin:true,status:'approved',migratedFrom:did,migratedAt:Date.now()});
-      return db.collection('devices').doc(uid).set(copy).then(function(){return db.collection('meta').doc('admin').get().then(function(a){if(!a.exists)return db.collection('meta').doc('admin').set({registeredAt:Date.now()});}).then(function(){return copy;});});
+  if (params.has('reset')) {
+    localStorage.removeItem(ROLE_KEY); localStorage.removeItem(REG_KEY);
+    Object.keys(localStorage).forEach(function(k){
+      if (k.indexOf('device_approved_')===0) localStorage.removeItem(k);
     });
-  }).catch(function(){return null;});
+  }
+
+  var urlRole=params.get('role');
+  if (urlRole==='child'||urlRole==='parent') { localStorage.setItem(ROLE_KEY,urlRole); }
+
+  var did=getDeviceId();
+  var uid=getAuthUid();
+
+  if (!uid) {
+    var role0=localStorage.getItem(ROLE_KEY);
+    if (!role0) { showOnboard(); return; }
+    if (localStorage.getItem('device_approved_'+did)==='1') { setDeviceRole(role0); return; }
+    showOnboard(role0);
+    return;
+  }
+
+  // 1) 새 방식(UID 문서)으로 이미 등록된 기기는 역할 선택/초대 화면을 절대 다시 보여주지 않는다.
+  db.collection('devices').doc(uid).get().then(function(uidSnap){
+    if (uidSnap.exists && uidSnap.data().status==='approved') {
+      var d=uidSnap.data();
+      var existingRole=(d.role==='child'||d.role==='parent') ? d.role : 'parent';
+      localStorage.setItem(ROLE_KEY, existingRole);
+      localStorage.setItem('device_approved_'+did, '1');
+      showApp();
+      return;
+    }
+
+    // 2) 구버전 관리자 기기라면 기존 기기 코드 문서를 찾아 1회 복구 절차로 보낸다.
+    db.collection('devices').doc(did).get().then(function(legacySnap){
+      var legacy=legacySnap.exists ? legacySnap.data() : null;
+      if (legacy && legacy.isAdmin===true && legacy.status==='approved') {
+        showLegacyAdminRecovery(did, uid);
+        return;
+      }
+
+      // 3) 기존 localStorage 승인 흔적
+      var role=localStorage.getItem(ROLE_KEY);
+      if (role && localStorage.getItem('device_approved_'+did)==='1') {
+        setDeviceRole(role);
+        return;
+      }
+
+      // 4) 신규 기기
+      if (!role) showOnboard();
+      else showOnboard(role);
+    }).catch(function(){
+      var role=localStorage.getItem(ROLE_KEY);
+      if (role && localStorage.getItem('device_approved_'+did)==='1') setDeviceRole(role);
+      else if (!role) showOnboard();
+      else showOnboard(role);
+    });
+  }).catch(function(){
+    var role=localStorage.getItem(ROLE_KEY);
+    if (role && localStorage.getItem('device_approved_'+did)==='1') setDeviceRole(role);
+    else if (!role) showOnboard();
+    else showOnboard(role);
+  });
 }
-function setDeviceRole(){showOnboard();showToast('⚠️ 가족 관리자가 보낸 1회용 초대 링크로 등록해주세요.');}
-function showApprovalWait(uid,did){
-  document.getElementById('approvalOverlay').style.display='flex';document.getElementById('appWrapper').style.display='none';
-  document.getElementById('approvalEmoji').textContent='⏳';document.getElementById('approvalTitle').textContent='승인 대기 중';
+
+var _legacyRecoveryDid=null;
+var _legacyRecoveryUid=null;
+
+function showLegacyAdminRecovery(did, uid) {
+  _legacyRecoveryDid=did;
+  _legacyRecoveryUid=uid;
+  document.getElementById('onboardOverlay').style.display='flex';
+  document.getElementById('approvalOverlay').style.display='none';
+  document.getElementById('appWrapper').style.display='none';
+  _forcedRole='parent';
+  var cardsWrap=document.getElementById('roleCardsWrap');
+  var contBtn=document.getElementById('continueRoleBtn');
+  var introEl=document.getElementById('obIntro');
+  if (cardsWrap) cardsWrap.style.display='none';
+  if (contBtn) {
+    contBtn.style.display='block';
+    contBtn.textContent='관리자 기기로 복구하기';
+    contBtn.onclick=recoverLegacyAdmin;
+  }
+  if (introEl) {
+    introEl.innerHTML='이 기기는 기존 가족 관리자 기기로 확인되었습니다.<br>기존에 설정한 가족 암호를 입력하면 이 기기를 관리자 기기로 한 번만 복구합니다.';
+  }
+  var pin=document.getElementById('devicePin');
+  if (pin) pin.value='';
+}
+
+function recoverLegacyAdmin() {
+  var pinEl=document.getElementById('devicePin');
+  var pin=(pinEl&&pinEl.value||'').trim();
+  if (!pin) { showToast('⚠️ 기존 가족 암호를 입력해주세요'); return; }
+  if (!_legacyRecoveryDid || !_legacyRecoveryUid) { showToast('⚠️ 기존 기기 정보를 확인할 수 없어요'); return; }
+
+  hashPin(pin).then(function(hash){
+    return db.collection('devices').doc(_legacyRecoveryUid).set({
+      uid:_legacyRecoveryUid,
+      code:_legacyRecoveryDid,
+      role:'parent',
+      label:'부모 기기(관리자)',
+      status:'approved',
+      isAdmin:true,
+      migratedFrom:_legacyRecoveryDid,
+      migrationPinHash:hash,
+      registeredAt:Date.now()
+    });
+  }).then(function(){
+    localStorage.setItem(ROLE_KEY,'parent');
+    localStorage.setItem('device_approved_'+_legacyRecoveryDid,'1');
+    showApp();
+    showToast('👑 기존 관리자 기기로 복구됐어요');
+  }).catch(function(err){
+    console.error('legacy admin recovery error:',err);
+    showToast('❌ 가족 암호가 맞지 않거나 복구가 허용되지 않았어요');
+  });
+}
+
+function showOnboard(forcedRole) {
+  document.getElementById('onboardOverlay').style.display='flex';
+  document.getElementById('approvalOverlay').style.display='none';
+  document.getElementById('appWrapper').style.display='none';
+  _forcedRole = forcedRole || null;
+  var cardsWrap=document.getElementById('roleCardsWrap');
+  var contBtn=document.getElementById('continueRoleBtn');
+  var introEl=document.getElementById('obIntro');
+  if (forcedRole) {
+    cardsWrap.style.display='none';
+    contBtn.style.display='block';
+    introEl.innerHTML=(forcedRole==='child'?'👦 자녀용 링크로 들어오셨어요.':'👨‍👩‍👧 부모용 링크로 들어오셨어요.')
+      +'<br>가족 암호가 있으면 입력하고, 없으면 그냥 계속 눌러 승인을 요청하세요.';
+  } else {
+    cardsWrap.style.display='flex';
+    contBtn.style.display='none';
+    introEl.innerHTML='이 기기를 사용하는 사람이 누구인가요?<br>한 번만 선택하면 다음부터 자동으로 열려요.';
+  }
+}
+var _forcedRole=null;
+function continueWithRole() { if (_forcedRole) chooseRole(_forcedRole); }
+
+function getAuthUid() {
+  var u = firebase.auth().currentUser;
+  return u ? u.uid : null;
+}
+
+// 온보딩 버튼은 항상 이걸 통해서 호출한다: 로그인(익명 로그인)이 아직 안 끝났으면
+// 기기 등록을 진행하지 않고 끝날 때까지 기다렸다가 진행한다 (uid 없이 문서가 만들어지는 걸 방지)
+function hashPin(pin) {
+  var enc=new TextEncoder().encode('family-planner-'+pin);
+  return crypto.subtle.digest('SHA-256', enc).then(function(buf){
+    return Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+  });
+}
+function chooseRole(role) {
+  var nickEl=document.getElementById('deviceNickname');
+  if (nickEl) localStorage.setItem('fp_nickname', nickEl.value.trim());
+  var pinEl=document.getElementById('devicePin');
+  if (pinEl && pinEl.value.trim()) localStorage.setItem('fp_pin_attempt', pinEl.value.trim());
+  if (getAuthUid()) { setDeviceRole(role); return; }
+  document.getElementById('onboardOverlay').style.display='none';
+  document.getElementById('approvalOverlay').style.display='flex';
+  document.getElementById('approvalDeviceId').textContent='연결 중...';
+  var tries=0;
+  var iv=setInterval(function(){
+    tries++;
+    if (getAuthUid()) { clearInterval(iv); setDeviceRole(role); }
+    else if (tries>100) { clearInterval(iv); showToast('⚠️ 연결에 실패했어요. 새로고침 해주세요'); }
+  }, 100);
+}
+
+// 예전 방식(기기 코드로 문서를 저장)으로 이미 등록된 관리자 기기가 있다면,
+// 이번 업데이트의 새 방식(로그인 uid로 문서를 저장)으로 한 번만 옮겨준다.
+function migrateLegacyAdminIfNeeded(did, uid) {
+  return db.collection('devices').doc(did).get().then(function(legacySnap){
+    if (!legacySnap.exists) return;
+    var legacy=legacySnap.data();
+    if (!(legacy.isAdmin && legacy.status==='approved')) return;
+    return db.collection('devices').doc(uid).get().then(function(newSnap){
+      if (newSnap.exists) return; // 이미 옮겨짐
+      return db.collection('devices').doc(uid).set({
+        uid:uid, code:did, role:'parent', label:'부모 기기(관리자)', status:'approved', isAdmin:true, registeredAt: legacy.registeredAt||Date.now()
+      }).then(function(){
+        return db.collection('meta').doc('admin').get().then(function(adminSnap){
+          if (!adminSnap.exists) return db.collection('meta').doc('admin').set({ registeredAt: Date.now() });
+        });
+      });
+    });
+  }).catch(function(){});
+}
+
+function setDeviceRole(role, skipRegister) {
+  var uid=getAuthUid();        // 실제 권한 판단 기준 (로그인 식별자)
+  if (!uid) { chooseRole(role); return; } // 로그인이 아직 안 끝난 채 호출된 경우를 위한 방어막
+  localStorage.setItem(ROLE_KEY, role);
+  document.getElementById('onboardOverlay').style.display='none';
+  var did=getDeviceId();       // 사람이 보는 기기 코드 (화면 표시용)
+  var APPROVED_KEY='device_approved_'+did;
+  var nick=(localStorage.getItem('fp_nickname')||'').trim();
+  var defaultLabel = role==='parent' ? '부모 기기' : '자녀 기기';
+  var label = nick || defaultLabel;
+
+  migrateLegacyAdminIfNeeded(did, uid).then(function(){
+
+    // 이 브라우저에서 이미 승인받은 적 있으면 바로 진입하고, 승인이 취소됐는지는 뒤에서 조용히 재확인
+    if (localStorage.getItem(APPROVED_KEY)==='1') {
+      showApp();
+      db.collection('devices').doc(uid).get().then(function(snap) {
+        if (snap.exists && snap.data().status!=='approved') {
+          localStorage.removeItem(APPROVED_KEY);
+          showApprovalWait(uid, did);
+        }
+      }).catch(function(){});
+      return;
+    }
+
+    // 최초 접속 또는 미승인 상태: 관리자가 있는지부터 확인한다
+    db.collection('devices').get().then(function(snap) {
+      var hasAdmin = snap.docs.some(function(d){ var v=d.data(); return v.isAdmin && v.status==='approved'; });
+      var mine = snap.docs.find(function(d){ return d.id===uid; });
+
+      if (!hasAdmin && role==='parent') {
+        // 아직 관리자가 없는 상태에서 '부모예요'로 들어옴 -> 이 기기가 우리집 관리자가 된다.
+        // meta/admin 문서 존재 여부와 트랜잭션으로 함께 묶어서, 여러 기기가 동시에 최초 진입해도
+        // 관리자가 단 하나만 만들어지도록 한다 (보안 규칙에서도 meta/admin 존재 여부로 다시 확인함)
+        var adminRef = db.collection('meta').doc('admin');
+        var deviceRef = db.collection('devices').doc(uid);
+        db.runTransaction(function(tx){
+          return tx.get(adminRef).then(function(adminDoc){
+            if (adminDoc.exists) throw new Error('admin-already-exists');
+            tx.set(adminRef, { registeredAt: Date.now() });
+            tx.set(deviceRef, { uid:uid, code:did, role:'parent', label: nick || '부모 기기(관리자)', status:'approved', isAdmin:true, registeredAt: Date.now() });
+          });
+        }).then(function(){
+          localStorage.setItem(APPROVED_KEY,'1');
+          localStorage.removeItem('fp_pin_attempt');
+          showApp();
+          showToast('👑 이 기기가 관리자로 등록됐어요');
+        }).catch(function(){
+          // 트랜잭션 도중 다른 기기가 먼저 관리자가 된 경우 -> 승인 대기로 전환
+          var write = mine ? Promise.resolve() : fsSet('devices', uid, { uid:uid, code:did, role:role, label: label, status:'pending', isAdmin:false, registeredAt:Date.now() });
+          write.then(function(){ showApprovalWait(uid, did); })
+            .catch(function(){ showRegisterError(); });
+        });
+        return;
+      }
+
+      if (mine && mine.data().status==='approved') {
+        localStorage.setItem(APPROVED_KEY,'1');
+        showApp();
+        return;
+      }
+      // mine이 없는 최초 접속이든, 예전에 만들어진 '대기중' 문서가 이미 있든 상관없이
+      // 암호를 입력했다면 항상 먼저 시도해본다 (예전엔 이미 대기중 문서가 있으면
+      // 암호 확인 자체를 건너뛰고 곧장 대기 화면으로 가버리는 문제가 있었다)
+      var pinAttempt=(localStorage.getItem('fp_pin_attempt')||'').trim();
+      if (pinAttempt) {
+        hashPin(pinAttempt).then(function(hash){
+          var base = mine ? mine.data() : { uid:uid, code:did, role:role, registeredAt:Date.now() };
+          var quickDoc=Object.assign({}, base, { label:label, status:'approved', isAdmin:false, pinHash:hash });
+          var writeOp = mine
+            ? db.collection('devices').doc(uid).update(quickDoc)
+            : db.collection('devices').doc(uid).set(quickDoc);
+          writeOp.then(function(){
+            localStorage.removeItem('fp_pin_attempt');
+            db.collection('devices').doc(uid).update({ pinHash: firebase.firestore.FieldValue.delete() }).catch(function(){});
+            localStorage.setItem(APPROVED_KEY,'1');
+            showApp();
+            showToast('✅ 가족 암호로 바로 연결됐어요!');
+          }).catch(function(){
+            // 암호가 틀렸거나 아직 설정되지 않음 -> 평소처럼 승인 대기로
+            localStorage.removeItem('fp_pin_attempt');
+            showToast('❌ 암호가 맞지 않거나 아직 설정 안 됨 - 승인 요청으로 전환했어요');
+            var write = mine ? Promise.resolve() : fsSet('devices', uid, { uid:uid, code:did, role:role, label:label, status:'pending', isAdmin:false, registeredAt:Date.now() });
+            write.then(function(){ showApprovalWait(uid, did); })
+              .catch(function(){ showRegisterError(); });
+          });
+        });
+        return;
+      }
+      if (!mine) {
+        fsSet('devices', uid, {
+          uid:uid, code:did, role:role,
+          label: label,
+          status:'pending', isAdmin:false, registeredAt:Date.now()
+        }).then(function(){ showApprovalWait(uid, did); })
+          .catch(function(){ showRegisterError(); });
+        return;
+      }
+      showApprovalWait(uid, did);
+    }).catch(function(){ showApprovalWait(uid, did); });
+  });
+}
+
+function showApprovalWait(uid, did) {
+  document.getElementById('approvalOverlay').style.display='flex';
+  document.getElementById('appWrapper').style.display='none';
+  document.getElementById('approvalEmoji').textContent='⏳';
+  document.getElementById('approvalTitle').textContent='승인 대기 중';
   document.getElementById('approvalDesc').innerHTML='관리자가 이 기기를 승인하면<br>앱을 사용할 수 있어요.<br>관리자 기기에서 승인 요청을 확인해 주세요.';
-  document.getElementById('approvalSpinner').style.display='';document.getElementById('approvalHint').style.display='';document.getElementById('approvalRetryBtn').style.display='none';document.getElementById('approvalDeviceId').textContent='기기 코드: '+did;
-  if(approvalUnsub)approvalUnsub();
-  approvalUnsub=db.collection('devices').doc(uid).onSnapshot(function(snap){if(snap.exists&&snap.data().status==='approved'){localStorage.setItem('device_approved_'+did,'1');if(approvalUnsub){approvalUnsub();approvalUnsub=null;}showApp();showToast('✅ 승인됐어요! 환영해요 😊');}});
+  document.getElementById('approvalSpinner').style.display='';
+  document.getElementById('approvalHint').style.display='';
+  document.getElementById('approvalRetryBtn').style.display='none';
+  document.getElementById('approvalDeviceId').textContent='기기 코드: '+did;
+  if (approvalUnsub) approvalUnsub();
+  approvalUnsub=db.collection('devices').doc(uid).onSnapshot(function(snap) {
+    if (!snap.exists) return;
+    var d=snap.data();
+    if (d.status==='approved') {
+      localStorage.setItem('device_approved_'+did,'1');
+      if (approvalUnsub) { approvalUnsub(); approvalUnsub=null; }
+      showApp();
+      showToast('✅ 승인됐어요! 환영해요 😊');
+    }
+  });
 }
 var _lastRegisterRole=null;
-function showRegisterError(){_lastRegisterRole=localStorage.getItem(ROLE_KEY);document.getElementById('approvalOverlay').style.display='flex';document.getElementById('appWrapper').style.display='none';document.getElementById('approvalEmoji').textContent='⚠️';document.getElementById('approvalTitle').textContent='등록에 실패했어요';document.getElementById('approvalDesc').innerHTML='네트워크 연결을 확인하고<br>다시 시도해주세요.';document.getElementById('approvalDeviceId').textContent='';document.getElementById('approvalSpinner').style.display='none';document.getElementById('approvalHint').style.display='none';document.getElementById('approvalRetryBtn').style.display='inline-block';}
-function retryRegistration(){document.getElementById('approvalRetryBtn').style.display='none';if(currentInviteToken())loadInviteAndShow();else showOnboard();}
-
-function showApp(){
-  document.getElementById('approvalOverlay').style.display='none';
-  var role=localStorage.getItem(ROLE_KEY)==='parent'?'parent':'child';
-  if(role!=='child'){completeShowApp();return;}
-  var uid=getAuthUid();
-  db.collection('devices').doc(uid).get().then(function(snap){var d=snap.exists?snap.data():{};if(!d.childId){document.getElementById('appWrapper').style.display='none';document.getElementById('childPickOverlay').style.display='flex';renderChildPickOverlay();}else completeShowApp();}).catch(function(){completeShowApp();});
+function showRegisterError() {
+  _lastRegisterRole = localStorage.getItem(ROLE_KEY);
+  document.getElementById('approvalOverlay').style.display='flex';
+  document.getElementById('appWrapper').style.display='none';
+  document.getElementById('approvalEmoji').textContent='⚠️';
+  document.getElementById('approvalTitle').textContent='등록에 실패했어요';
+  document.getElementById('approvalDesc').innerHTML='네트워크 연결을 확인하고<br>다시 시도해주세요.';
+  document.getElementById('approvalDeviceId').textContent='';
+  document.getElementById('approvalSpinner').style.display='none';
+  document.getElementById('approvalHint').style.display='none';
+  document.getElementById('approvalRetryBtn').style.display='inline-block';
 }
-function completeShowApp(){
-  var pairBtn=document.getElementById('appPairBtn'); if(pairBtn)pairBtn.style.display=isStandaloneApp()?'none':'';
-  document.getElementById('childPickOverlay').style.display='none';setupFamilyListeners();applyMode(localStorage.getItem(ROLE_KEY)==='parent'?'parent':'child');render();maybeShowWelcome(function(){document.getElementById('appWrapper').style.display='flex';});
+function retryRegistration() {
+  document.getElementById('approvalRetryBtn').style.display='none';
+  setDeviceRole(_lastRegisterRole || 'child');
+}
+
+function showApp() {
+  document.getElementById('approvalOverlay').style.display='none';
+  var role = localStorage.getItem(ROLE_KEY)==='parent' ? 'parent' : 'child';
+  if (role!=='child') { completeShowApp(); return; }
+  var uid=getAuthUid();
+  db.collection('devices').doc(uid).get().then(function(snap){
+    var d = snap.exists ? snap.data() : {};
+    if (!d.childId) {
+      document.getElementById('appWrapper').style.display='none';
+      document.getElementById('childPickOverlay').style.display='flex';
+      renderChildPickOverlay();
+    } else {
+      completeShowApp();
+    }
+  }).catch(function(){ completeShowApp(); });
+}
+function completeShowApp() {
+  document.getElementById('childPickOverlay').style.display='none';
+  setupFamilyListeners();
+  applyMode(localStorage.getItem(ROLE_KEY)==='parent' ? 'parent' : 'child');
+  render();
+  maybeShowWelcome(function(){
+    document.getElementById('appWrapper').style.display='flex';
+  });
+}
+
+// ── 웰컴 화면 (재방문 시 하루 한 번, 역할/자녀에 맞는 멘트) ──
+var PARENT_WELCOME_LINES=[
+  '제 생활이 궁금하시죠? 잘 하고 있어요 😊',
+  '오늘도 우리 가족을 챙겨주셔서 감사해요 💛',
+  '우리 아이들, 오늘도 잘 지내고 있어요!'
+];
+var CHILD_WELCOME_LINES=[
+  '오늘 하루도 열심히 하자! 아자아자 화이팅 💪',
+  '네가 있어서 우리 집이 더 즐거워! ✨',
+  '오늘도 멋지게 하루를 시작해보자! 🌟'
+];
+var _welcomeDone=false;
+function maybeShowWelcome(onDone) {
+  renderWelcomeOverlay();
+  var overlay=document.getElementById('welcomeOverlay');
+  overlay.style.display='flex';
+  _welcomeDone=false;
+  window._finishWelcomeCb=function(){
+    if (_welcomeDone) return;
+    _welcomeDone=true;
+    overlay.style.display='none';
+    onDone();
+  };
+  setTimeout(function(){ window._finishWelcomeCb && window._finishWelcomeCb(); }, 2200);
+}
+function finishWelcome() { window._finishWelcomeCb && window._finishWelcomeCb(); }
+function renderWelcomeOverlay() {
+  var role=localStorage.getItem(ROLE_KEY)==='parent' ? 'parent' : 'child';
+  var overlay=document.getElementById('welcomeOverlay');
+  var emoji, name, line, particles;
+  if (role==='child') {
+    var c=state.children.find(function(x){ return x.id===myChildId(); });
+    emoji = c ? (c.emoji||'🧒') : '🧒';
+    name = c ? c.name : '';
+    line = CHILD_WELCOME_LINES[Math.floor(Math.random()*CHILD_WELCOME_LINES.length)];
+    overlay.className='welcome-overlay child';
+    particles=['🎈','⭐','✨','🎉'];
+  } else {
+    emoji='👋';
+    var mine=devicesState.find(function(d){ return d.uid===getAuthUid(); });
+    name = mine && mine.label ? mine.label.replace(/\s*(폰|기기)\s*/g,'').trim() : '';
+    line = PARENT_WELCOME_LINES[Math.floor(Math.random()*PARENT_WELCOME_LINES.length)];
+    overlay.className='welcome-overlay parent';
+    particles=['💛','✨','🌸','💫'];
+  }
+  document.getElementById('welcomeEmoji').textContent=emoji;
+  document.getElementById('welcomeGreeting').textContent=(name?name+', ':'')+line;
+  var box=document.getElementById('welcomeParticles');
+  var html='';
+  for (var i=0;i<10;i++) {
+    html+='<div class="welcome-particle" style="left:'+(5+Math.random()*90)+'%;top:'+(50+Math.random()*40)+'%;animation-delay:'+(Math.random()*1.2)+'s">'
+      +particles[i%particles.length]+'</div>';
+  }
+  box.innerHTML=html;
 }
 
 // ── 다자녀 지원 ──
@@ -2063,30 +2292,10 @@ function addChildFromDevices() {
     showToast('✅ '+emoji+' '+name+' 등록됐어요!');
   }).catch(function(){ showToast('⚠️ 저장 실패. 네트워크를 확인해주세요'); });
 }
-var _inviteRole='parent';
-function selectInviteRole(role){
-  _inviteRole=role;
-  var pb=document.getElementById('inviteParentBtn'), cb=document.getElementById('inviteChildBtn'), ci=document.getElementById('inviteChildId');
-  if(pb){pb.style.background=role==='parent'?'var(--parent)':'#E0F2FE';pb.style.color=role==='parent'?'#fff':'#0284C7';}
-  if(cb){cb.style.background=role==='child'?'var(--child-l)':'#EEF2FF';cb.style.color=role==='child'?'var(--child)':'#4F46E5';}
-  if(ci)ci.style.display=role==='child'?'':'none';
-}
-function createFamilyInvite(){
-  if(!amIAdmin()){showToast('🔒 관리자만 초대 링크를 만들 수 있어요');return;}
-  var name=(document.getElementById('inviteMemberName').value||'').trim();
-  var childId=_inviteRole==='child'?(document.getElementById('inviteChildId').value||null):null;
-  if(_inviteRole==='child'&&!childId){showToast('⚠️ 자녀 프로필을 선택해주세요');return;}
-  var token=randomCode(32), now=Date.now();
-  var inv={role:_inviteRole,memberName:name||(_inviteRole==='parent'?'부모':'자녀'),childId:childId,deviceLabel:(name?name+' 기기':(_inviteRole==='parent'?'부모 기기':'자녀 기기')),status:'active',createdBy:getAuthUid(),createdAt:now,expiresAt:now+5*60*1000};
-  db.collection('invites').doc(token).set(inv).then(function(){
-    var url=location.origin+location.pathname+'?invite='+token;
-    showUrlPopupFn(url,_inviteRole);
-    showToast('✅ 5분짜리 1회용 초대 링크가 만들어졌어요');
-  }).catch(function(err){console.error('create invite',err);showToast('⚠️ 초대 링크 생성에 실패했어요');});
-}
-
 function renderDevices() {
   var baseUrl=location.origin+location.pathname;
+  var childUrl=baseUrl+'?role=child';
+  var parentUrl=baseUrl+'?role=parent';
   var pending=devicesState.filter(function(d){ return d.status==='pending'; });
   var approved=devicesState.filter(function(d){ return d.status==='approved'; });
   var myId=getAuthUid();
@@ -2098,27 +2307,16 @@ function renderDevices() {
     +'<div class="pc-row"><div><div class="pc-label">기기 관리</div><div class="pc-date">접속 기기 승인 🔐</div></div>'
     +'<div><div class="pc-big">'+pending.length+'</div><div class="pc-unit">대기중</div></div></div></div>';
 
-  // 1회용 초대 링크
-  if(isAdmin){
-    html+='<div class="sec-title">🔑 새 기기 초대</div>';
-    html+='<div class="form-box">';
-    html+='<div style="font-size:12px;color:var(--sub);line-height:1.6;margin-bottom:10px">관리자가 대상과 역할을 지정한 <b>1회용 초대 링크</b>입니다. <b>5분 후 자동 만료</b>되고 한 번 사용하면 폐기됩니다.</div>';
-    html+='<div class="f-label">대상</div>';
-    html+='<div style="display:flex;gap:8px;margin-bottom:10px">';
-    html+='<button type="button" id="inviteParentBtn" class="f-btn p" style="margin-top:0;flex:1" onclick="selectInviteRole(\'parent\')">👨‍👩‍👧 부모</button>';
-    html+='<button type="button" id="inviteChildBtn" class="f-btn" style="margin-top:0;flex:1;background:#EEF2FF;color:#4F46E5" onclick="selectInviteRole(\'child\')">👦 자녀</button>';
-    html+='</div>';
-    html+='<input class="m-field" id="inviteMemberName" placeholder="이름 (예: 아빠, 엄마, 수민)">';
-    html+='<select class="m-field" id="inviteChildId" style="display:none">';
-    html+='<option value="">자녀 프로필 선택</option>';
-    state.children.forEach(function(c){html+='<option value="'+esc(c.id)+'">'+esc(c.emoji||'🧒')+' '+esc(c.name)+'</option>';});
-    html+='</select>';
-    html+='<button class="f-btn p" onclick="createFamilyInvite()">🔗 5분짜리 초대 링크 만들기</button>';
-    html+='</div>';
-  }
-  html+='<div class="sec-title">📱 앱 연결</div>';
-  html+='<div class="form-box"><div style="font-size:12px;color:var(--sub);line-height:1.6">홈 화면에 설치한 앱은 브라우저와 저장공간이 분리될 수 있습니다. 이 기기에서 앱을 처음 열 때 <b>8자리 연결 코드</b>를 입력하면 같은 가족/역할로 연결됩니다.</div>'
-    +(isAdmin||myDevice?'<button class="f-btn p" onclick="createAppPairCode()">📱 5분짜리 앱 연결 코드 만들기</button>':'')+'</div>';
+  // URL Share
+  html+='<div class="sec-title">초대 URL 공유</div>';
+  html+='<div class="form-box">'
+    +'<div class="f-label">👦 자녀용 URL — 자녀에게 이 링크만 전송하세요</div>'
+    +'<div style="background:var(--bg);border-radius:10px;padding:10px 12px;font-size:11px;color:var(--child);word-break:break-all;margin-bottom:8px;font-weight:600">'+childUrl+'</div>'
+    +'<button class="f-btn" onclick="showUrlPopupFn(\''+childUrl+'\',\'child\')" style="margin-top:0">📋 자녀용 URL 복사</button></div>';
+  html+='<div class="form-box">'
+    +'<div class="f-label">👨‍👩‍👧 부모용 URL — 링크를 열어도 관리자 승인이 있어야 접속돼요</div>'
+    +'<div style="background:var(--bg);border-radius:10px;padding:10px 12px;font-size:11px;color:var(--parent);word-break:break-all;margin-bottom:8px;font-weight:600">'+parentUrl+'</div>'
+    +'<button class="f-btn p" onclick="showUrlPopupFn(\''+parentUrl+'\',\'parent\')" style="margin-top:0">📋 부모용 URL 복사</button></div>';
 
   if (isAdmin) {
     html+='<div class="sec-title">🔑 가족 암호 (빠른 참여)</div>';
@@ -3319,9 +3517,7 @@ function selectDay(ds) { state.selectedDate=parseDate(ds); render(); }
 
 // ── URL COPY ──
 function showUrlPopupFn(url, type) {
-  document.getElementById('urlPopupTitle').textContent=type==='child'?'👦 자녀용 1회용 초대 링크':(type==='parent'?'👨‍👩‍👧 부모용 1회용 초대 링크':'📱 앱 연결 코드');
-  var desc=document.getElementById('urlPopupDesc');
-  if(desc) desc.textContent=type==='appPair'?'이 8자리 코드를 홈 화면 앱에 입력하세요. 5분 후 만료됩니다.':'아래 링크를 복사해서 가족에게 보내세요. 5분 후 만료됩니다.';
+  document.getElementById('urlPopupTitle').textContent=type==='child'?'👦 자녀용 URL':'👨‍👩‍👧 부모용 URL';
   document.getElementById('urlInput').value=url;
   document.getElementById('urlPopup').classList.add('open');
   setTimeout(function(){ var el=document.getElementById('urlInput'); el.focus(); el.select(); el.setSelectionRange(0,99999); },100);
