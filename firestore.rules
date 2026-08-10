@@ -1,94 +1,301 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // ==============================
+    // 기본 인증 / 승인된 기기
+    // ==============================
     function signedIn() {
       return request.auth != null;
     }
 
-    // devices/{내 uid} 문서가 있고 isAdmin이 true이며 승인된 상태면 나는 관리자
-    function isAdmin() {
+    function myDevice() {
+      return /databases/$(database)/documents/devices/$(request.auth.uid);
+    }
+
+    function isApproved() {
       return signedIn()
-        && exists(/databases/$(database)/documents/devices/$(request.auth.uid))
-        && get(/databases/$(database)/documents/devices/$(request.auth.uid)).data.isAdmin == true
-        && get(/databases/$(database)/documents/devices/$(request.auth.uid)).data.status == 'approved';
+        && exists(myDevice())
+        && get(myDevice()).data.status == 'approved';
     }
 
-    // 관리자 부트스트랩 게이트: 앱에서 딱 한 번, 아직 관리자가 없을 때만 만들어질 수 있다.
-    // (이 문서 자체는 "관리자가 이미 정해졌는지"를 표시하는 용도일 뿐, 누가 관리자인지는
-    //  devices/{uid}.isAdmin 이 실제 기준이라서 공동관리자·관리자 이관이 자유롭게 된다)
-    match /meta/admin {
-      allow read: if signedIn();
-      allow create: if signedIn() && !exists(/databases/$(database)/documents/meta/admin);
-      allow update, delete: if false;
-    }
-    match /meta/{docId} {
-      allow read, write: if signedIn() && docId != 'admin';
+    function isAdmin() {
+      return isApproved()
+        && get(myDevice()).data.role == 'parent'
+        && get(myDevice()).data.isAdmin == true;
     }
 
-    // 기기 등록/승인. 문서 ID는 기기의 로그인 uid.
-    match /devices/{deviceUid} {
-      allow read: if signedIn();
-      // 새로 등록: 자기 자신의 문서만, 항상 '대기중 + 관리자 아님'으로만 스스로 만들 수 있다.
-      // (최초 관리자가 되는 경우는 meta/admin이 아직 없을 때만 예외적으로 허용)
-      allow create: if signedIn() && deviceUid == request.auth.uid
-        && (
-          (request.resource.data.status == 'pending' && request.resource.data.isAdmin == false)
-          || (request.resource.data.status == 'approved' && request.resource.data.isAdmin == true && !exists(/databases/$(database)/documents/meta/admin))
+    function isParent() {
+      return isApproved()
+        && get(myDevice()).data.role == 'parent';
+    }
+
+    function isChild() {
+      return isApproved()
+        && get(myDevice()).data.role == 'child';
+    }
+
+    function activeInvite(token) {
+      return token is string
+        && token.size() >= 20
+        && exists(/databases/$(database)/documents/invites/$(token))
+        && get(/databases/$(database)/documents/invites/$(token)).data.status == 'active'
+        && get(/databases/$(database)/documents/invites/$(token)).data.expiresAt > request.time;
+    }
+
+    // ==============================
+    // devices
+    // ==============================
+    match /devices/{uid} {
+
+      // 승인된 사용자는 기기 목록을 읽을 수 있고,
+      // 미승인 사용자는 자기 문서만 확인할 수 있습니다.
+      allow read: if isApproved()
+                  || (signedIn() && uid == request.auth.uid)
+                  || (signedIn() && resource.data.uid == request.auth.uid);
+
+      // 신규 기기는 자기 UID로만 pending 상태로 등록할 수 있습니다.
+      //
+      // 최초 관리자 생성은 현재 앱의 transaction에서
+      // meta/admin + devices/{uid}를 함께 생성하는 경우에만 허용합니다.
+      allow create: if
+        (
+          signedIn()
+          && uid == request.auth.uid
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.status == 'pending'
+          && request.resource.data.isAdmin == false
+        )
+        ||
+        (
+          signedIn()
+          && uid == request.auth.uid
+          && !exists(/databases/$(database)/documents/meta/admin)
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.role == 'parent'
+          && request.resource.data.status == 'approved'
+          && request.resource.data.isAdmin == true
+          && getAfter(/databases/$(database)/documents/meta/admin).data.registeredAt != null
+        )
+        ||
+        (
+          signedIn()
+          && uid == request.auth.uid
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.status == 'approved'
+          && request.resource.data.isAdmin == false
+          && activeInvite(request.resource.data.inviteId)
+          && request.resource.data.role == get(/databases/$(database)/documents/invites/$(request.resource.data.inviteId)).data.role
+          && request.resource.data.childId == get(/databases/$(database)/documents/invites/$(request.resource.data.inviteId)).data.childId
+        )
+        ||
+        (
+          signedIn()
+          && uid == request.auth.uid
+          && request.resource.data.status == 'approved'
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.migratedFrom is string
+          && exists(/databases/$(database)/documents/devices/$(request.resource.data.migratedFrom))
+          && get(/databases/$(database)/documents/devices/$(request.resource.data.migratedFrom)).data.uid == request.auth.uid
+          && get(/databases/$(database)/documents/devices/$(request.resource.data.migratedFrom)).data.status == 'approved'
+        )
+        ||
+        (
+          signedIn()
+          && uid == request.auth.uid
+          && request.resource.data.status == 'approved'
+          && request.resource.data.isAdmin == false
+          && request.resource.data.pairedFrom is string
+          && exists(/databases/$(database)/documents/appPairs/$(request.resource.data.pairedFrom))
+          && get(/databases/$(database)/documents/appPairs/$(request.resource.data.pairedFrom)).data.status == 'active'
+          && get(/databases/$(database)/documents/appPairs/$(request.resource.data.pairedFrom)).data.expiresAt > request.time
+          && request.resource.data.role == get(/databases/$(database)/documents/appPairs/$(request.resource.data.pairedFrom)).data.role
+          && request.resource.data.childId == get(/databases/$(database)/documents/appPairs/$(request.resource.data.pairedFrom)).data.childId
         );
-      // 승인/거절/취소/공동관리자 지정·해제 등 기존 문서 수정·삭제는 관리자만
+
+      // 관리자:
+      // 다른 기기의 승인/취소/역할 등을 관리할 수 있습니다.
+      //
+      // 일반 사용자는 자기 문서의 label/childId 등만 변경할 수 있고
+      // status / role / isAdmin / uid는 변경할 수 없습니다.
+      allow update: if
+        isAdmin()
+        ||
+        (
+          signedIn()
+          && uid == request.auth.uid
+          && resource.data.uid == request.auth.uid
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.status == resource.data.status
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.isAdmin == resource.data.isAdmin
+        );
+
+      // 관리자만 다른 기기를 삭제할 수 있습니다.
+      allow delete: if isAdmin() && uid != request.auth.uid;
+    }
+
+    // ==============================
+    // one-time family invites
+    // ==============================
+    match /invites/{token} {
+      allow create: if isAdmin()
+        && request.resource.data.status == 'active'
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.expiresAt > request.time
+        && request.resource.data.role in ['parent','child'];
+
+      allow read: if isAdmin()
+        || (signedIn() && resource.data.status == 'active' && resource.data.expiresAt > request.time);
+
+      allow update: if isAdmin()
+        || (signedIn()
+          && resource.data.status == 'active'
+          && request.resource.data.status == 'used'
+          && request.resource.data.usedBy == request.auth.uid);
+
+      allow delete: if isAdmin();
+    }
+
+    // ==============================
+    // app pairing codes (browser -> installed PWA)
+    // ==============================
+    match /appPairs/{code} {
+      allow create: if isApproved()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.status == 'active'
+        && request.resource.data.expiresAt > request.time
+        && request.resource.data.role in ['parent','child'];
+
+      // 연결 코드는 비밀 토큰이므로 코드를 알고 있는 로그인 기기만
+      // 활성 상태에서 읽을 수 있습니다. 역할/가족 정보는 코드에 의해 결정됩니다.
+      allow read: if signedIn()
+        && resource.data.status == 'active'
+        && resource.data.expiresAt > request.time;
+
+      allow update: if signedIn()
+        && resource.data.status == 'active'
+        && request.resource.data.status == 'used'
+        && request.resource.data.usedBy == request.auth.uid;
+
+      allow delete: if isAdmin() && resource.data.createdBy == request.auth.uid;
+    }
+
+    // ==============================
+    // meta
+    // ==============================
+    match /meta/{docId} {
+
+      // admin 정보는 승인된 사용자만 읽을 수 있습니다.
+      // workbooks는 앱에서 사용하는 공용 설정이므로 승인된 사용자에게 읽기를 허용합니다.
+      allow read: if
+        (docId == 'admin' && isApproved())
+        || (docId == 'workbooks' && isApproved());
+
+      // 최초 관리자 생성:
+      // 현재 앱의 transaction에서 관리자 기기와 admin 문서를 함께 생성할 때만 허용합니다.
+      allow create: if
+        (
+          docId == 'admin'
+          && signedIn()
+          && !exists(/databases/$(database)/documents/meta/admin)
+          && getAfter(/databases/$(database)/documents/devices/$(request.auth.uid)).data.uid == request.auth.uid
+          && getAfter(/databases/$(database)/documents/devices/$(request.auth.uid)).data.role == 'parent'
+          && getAfter(/databases/$(database)/documents/devices/$(request.auth.uid)).data.status == 'approved'
+          && getAfter(/databases/$(database)/documents/devices/$(request.auth.uid)).data.isAdmin == true
+        )
+        ||
+        (docId == 'workbooks' && isAdmin());
+
+      // 관리자만 설정을 변경할 수 있습니다.
+      allow update, delete: if
+        (docId == 'admin' && isAdmin())
+        || (docId == 'workbooks' && isAdmin());
+    }
+
+    // ==============================
+    // tasks
+    // ==============================
+    match /tasks/{id} {
+      allow read: if isApproved();
+
+      // 현재 앱은 부모/자녀 모두 할 일을 등록합니다.
+      // 저장 데이터의 fromParent 값과 실제 역할을 일치시켜 위조를 막습니다.
+      allow create: if
+        isApproved()
+        && (
+          (isParent() && request.resource.data.fromParent == true)
+          || (isChild() && request.resource.data.fromParent == false)
+        );
+
+      allow update: if
+        isApproved()
+        && (
+          (isParent() && resource.data.fromParent == true
+            && request.resource.data.fromParent == true)
+          ||
+          (isChild() && resource.data.fromParent == false
+            && request.resource.data.fromParent == false)
+        );
+
+      allow delete: if
+        isApproved()
+        && (
+          (isParent() && resource.data.fromParent == true)
+          || (isChild() && resource.data.fromParent == false)
+        );
+    }
+
+    // ==============================
+    // sharedEvents
+    // ==============================
+    match /sharedEvents/{id} {
+      allow read: if isApproved();
+
+      // 가족 공유 일정은 현재 부모/자녀 모두 등록 가능하므로
+      // 승인된 사용자에게 허용합니다.
+      allow create, update, delete: if isApproved();
+    }
+
+    // ==============================
+    // messages
+    // ==============================
+    match /messages/{id} {
+      allow read: if isApproved();
+      allow create: if isApproved();
       allow update, delete: if isAdmin();
     }
 
-    // 할일
-    match /tasks/{taskId} {
-      allow read: if signedIn();
-      allow write: if signedIn()
-        && request.resource.data.name is string
-        && request.resource.data.name.size() > 0
-        && request.resource.data.name.size() < 200;
+    // ==============================
+    // schoolSchedule
+    // ==============================
+    match /schoolSchedule/{id} {
+      allow read: if isApproved();
+      // 학교/학원 시간표 관리는 부모 기능으로 제한합니다.
+      allow create, update, delete: if isParent();
     }
 
-    // 공유 일정
-    match /sharedEvents/{eventId} {
-      allow read: if signedIn();
-      allow write: if signedIn()
-        && request.resource.data.name is string
-        && request.resource.data.name.size() > 0
-        && request.resource.data.name.size() < 200;
+    // ==============================
+    // children
+    // ==============================
+    match /children/{id} {
+      allow read: if isApproved();
+
+      // 현재 앱에서는 자녀 기기 최초 설정에서도 자녀 프로필을 생성하므로
+      // 승인된 사용자에게 create를 허용합니다.
+      allow create: if isApproved();
+
+      // 자녀 정보 변경/삭제는 부모가 관리합니다.
+      allow update, delete: if isParent();
     }
 
-    // 메시지
-    match /messages/{msgId} {
-      allow read: if signedIn();
-      allow write: if signedIn()
-        && request.resource.data.text is string
-        && request.resource.data.text.size() < 1000;
-    }
-
-    // 학교/학원 시간표
-    match /schoolSchedule/{itemId} {
-      allow read: if signedIn();
-      allow write: if signedIn()
-        && request.resource.data.name is string
-        && request.resource.data.name.size() > 0
-        && request.resource.data.name.size() < 200;
-    }
-
-    // 자녀 프로필 (다자녀 지원)
-    match /children/{childId} {
-      allow read: if signedIn();
-      allow write: if signedIn()
-        && request.resource.data.name is string
-        && request.resource.data.name.size() > 0
-        && request.resource.data.name.size() < 50;
-    }
-
-    // 그 외 컬렉션은 전부 차단
+    // ==============================
+    // 그 외 모든 컬렉션
+    // ==============================
+    // 명시적으로 허용하지 않은 데이터는 모두 차단합니다.
     match /{document=**} {
       allow read, write: if false;
     }
   }
 }
-
-
