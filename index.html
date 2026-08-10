@@ -15,7 +15,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <!-- v20260705 -->
-<title>Build 026 · 우리가족 플래너</title>
+<title>Build 027 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -685,7 +685,7 @@ body {
 </style>
 </head>
 <body>
-<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 026</div>
+<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 027</div>
 
 <!-- ONBOARDING -->
 <div id="onboardOverlay">
@@ -1274,11 +1274,10 @@ function initDeviceRole() {
   }
 
   var urlRole=params.get('role');
-  if (urlRole==='child'||urlRole==='parent') { localStorage.setItem(ROLE_KEY,urlRole); }
+  if (urlRole==='child'||urlRole==='parent') localStorage.setItem(ROLE_KEY,urlRole);
 
   var did=getDeviceId();
   var uid=getAuthUid();
-
   if (!uid) {
     var role0=localStorage.getItem(ROLE_KEY);
     if (!role0) { showOnboard(); return; }
@@ -1287,33 +1286,42 @@ function initDeviceRole() {
     return;
   }
 
-  // 1) 새 방식(UID 문서)으로 이미 등록된 기기는 역할 선택/초대 화면을 절대 다시 보여주지 않는다.
+  // Build 027: Firebase UID 문서를 가장 먼저 확인합니다.
+  // 이미 승인된 기기는 PC/휴대폰을 구분하지 않고 역할 선택을 절대 다시 보여주지 않습니다.
   db.collection('devices').doc(uid).get().then(function(uidSnap){
-    if (uidSnap.exists && uidSnap.data().status==='approved') {
+    if (uidSnap.exists) {
       var d=uidSnap.data();
-      var existingRole=(d.role==='child'||d.role==='parent') ? d.role : 'parent';
-      localStorage.setItem(ROLE_KEY, existingRole);
-      localStorage.setItem('device_approved_'+did, '1');
-      showApp();
-      return;
+      if (d.status==='approved') {
+        var existingRole=(d.role==='child'||d.role==='parent') ? d.role : 'parent';
+        localStorage.setItem(ROLE_KEY,existingRole);
+        localStorage.setItem('device_approved_'+did,'1');
+        showApp();
+        return;
+      }
+      if (d.status==='pending') {
+        showApprovalWait(uid,did);
+        return;
+      }
     }
 
-    // 2) 구버전 관리자 기기라면 기존 기기 코드 문서를 찾아 1회 복구 절차로 보낸다.
+    // 구버전 기기 문서는 DID를 document ID로 사용했습니다.
+    // Build 027 Rules에서 승인된 legacy 관리자 문서의 읽기를 제한적으로 허용하므로
+    // 기존 관리자 노트북을 역할 선택 화면으로 보내지 않고 복구 절차로 연결합니다.
     db.collection('devices').doc(did).get().then(function(legacySnap){
       var legacy=legacySnap.exists ? legacySnap.data() : null;
       if (legacy && legacy.isAdmin===true && legacy.status==='approved') {
-        showLegacyAdminRecovery(did, uid);
+        showLegacyAdminRecovery(did,uid);
         return;
       }
 
-      // 3) 기존 localStorage 승인 흔적
+      // 이 브라우저에서 이미 승인받았던 흔적이 있으면 역할 선택을 생략합니다.
       var role=localStorage.getItem(ROLE_KEY);
       if (role && localStorage.getItem('device_approved_'+did)==='1') {
         setDeviceRole(role);
         return;
       }
 
-      // 4) 신규 기기
+      // 신규 기기만 온보딩으로 이동합니다.
       if (!role) showOnboard();
       else showOnboard(role);
     }).catch(function(){
