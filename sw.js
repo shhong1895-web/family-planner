@@ -1,4 +1,4 @@
-const CACHE = 'family-planner-build029-v1';
+const CACHE = 'family-planner-build030-v1';
 const APP_SHELL = './index.html';
 
 self.addEventListener('install', event => {
@@ -20,7 +20,6 @@ self.addEventListener('fetch', event => {
   const req = event.request;
   if (req.method !== 'GET') return;
 
-  // HTML: network-first so a new GitHub Pages build is not hidden by old PWA cache.
   if (req.mode === 'navigate' ||
       new URL(req.url).pathname.endsWith('/index.html') ||
       new URL(req.url).pathname.endsWith('/family-planner/')) {
@@ -36,7 +35,6 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Other resources: network first, cache fallback.
   event.respondWith(
     fetch(req).catch(() => caches.match(req))
   );
