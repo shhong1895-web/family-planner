@@ -14,8 +14,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20260812-build030 -->
-<title>Build 030 · 우리가족 플래너</title>
+<!-- v20260813-build031 -->
+<title>Build 031 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -190,6 +190,27 @@ body {
 .prog-bar { height:8px; background:rgba(255,255,255,.25); border-radius:4px; overflow:hidden; }
 .prog-fill { height:100%; background:#fff; border-radius:4px; transition:width .5s; }
 /* TODAY SUMMARY (Build 030) */
+/* WEEKLY GOALS (Build 031) */
+.goal-card {
+  background:var(--card); border-radius:var(--r); padding:14px 14px 12px;
+  margin-bottom:8px; box-shadow:var(--sh); display:flex; gap:10px; align-items:flex-start;
+  border-left:3px solid var(--child);
+}
+.goal-card.done { opacity:.62; }
+.goal-check {
+  width:28px; height:28px; border-radius:50%; border:1.5px solid #CBD5E1;
+  background:#fff; flex-shrink:0; font-size:15px; cursor:pointer; padding:0;
+}
+.goal-check.checked { background:var(--child); color:#fff; border-color:var(--child); }
+.goal-body { flex:1; min-width:0; }
+.goal-title { font-size:14px; font-weight:700; color:var(--text); line-height:1.35; }
+.goal-card.done .goal-title { text-decoration:line-through; color:var(--sub); }
+.goal-meta { font-size:11px; color:var(--sub); margin-top:4px; }
+.goal-del { border:0; background:transparent; color:#94A3B8; font-size:15px; cursor:pointer; padding:4px; }
+.goal-progress { background:#EEF2F7; height:7px; border-radius:99px; overflow:hidden; margin:8px 0 2px; }
+.goal-progress-fill { height:100%; background:var(--child); border-radius:99px; }
+.goal-empty { background:var(--card); border-radius:var(--r); padding:14px; box-shadow:var(--sh); color:var(--sub); font-size:12px; line-height:1.6; margin-bottom:10px; }
+
 .today-summary {
   display:grid; grid-template-columns:repeat(3,1fr); gap:8px;
   margin-bottom:14px;
@@ -698,7 +719,7 @@ body {
 </style>
 </head>
 <body>
-<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 030</div>
+<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 031</div>
 
 <!-- ONBOARDING -->
 <div id="onboardOverlay">
@@ -996,7 +1017,7 @@ var state = {
   selectedDate: new Date(TODAY),
   weekStart: getWeekStart(TODAY),
   month: new Date(TODAY.getFullYear(), TODAY.getMonth(), 1),
-  tasks: [], sharedEvents: [], messages: [], schoolSchedule: [], workbooks: [], children: [], pinConfigured:false
+  tasks: [], sharedEvents: [], messages: [], schoolSchedule: [], goals: [], workbooks: [], children: [], pinConfigured:false
 };
 var devicesState = [];
 
@@ -1218,6 +1239,9 @@ function setupFamilyListeners() {
   db.collection('schoolSchedule').onSnapshot(function(snap) {
     state.schoolSchedule = snap.docs.map(function(d){ return d.data(); }); render();
   });
+  db.collection('goals').onSnapshot(function(snap) {
+    state.goals = snap.docs.map(function(d){ return d.data(); }); render();
+  }, function(){ state.goals=[]; render(); });
   db.collection('children').onSnapshot(function(snap) {
     state.children = snap.docs.map(function(d){ return d.data(); }).sort(function(a,b){ return (a.createdAt||0)-(b.createdAt||0); });
     var cpo=document.getElementById('childPickOverlay');
@@ -2164,6 +2188,70 @@ function sharedCard(e, showDel) {
     +'</div>';
 }
 
+// ── WEEKLY GOALS (Build 031) ──
+function goalsForActiveWeek() {
+  var ws=fmt(state.weekStart);
+  var ac=activeChildId();
+  return state.goals.filter(function(g){
+    if (g.weekStart!==ws) return false;
+    if (g.childId && ac && g.childId!==ac) return false;
+    return !g.childId || !ac ? true : g.childId===ac;
+  }).sort(function(a,b){
+    if (!!a.done!==!!b.done) return a.done?1:-1;
+    return (a.createdAt||0)-(b.createdAt||0);
+  });
+}
+function goalCard(g) {
+  var isChild=state.mode==='child';
+  return '<div class="goal-card'+(g.done?' done':'')+'">'
+    +'<button class="goal-check'+(g.done?' checked':'')+'" '+(isChild?'onclick="toggleGoal(\''+esc(g.id)+'\')"':'onclick="showToast(\'👀 자녀가 직접 목표를 완료 처리해요\')"')+'>'+(g.done?'✓':'')+'</button>'
+    +'<div class="goal-body"><div class="goal-title">'+esc(g.title)+'</div><div class="goal-meta">이번 주 목표'+(g.category?' · '+esc(g.category):'')+'</div></div>'
+    +(isChild?'<button class="goal-del" onclick="deleteGoal(\''+esc(g.id)+'\');event.stopPropagation()">🗑</button>':'')
+    +'</div>';
+}
+function renderGoals() {
+  var goals=goalsForActiveWeek();
+  var done=goals.filter(function(g){return !!g.done;}).length;
+  var html='<div class="sec-title">🎯 이번 주 목표 <span style="font-size:11px;color:var(--sub);font-weight:600">'+done+'/'+goals.length+'</span></div>';
+  if (!goals.length) {
+    html+='<div class="goal-empty">이번 주 목표를 세워보세요.<br>작은 목표를 정하고 하나씩 완료하면 자기주도적으로 하루를 관리하는 데 도움이 됩니다.</div>';
+  } else {
+    goals.forEach(function(g){ html+=goalCard(g); });
+  }
+  if (state.mode==='child') {
+    html+='<div class="form-box" style="text-align:center"><button class="f-btn" onclick="addGoalPrompt()">+ 이번 주 목표 추가</button></div>';
+  } else if (goals.length) {
+    html+='<div style="font-size:11px;color:var(--sub);margin:-3px 0 12px 2px">자녀가 직접 세우고 완료하는 목표입니다.</div>';
+  }
+  return html;
+}
+function addGoalPrompt() {
+  if (state.mode!=='child') { showToast('🔒 자녀가 직접 목표를 세워요'); return; }
+  var uid=getAuthUid(), childId=activeChildId();
+  if (!uid || !childId) { showToast('⚠️ 연결된 자녀 정보를 확인해주세요'); return; }
+  var title=window.prompt('이번 주 목표를 입력해주세요.\n예: 수학 문제집 3회 하기');
+  if (!title) return;
+  title=title.trim();
+  if (!title) return;
+  if (title.length>60) { showToast('⚠️ 목표는 60자 이내로 입력해주세요'); return; }
+  var id='goal_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+  var g={id:id,title:title,weekStart:fmt(state.weekStart),childId:childId,done:false,createdBy:uid,createdAt:Date.now()};
+  fsSet('goals',id,g).then(function(){ showToast('🎯 이번 주 목표를 추가했어요'); }).catch(function(){ showToast('⚠️ 목표 저장에 실패했어요'); });
+}
+function toggleGoal(id) {
+  if (state.mode!=='child') { showToast('🔒 자녀가 직접 완료해요'); return; }
+  var g=state.goals.find(function(x){return String(x.id)===String(id);});
+  if (!g) return;
+  fsUpdate('goals',g.id,{done:!g.done}).then(function(){ showToast(g.done?'↩️ 목표를 다시 진행해요':'🎉 목표를 완료했어요'); }).catch(function(){ showToast('⚠️ 저장에 실패했어요'); });
+}
+function deleteGoal(id) {
+  if (state.mode!=='child') { showToast('🔒 자녀가 직접 관리해요'); return; }
+  var g=state.goals.find(function(x){return String(x.id)===String(id);});
+  if (!g) return;
+  if (!confirm('이번 주 목표를 삭제할까요?')) return;
+  fsDel('goals',g.id).then(function(){ showToast('🗑 목표를 삭제했어요'); }).catch(function(){ showToast('⚠️ 삭제에 실패했어요'); });
+}
+
 // ── DAY VIEW ──
 function renderDay() {
   var ds=fmt(state.selectedDate);
@@ -2208,6 +2296,8 @@ function renderDay() {
     +'<div class="prog-bar"><div class="prog-fill" style="width:'+pct+'%"></div></div>'
     +(streak>0?'<div class="streak-badge">🔥 '+streak+'일 연속 완료 중!</div>':'')
     +'</div>';
+
+  html+=renderGoals();
 
   if (shared.length) {
     html+='<div class="sec-title">공유 일정</div>';
