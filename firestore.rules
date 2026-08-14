@@ -189,6 +189,13 @@ service cloud.firestore {
         && (
           (isParent() && request.resource.data.fromParent == true)
           || (isChild() && request.resource.data.fromParent == false)
+        )
+        && (
+          !('goalId' in request.resource.data)
+          || request.resource.data.goalId == ''
+          || (request.resource.data.childId is string
+              && exists(/databases/$(database)/documents/goals/$(request.resource.data.goalId))
+              && get(/databases/$(database)/documents/goals/$(request.resource.data.goalId)).data.childId == request.resource.data.childId)
         );
 
       allow update: if
@@ -199,6 +206,13 @@ service cloud.firestore {
           ||
           (isChild() && resource.data.fromParent == false
             && request.resource.data.fromParent == false)
+        )
+        && (
+          !('goalId' in request.resource.data)
+          || request.resource.data.goalId == ''
+          || (request.resource.data.childId is string
+              && exists(/databases/$(database)/documents/goals/$(request.resource.data.goalId))
+              && get(/databases/$(database)/documents/goals/$(request.resource.data.goalId)).data.childId == request.resource.data.childId)
         );
 
       allow delete: if

@@ -15,7 +15,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <!-- v20260813-build031 -->
-<title>Build 031 · 우리가족 플래너</title>
+<title>Build 032 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -189,6 +189,10 @@ body {
 .pc-unit { font-size:13px; opacity:.75; }
 .prog-bar { height:8px; background:rgba(255,255,255,.25); border-radius:4px; overflow:hidden; }
 .prog-fill { height:100%; background:#fff; border-radius:4px; transition:width .5s; }
+/* GOAL LINK (Build 032) */
+.goal-link-wrap { margin-top:10px; }
+.goal-link-note { font-size:10px; color:var(--sub); margin-top:5px; line-height:1.45; }
+.goal-linked { font-size:10px; color:var(--child); font-weight:700; margin-top:4px; }
 /* TODAY SUMMARY (Build 030) */
 /* WEEKLY GOALS (Build 031) */
 .goal-card {
@@ -719,7 +723,7 @@ body {
 </style>
 </head>
 <body>
-<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 031</div>
+<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 032</div>
 
 <!-- ONBOARDING -->
 <div id="onboardOverlay">
@@ -879,6 +883,14 @@ body {
           <option value="기타">⭐ 기타</option>
         </select>
       </div>
+      <div id="mGoalWrap" class="goal-link-wrap" style="display:none">
+        <div class="m-label">🎯 연결할 이번 주 목표 <span style="font-size:10px;color:var(--sub);font-weight:500">(선택)</span></div>
+        <select class="m-field" id="mGoalSelect">
+          <option value="">연결하지 않음</option>
+        </select>
+        <div class="goal-link-note">이 할 일을 완료하면 연결된 목표의 실행 내역에 반영됩니다.</div>
+      </div>
+
       <div class="m-label">반복</div>
       <select class="m-field" id="mRepeat" onchange="onRepeatTypeChange()">
         <option value="none">반복 없음</option>
@@ -2203,9 +2215,15 @@ function goalsForActiveWeek() {
 }
 function goalCard(g) {
   var isChild=state.mode==='child';
+  var ws=g.weekStart;
+  var linked=state.tasks.filter(function(t){ return t.goalId===g.id && (!t.childId || !g.childId || t.childId===g.childId) && t.date>=ws && t.date<fmt((function(){var d=parseDate(ws);d.setDate(d.getDate()+7);return d;})()); });
+  var linkedDone=linked.filter(function(t){ return !!t.done; }).length;
+  var meta=linked.length ? '실행 '+linkedDone+'/'+linked.length+' · 이번 주 목표' : '이번 주 목표';
   return '<div class="goal-card'+(g.done?' done':'')+'">'
     +'<button class="goal-check'+(g.done?' checked':'')+'" '+(isChild?'onclick="toggleGoal(\''+esc(g.id)+'\')"':'onclick="showToast(\'👀 자녀가 직접 목표를 완료 처리해요\')"')+'>'+(g.done?'✓':'')+'</button>'
-    +'<div class="goal-body"><div class="goal-title">'+esc(g.title)+'</div><div class="goal-meta">이번 주 목표'+(g.category?' · '+esc(g.category):'')+'</div></div>'
+    +'<div class="goal-body"><div class="goal-title">'+esc(g.title)+'</div><div class="goal-meta">'+meta+'</div>'
+    +(linked.length?'<div class="goal-linked">📌 연결된 할 일 '+linkedDone+'/'+linked.length+'</div>':'')
+    +'</div>'
     +(isChild?'<button class="goal-del" onclick="deleteGoal(\''+esc(g.id)+'\');event.stopPropagation()">🗑</button>':'')
     +'</div>';
 }
@@ -3613,6 +3631,19 @@ function onWorkbookChange() {
   var v = document.getElementById('mWorkbook').value;
   document.getElementById('mWorkbookCustom').style.display = v === '__custom__' ? '' : 'none';
 }
+function renderGoalSelect(selectedId) {
+  var wrap=document.getElementById('mGoalWrap'), sel=document.getElementById('mGoalSelect');
+  if (!wrap || !sel) return;
+  var ac=activeChildId();
+  var goals=state.goals.filter(function(g){ return g.weekStart===fmt(getWeekStart(TODAY)) && (!g.childId || !ac || g.childId===ac); });
+  if (!goals.length) { wrap.style.display='none'; sel.innerHTML='<option value="">연결할 목표 없음</option>'; return; }
+  wrap.style.display='';
+  var html='<option value="">연결하지 않음</option>';
+  goals.forEach(function(g){ html+='<option value="'+esc(g.id)+'">'+esc(g.title)+'</option>'; });
+  sel.innerHTML=html;
+  sel.value=selectedId||'';
+}
+
 function openModal(taskId) {
   _editTaskId = taskId || null;
   var isP = state.mode === 'parent';
@@ -3639,6 +3670,7 @@ function openModal(taskId) {
     document.getElementById('mName').value = t.name;
     document.getElementById('mCat').value = t.cat || '기타';
     document.getElementById('mDesc').value = t.desc || '';
+    renderGoalSelect(t.goalId || '');
     document.getElementById('mAllday').checked = !!t.allday;
     dateStr = t.date || dateStr;
     document.getElementById('mDate').value = dateStr;
@@ -3674,6 +3706,7 @@ function openModal(taskId) {
     document.getElementById('mCat').value = '기타';
     document.getElementById('mRepeat').value = 'none';
     document.getElementById('mDesc').value = '';
+    renderGoalSelect('');
     document.getElementById('mAllday').checked = false;
     document.getElementById('mDate').value = dateStr;
     document.getElementById('mTimeWrap').style.display = '';
@@ -3764,6 +3797,7 @@ function saveTask() {
     pageEnd: isStudy ? pageEnd : '',
     repeat: repeat, repeatDays: repeatDays, repeatEnd: repeatEnd,
     desc: document.getElementById('mDesc').value,
+    goalId: (document.getElementById('mGoalSelect') ? document.getElementById('mGoalSelect').value : (existing.goalId || '')),
     done: existing.done || false,
     fromParent: isEdit ? existing.fromParent : (state.mode==='parent')
   });
