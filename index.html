@@ -15,7 +15,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <!-- v20260813-build031 -->
-<title>Build 038 · 우리가족 플래너</title>
+<title>Build 039 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -222,7 +222,7 @@ body {
 .week-glance-right { text-align:right; font-size:10px; color:var(--sub); line-height:1.35; }
 .week-glance-right b { color:var(--text); font-size:11px; }
 
-/* WEEKLY PLAN (Build 038) */
+/* WEEKLY PLAN (Build 039) */
 .week-plan { background:var(--card); border-radius:var(--r); padding:14px; box-shadow:var(--sh); margin-bottom:14px; }
 .week-plan-title { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:13px; font-weight:800; color:var(--text); }
 .week-plan-sub { font-size:10px; color:var(--sub); font-weight:600; }
@@ -774,7 +774,7 @@ body {
 </style>
 </head>
 <body>
-<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 038</div>
+<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 039</div>
 
 <!-- ONBOARDING -->
 <div id="onboardOverlay">
@@ -2533,7 +2533,7 @@ function weekGlanceHtml(ws) {
   return html;
 }
 
-// ── WEEKLY PLAN (Build 038) ──
+// ── WEEKLY PLAN (Build 039) ──
 function weekPlanHtml(ws) {
   var days=['일','월','화','수','목','금','토'];
   var html='<div class="week-plan">'
@@ -2593,33 +2593,10 @@ function renderWeek() {
   html+=weekPlanHtml(ws);
   html+=weekGlanceHtml(ws);
 
-  var days=['일','월','화','수','목','금','토'];
-  html+='<div class="week-grid">';
-  for (var i=0;i<7;i++) {
-    var d=new Date(ws); d.setDate(ws.getDate()+i);
-    var ds=fmt(d);
-    var hasTasks=tasksForDate(ds).length>0, hasShared=sharedForDate(ds).length>0;
-    var isTod=isToday(d), isSel=ds===fmt(state.selectedDate);
-    var isHoliday=!!getHoliday(ds);
-    html+='<div class="week-day'+(isTod?' today':'')+(isSel?' sel':'')+'" onclick="selectDay(\''+ds+'\')" data-dbtap="date:'+ds+'">'
-      +'<div class="wd-name">'+days[d.getDay()]+'</div>'
-      +'<div class="wd-num'+(isHoliday&&!isSel?' holiday':'')+'">'+d.getDate()+'</div>'
-      +'<div class="wd-dots">'
-      +(hasTasks?'<div class="wd-dot"></div>':'')
-      +(hasShared?'<div class="wd-dot s"></div>':'')
-      +'</div></div>';
-  }
-  html+='</div>';
+  // Build 039: 기존 하단 월~일 날짜 선택 영역과 선택 날짜 상세 영역은 제거했습니다.
+  // 날짜별 계획/일정 확인은 '이번 주 계획'에서 담당합니다.
+  // '이번 주 한눈에'는 주간 실행 현황을 빠르게 비교하는 용도로 유지합니다.
 
-  var ds=fmt(state.selectedDate);
-  var tasks=tasksForDate(ds), shared=sharedForDate(ds);
-  var holiday1=getHoliday(ds);
-  html+='<div class="sec-title">'+koDate(state.selectedDate)+(holiday1?' <span style="color:#EF4444">· 🎉 '+esc(holiday1)+'</span>':'')+'</div>';
-  if (!tasks.length&&!shared.length) {
-    html+=emptyBox('📅','이날 할일이 없어요','날짜를 더블탭하면 일정을 추가할 수 있어요');
-  }
-  shared.forEach(function(e){ html+=sharedCard(e,false); });
-  tasks.forEach(function(t){ html+=taskCard(t, ds); });
   return html;
 }
 
