@@ -15,7 +15,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <!-- v20260813-build031 -->
-<title>Build 037 · 우리가족 플래너</title>
+<title>Build 038 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -221,6 +221,28 @@ body {
 .week-glance-meta { font-size:10px; color:var(--sub); white-space:nowrap; }
 .week-glance-right { text-align:right; font-size:10px; color:var(--sub); line-height:1.35; }
 .week-glance-right b { color:var(--text); font-size:11px; }
+
+/* WEEKLY PLAN (Build 038) */
+.week-plan { background:var(--card); border-radius:var(--r); padding:14px; box-shadow:var(--sh); margin-bottom:14px; }
+.week-plan-title { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:13px; font-weight:800; color:var(--text); }
+.week-plan-sub { font-size:10px; color:var(--sub); font-weight:600; }
+.week-plan-day { border-top:1px solid var(--border); padding:10px 0 4px; }
+.week-plan-day:first-child { border-top:0; padding-top:2px; }
+.week-plan-day-head { display:flex; align-items:center; justify-content:space-between; gap:8px; cursor:pointer; }
+.week-plan-day-name { font-size:12px; font-weight:800; color:var(--text); }
+.week-plan-day-name span { font-size:10px; color:var(--sub); font-weight:600; margin-left:4px; }
+.week-plan-day.today .week-plan-day-name { color:var(--child); }
+.week-plan-add { border:1px solid var(--border); background:#fff; color:var(--child); border-radius:8px; padding:5px 8px; font-family:inherit; font-size:10px; font-weight:700; cursor:pointer; }
+.week-plan-items { margin-top:7px; display:flex; flex-direction:column; gap:5px; }
+.week-plan-item { display:flex; align-items:center; gap:7px; padding:7px 8px; border-radius:9px; background:var(--bg); cursor:pointer; }
+.week-plan-check { width:18px; height:18px; border-radius:50%; border:1px solid #CBD5E1; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:10px; background:#fff; }
+.week-plan-item.done .week-plan-check { background:var(--success); color:#fff; border-color:var(--success); }
+.week-plan-item.done .week-plan-item-name { text-decoration:line-through; opacity:.55; }
+.week-plan-item-name { flex:1; min-width:0; font-size:11px; font-weight:600; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.week-plan-goal { font-size:9px; color:var(--child); font-weight:700; flex-shrink:0; max-width:86px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.week-plan-event { display:flex; align-items:center; gap:6px; padding:6px 8px; border-radius:9px; background:var(--shared-l); font-size:10px; color:var(--text); }
+.week-plan-empty { font-size:10px; color:var(--sub); padding:4px 2px 3px; }
+.week-plan-more { text-align:center; font-size:10px; color:var(--sub); font-weight:600; padding:3px; }
 
 /* TODAY SUMMARY (Build 030) */
 /* WEEKLY GOALS (Build 031) */
@@ -752,7 +774,7 @@ body {
 </style>
 </head>
 <body>
-<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 037</div>
+<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 038</div>
 
 <!-- ONBOARDING -->
 <div id="onboardOverlay">
@@ -2511,6 +2533,52 @@ function weekGlanceHtml(ws) {
   return html;
 }
 
+// ── WEEKLY PLAN (Build 038) ──
+function weekPlanHtml(ws) {
+  var days=['일','월','화','수','목','금','토'];
+  var html='<div class="week-plan">'
+    +'<div class="week-plan-title"><span>🗓️ 이번 주 계획</span><span class="week-plan-sub">월~일 · 날짜별로 계획하기</span></div>';
+  for (var i=0;i<7;i++) {
+    var d=new Date(ws); d.setDate(ws.getDate()+i);
+    var ds=fmt(d);
+    var tasks=tasksForDate(ds);
+    var shared=sharedForDate(ds);
+    var isTod=isToday(d);
+    var maxItems=4;
+    html+='<div class="week-plan-day'+(isTod?' today':'')+'">'
+      +'<div class="week-plan-day-head" onclick="selectDay(\''+ds+'\')">'
+      +'<div class="week-plan-day-name">'+days[d.getDay()]+'요일 <span>'+(d.getMonth()+1)+'월 '+d.getDate()+'일</span></div>'
+      +'<button class="week-plan-add" onclick="event.stopPropagation();selectDayAndAdd(\''+ds+'\')">+ 계획</button>'
+      +'</div>'
+      +'<div class="week-plan-items">';
+    if (!tasks.length && !shared.length) {
+      html+='<div class="week-plan-empty">계획이 없어요.</div>';
+    } else {
+      tasks.slice(0,maxItems).forEach(function(t){
+        var done=taskDoneForDate(t,ds);
+        var goal='';
+        if (t.goalId) {
+          var g=state.goals.find(function(x){return String(x.id)===String(t.goalId);});
+          if (g) goal='🎯 '+g.title;
+        }
+        html+='<div class="week-plan-item'+(done?' done':'')+'" onclick="selectDay(\''+ds+'\')">'
+          +'<div class="week-plan-check">'+(done?'✓':'')+'</div>'
+          +'<div class="week-plan-item-name">'+esc(t.name)+'</div>'
+          +(goal?'<div class="week-plan-goal">'+esc(goal)+'</div>':'')
+          +'</div>';
+      });
+      shared.slice(0,2).forEach(function(e){
+        html+='<div class="week-plan-event">'+(e.icon||'📅')+' '+esc(e.name)+'<span style="margin-left:auto;color:var(--sub)">'+esc(sharedTargetLabel(e))+'</span></div>';
+      });
+      var more=Math.max(0,tasks.length-maxItems)+Math.max(0,shared.length-2);
+      if (more>0) html+='<div class="week-plan-more">외 '+more+'개 · 날짜를 눌러 전체 보기</div>';
+    }
+    html+='</div></div>';
+  }
+  html+='</div>';
+  return html;
+}
+
 // ── WEEK VIEW ──
 function renderWeek() {
   var ws=state.weekStart;
@@ -2522,6 +2590,7 @@ function renderWeek() {
     +'<button class="date-nav-btn" onclick="shiftWeek(1)">›</button></div>';
 
   html+=weeklyReviewHtml(fmt(ws));
+  html+=weekPlanHtml(ws);
   html+=weekGlanceHtml(ws);
 
   var days=['일','월','화','수','목','금','토'];
