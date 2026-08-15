@@ -1,0 +1,306 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ==============================
+    // 기본 인증 / 승인된 기기
+    // ==============================
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function myDevice() {
+      return /databases/$(database)/documents/devices/$(request.auth.uid);
+    }
+
+    function isApproved() {
+      return signedIn()
+        && exists(myDevice())
+        && get(myDevice()).data.status == 'approved';
+    }
+
+    function isAdmin() {
+      return isApproved()
+        && get(myDevice()).data.role == 'parent'
+        && get(myDevice()).data.isAdmin == true;
+    }
+
+    function isParent() {
+      return isApproved()
+        && get(myDevice()).data.role == 'parent';
+    }
+
+    function isChild() {
+      return isApproved()
+        && get(myDevice()).data.role == 'child';
+    }
+
+    // ==============================
+    // devices
+    // ==============================
+    match /devices/{uid} {
+
+      // 승인된 사용자는 기기 목록을 읽을 수 있고,
+      // 미승인 사용자는 자기 문서만 확인할 수 있습니다.
+      allow read: if isApproved()
+                  || (signedIn() && uid == request.auth.uid);
+
+      // Build 029: 신규 기기는 1회용 초대코드와 함께 자기 UID로만 등록할 수 있습니다.
+      // 초대 문서도 같은 transaction에서 used=true로 바뀌어야 하므로 1회 사용을 보장합니다.
+      allow create: if
+        (
+          signedIn()
+          && uid == request.auth.uid
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.status == 'pending'
+          && request.resource.data.isAdmin == false
+          && request.resource.data.inviteCode is string
+          && exists(/databases/$(database)/documents/invites/$(request.resource.data.inviteCode))
+          && getAfter(/databases/$(database)/documents/invites/$(request.resource.data.inviteCode)).data.used == true
+          && getAfter(/databases/$(database)/documents/invites/$(request.resource.data.inviteCode)).data.usedBy == request.auth.uid
+          && getAfter(/databases/$(database)/documents/invites/$(request.resource.data.inviteCode)).data.role == request.resource.data.role
+        )
+        ||
+        (
+          signedIn()
+          && uid == request.auth.uid
+          && !exists(/databases/$(database)/documents/meta/admin)
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.role == 'parent'
+          && request.resource.data.status == 'approved'
+          && request.resource.data.isAdmin == true
+          && getAfter(/databases/$(database)/documents/meta/admin).data.registeredAt != null
+        );
+
+      // 관리자:
+      // 다른 기기의 승인/취소/역할 등을 관리할 수 있습니다.
+      //
+      // 일반 사용자는 자기 문서의 label/childId 등만 변경할 수 있고
+      // status / role / isAdmin / uid는 변경할 수 없습니다.
+      allow update: if
+        isAdmin()
+        ||
+        (
+          signedIn()
+          && uid == request.auth.uid
+          && resource.data.uid == request.auth.uid
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.status == resource.data.status
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.isAdmin == resource.data.isAdmin
+        )
+        ||
+        (
+          signedIn()
+          && uid == request.auth.uid
+          && resource.data.uid == request.auth.uid
+          && request.resource.data.status == 'pending'
+          && request.resource.data.isAdmin == false
+          && request.resource.data.inviteCode is string
+          && exists(/databases/$(database)/documents/invites/$(request.resource.data.inviteCode))
+          && getAfter(/databases/$(database)/documents/invites/$(request.resource.data.inviteCode)).data.used == true
+          && getAfter(/databases/$(database)/documents/invites/$(request.resource.data.inviteCode)).data.usedBy == request.auth.uid
+          && getAfter(/databases/$(database)/documents/invites/$(request.resource.data.inviteCode)).data.role == request.resource.data.role
+        );
+
+      // 관리자만 다른 기기를 삭제할 수 있습니다.
+      allow delete: if isAdmin() && uid != request.auth.uid;
+    }
+
+    // ==============================
+    // 1회용 초대코드 (Build 029)
+    // ==============================
+    match /invites/{code} {
+      // 코드를 알고 있고 아직 유효한 경우에만 읽을 수 있습니다.
+      // 코드는 8자리 난수이며 5분 후 만료됩니다.
+      allow read: if
+        signedIn()
+        && resource.data.used == false
+        && resource.data.expiresAt > request.time;
+
+      // 관리자만 새 초대코드를 만들 수 있습니다.
+      allow create: if
+        isAdmin()
+        && request.resource.data.code == code
+        && request.resource.data.createdBy == request.auth.uid
+        && (request.resource.data.role == 'parent' || request.resource.data.role == 'child')
+        && request.resource.data.used == false
+        && request.resource.data.expiresAt > request.time;
+
+      // 초대코드를 사용하는 기기만, 같은 transaction에서 자기 UID를 기록하며 사용 처리할 수 있습니다.
+      allow update: if
+        signedIn()
+        && resource.data.used == false
+        && resource.data.expiresAt > request.time
+        && request.resource.data.used == true
+        && request.resource.data.usedBy == request.auth.uid
+        && request.resource.data.code == resource.data.code
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.createdBy == resource.data.createdBy
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.expiresAt == resource.data.expiresAt;
+
+      allow delete: if isAdmin();
+    }
+
+    // ==============================
+    // meta
+    // ==============================
+    match /meta/{docId} {
+
+      // admin 정보는 승인된 사용자만 읽을 수 있습니다.
+      // workbooks는 앱에서 사용하는 공용 설정이므로 승인된 사용자에게 읽기를 허용합니다.
+      allow read: if
+        (docId == 'admin' && isApproved())
+        || (docId == 'workbooks' && isApproved());
+
+      // 최초 관리자 생성:
+      // 현재 앱의 transaction에서 관리자 기기와 admin 문서를 함께 생성할 때만 허용합니다.
+      allow create: if
+        (
+          docId == 'admin'
+          && signedIn()
+          && !exists(/databases/$(database)/documents/meta/admin)
+          && getAfter(/databases/$(database)/documents/devices/$(request.auth.uid)).data.uid == request.auth.uid
+          && getAfter(/databases/$(database)/documents/devices/$(request.auth.uid)).data.role == 'parent'
+          && getAfter(/databases/$(database)/documents/devices/$(request.auth.uid)).data.status == 'approved'
+          && getAfter(/databases/$(database)/documents/devices/$(request.auth.uid)).data.isAdmin == true
+        )
+        ||
+        (docId == 'workbooks' && isAdmin());
+
+      // 관리자만 설정을 변경할 수 있습니다.
+      allow update, delete: if
+        (docId == 'admin' && isAdmin())
+        || (docId == 'workbooks' && isAdmin());
+    }
+
+    // ==============================
+    // tasks
+    // ==============================
+    match /tasks/{id} {
+      allow read: if isApproved();
+
+      // 현재 앱은 부모/자녀 모두 할 일을 등록합니다.
+      // 저장 데이터의 fromParent 값과 실제 역할을 일치시켜 위조를 막습니다.
+      allow create: if
+        isApproved()
+        && (
+          (isParent() && request.resource.data.fromParent == true)
+          || (isChild() && request.resource.data.fromParent == false)
+        )
+        && (
+          !('goalId' in request.resource.data)
+          || request.resource.data.goalId == ''
+          || (request.resource.data.childId is string
+              && exists(/databases/$(database)/documents/goals/$(request.resource.data.goalId))
+              && get(/databases/$(database)/documents/goals/$(request.resource.data.goalId)).data.childId == request.resource.data.childId)
+        );
+
+      allow update: if
+        isApproved()
+        && (
+          (isParent() && resource.data.fromParent == true
+            && request.resource.data.fromParent == true)
+          ||
+          (isChild() && resource.data.fromParent == false
+            && request.resource.data.fromParent == false)
+        )
+        && (
+          !('goalId' in request.resource.data)
+          || request.resource.data.goalId == ''
+          || (request.resource.data.childId is string
+              && exists(/databases/$(database)/documents/goals/$(request.resource.data.goalId))
+              && get(/databases/$(database)/documents/goals/$(request.resource.data.goalId)).data.childId == request.resource.data.childId)
+        );
+
+      allow delete: if
+        isApproved()
+        && (
+          (isParent() && resource.data.fromParent == true)
+          || (isChild() && resource.data.fromParent == false)
+        );
+    }
+
+    // ==============================
+    // sharedEvents
+    // ==============================
+    match /sharedEvents/{id} {
+      allow read: if isApproved();
+
+      // 가족 공유 일정은 현재 부모/자녀 모두 등록 가능하므로
+      // 승인된 사용자에게 허용합니다.
+      allow create, update, delete: if isApproved();
+    }
+
+    // ==============================
+    // messages
+    // ==============================
+    match /messages/{id} {
+      allow read: if isApproved();
+      allow create: if isApproved();
+      allow update, delete: if isAdmin();
+    }
+
+    // ==============================
+    // schoolSchedule
+    // ==============================
+    match /schoolSchedule/{id} {
+      allow read: if isApproved();
+      // 학교/학원 시간표 관리는 부모 기능으로 제한합니다.
+      allow create, update, delete: if isParent();
+    }
+
+    // ==============================
+    // children
+    // ==============================
+    match /children/{id} {
+      allow read: if isApproved();
+
+      // 현재 앱에서는 자녀 기기 최초 설정에서도 자녀 프로필을 생성하므로
+      // 승인된 사용자에게 create를 허용합니다.
+      allow create: if isApproved();
+
+      // 자녀 정보 변경/삭제는 부모가 관리합니다.
+      allow update, delete: if isParent();
+    }
+
+    // ==============================
+    // goals (Build 031)
+    // 자녀가 스스로 세우는 주간 목표입니다. 부모는 읽기만 가능합니다.
+    // 자녀 기기의 childId와 목표의 childId를 일치시켜 다른 자녀 목표의
+    // 생성/수정/삭제를 막습니다.
+    // ==============================
+    match /goals/{id} {
+      allow read: if isApproved();
+
+      allow create: if
+        isChild()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.childId == get(myDevice()).data.childId
+        && request.resource.data.childId is string
+        && exists(/databases/$(database)/documents/children/$(request.resource.data.childId));
+
+      allow update: if
+        isChild()
+        && resource.data.createdBy == request.auth.uid
+        && resource.data.childId == get(myDevice()).data.childId
+        && request.resource.data.createdBy == resource.data.createdBy
+        && request.resource.data.childId == resource.data.childId;
+
+      allow delete: if
+        isChild()
+        && resource.data.createdBy == request.auth.uid
+        && resource.data.childId == get(myDevice()).data.childId;
+    }
+
+    // ==============================
+    // 그 외 모든 컬렉션
+    // ==============================
+    // 명시적으로 허용하지 않은 데이터는 모두 차단합니다.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
