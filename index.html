@@ -15,7 +15,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <!-- v20260813-build031 -->
-<title>Build 036 · 우리가족 플래너</title>
+<title>Build 037 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -752,7 +752,7 @@ body {
 </style>
 </head>
 <body>
-<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 036</div>
+<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 037</div>
 
 <!-- ONBOARDING -->
 <div id="onboardOverlay">
@@ -1080,7 +1080,28 @@ function fmt(d) {
 }
 function pad(n) { return String(n).padStart(2,'0'); }
 function parseDate(s) { var p=s.split('-').map(Number); var d=new Date(p[0],p[1]-1,p[2]); d.setHours(0,0,0,0); return d; }
-function getWeekStart(d) { var r=new Date(d); r.setHours(0,0,0,0); r.setDate(r.getDate()-r.getDay()); return r; }
+// Build 037: 가족 플래너의 '한 주'는 월요일~일요일로 정의합니다.
+function getWeekStart(d) { var r=new Date(d); r.setHours(0,0,0,0); var day=r.getDay(); var diff=(day===0?-6:1-day); r.setDate(r.getDate()+diff); return r; }
+// Build 031~036에서 저장된 목표는 일요일 시작 방식이므로, 기존 목표는 새 주에
+// 대응시켜 계속 보이도록 합니다. 새 목표는 모두 월요일 시작으로 저장합니다.
+function getLegacyWeekStart(d) { var r=new Date(d); r.setHours(0,0,0,0); r.setDate(r.getDate()-r.getDay()); return r; }
+function goalMatchesWeek(g, ws) {
+  var w=fmt(ws);
+  if (g.weekStart===w) return true;
+  var legacy=fmt(getLegacyWeekStart(ws));
+  return g.weekStart===legacy;
+}
+function goalEffectiveWeekStart(g) {
+  var d=parseDate(g.weekStart);
+  return fmt(getWeekStart(d));
+}
+function contextWeekStart() {
+  return state.view==='week' ? new Date(state.weekStart) : new Date(getWeekStart(state.selectedDate));
+}
+function weekRangeLabel(ws) {
+  var s=new Date(ws); var e=new Date(ws); e.setDate(e.getDate()+6);
+  return (s.getMonth()+1)+'/'+s.getDate()+' ~ '+(e.getMonth()+1)+'/'+e.getDate();
+}
 function isToday(d) { return fmt(d)===fmt(TODAY); }
 // ── 대한민국 공휴일 (음력 기반 명절 포함, 정부 발표 기준) ──
 // 설날/추석/부처님오신날처럼 음력 기준 명절은 매년 양력 날짜가 달라져서 수식으로 계산할 수 없어
@@ -2248,10 +2269,10 @@ function sharedCard(e, showDel) {
 
 // ── WEEKLY GOALS (Build 031) ──
 function goalsForActiveWeek() {
-  var ws=fmt(state.weekStart);
+  var ws=contextWeekStart();
   var ac=activeChildId();
   return state.goals.filter(function(g){
-    if (g.weekStart!==ws) return false;
+    if (!goalMatchesWeek(g,ws)) return false;
     if (g.childId && ac && g.childId!==ac) return false;
     return !g.childId || !ac ? true : g.childId===ac;
   }).sort(function(a,b){
@@ -2261,7 +2282,7 @@ function goalsForActiveWeek() {
 }
 function goalCard(g) {
   var isChild=state.mode==='child';
-  var ws=g.weekStart;
+  var ws=goalEffectiveWeekStart(g);
   var linked=state.tasks.filter(function(t){ return t.goalId===g.id && (!t.childId || !g.childId || t.childId===g.childId) && t.date>=ws && t.date<fmt((function(){var d=parseDate(ws);d.setDate(d.getDate()+7);return d;})()); });
   var linkedDone=linked.filter(function(t){ return !!t.done; }).length;
   var meta=linked.length ? '실행 '+linkedDone+'/'+linked.length+' · 이번 주 목표' : '이번 주 목표';
@@ -2274,9 +2295,10 @@ function goalCard(g) {
     +'</div>';
 }
 function renderGoals() {
+  var ws=contextWeekStart();
   var goals=goalsForActiveWeek();
   var done=goals.filter(function(g){return !!g.done;}).length;
-  var html='<div class="sec-title">🎯 이번 주 목표 <span style="font-size:11px;color:var(--sub);font-weight:600">'+done+'/'+goals.length+'</span></div>';
+  var html='<div class="sec-title">🎯 이번 주 목표 <span style="font-size:11px;color:var(--sub);font-weight:600">'+weekRangeLabel(ws)+' · 월~일 · '+done+'/'+goals.length+'</span></div>';
   if (!goals.length) {
     html+='<div class="goal-empty">이번 주 목표를 세워보세요.<br>작은 목표를 정하고 하나씩 완료하면 자기주도적으로 하루를 관리하는 데 도움이 됩니다.</div>';
   } else {
@@ -2293,13 +2315,13 @@ function addGoalPrompt() {
   if (state.mode!=='child') { showToast('🔒 자녀가 직접 목표를 세워요'); return; }
   var uid=getAuthUid(), childId=activeChildId();
   if (!uid || !childId) { showToast('⚠️ 연결된 자녀 정보를 확인해주세요'); return; }
-  var title=window.prompt('이번 주 목표를 입력해주세요.\n예: 수학 문제집 3회 하기');
+  var title=window.prompt('이번 주 목표를 입력해주세요.\n기간: 월요일~일요일 ('+weekRangeLabel(contextWeekStart())+')\n예: 수학 문제집 3회 하기');
   if (!title) return;
   title=title.trim();
   if (!title) return;
   if (title.length>60) { showToast('⚠️ 목표는 60자 이내로 입력해주세요'); return; }
   var id='goal_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
-  var g={id:id,title:title,weekStart:fmt(state.weekStart),childId:childId,done:false,createdBy:uid,createdAt:Date.now()};
+  var g={id:id,title:title,weekStart:fmt(contextWeekStart()),childId:childId,done:false,createdBy:uid,createdAt:Date.now()};
   fsSet('goals',id,g).then(function(){ showToast('🎯 이번 주 목표를 추가했어요'); }).catch(function(){ showToast('⚠️ 목표 저장에 실패했어요'); });
 }
 function toggleGoal(id) {
@@ -2435,7 +2457,7 @@ function weeklyReviewHtml(ws) {
   var taskDone=weekTasks.filter(function(t){return !!t.done;}).length;
   var taskPct=weekTasks.length?Math.round(taskDone/weekTasks.length*100):0;
   var goals=state.goals.filter(function(g){
-    return g.weekStart===ws && (!g.childId || g.childId===activeChildId());
+    return goalMatchesWeek(g,parseDate(ws)) && (!g.childId || g.childId===activeChildId());
   });
   var goalDone=goals.filter(function(g){return !!g.done;}).length;
   var goalPct=goals.length?Math.round(goalDone/goals.length*100):0;
@@ -2443,7 +2465,7 @@ function weeklyReviewHtml(ws) {
   var linkedDone=linked.filter(function(t){return !!t.done;}).length;
   var linkedPct=linked.length?Math.round(linkedDone/linked.length*100):0;
   return '<div class="weekly-review">'
-    +'<div class="weekly-review-title">📊 이번 주 돌아보기</div>'
+    +'<div class="weekly-review-title">📊 이번 주 돌아보기 <span style="font-size:10px;color:var(--sub);font-weight:600">'+weekRangeLabel(parseDate(ws))+' · 월~일</span></div>'
     +'<div class="weekly-review-grid">'
     +'<div class="weekly-review-item"><div class="weekly-review-label">할 일 실행</div>'
     +'<div class="weekly-review-value">'+taskDone+'/'+weekTasks.length+'</div>'
@@ -3755,7 +3777,8 @@ function renderGoalSelect(selectedId) {
   var wrap=document.getElementById('mGoalWrap'), sel=document.getElementById('mGoalSelect');
   if (!wrap || !sel) return;
   var ac=activeChildId();
-  var goals=state.goals.filter(function(g){ return g.weekStart===fmt(getWeekStart(TODAY)) && (!g.childId || !ac || g.childId===ac); });
+  var ws=contextWeekStart();
+  var goals=state.goals.filter(function(g){ return goalMatchesWeek(g,ws) && (!g.childId || !ac || g.childId===ac); });
   if (!goals.length) { wrap.style.display='none'; sel.innerHTML='<option value="">연결할 목표 없음</option>'; return; }
   wrap.style.display='';
   var html='<option value="">연결하지 않음</option>';
