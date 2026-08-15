@@ -14,7 +14,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20260815-build042 -->
+<!-- v20260815-build043 -->
 <title>Build 042 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
@@ -4381,5 +4381,33 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+
+<script>
+/* Build 043: continuation-page skip confirmation.
+   A prior recorded page is allowed to be skipped, but the user is asked to
+   confirm when the new start page jumps beyond prior_page + 1. */
+(function () {
+  window.fpBuild043CheckContinuationStart = function (previousPage, newStartPage) {
+    const prev = Number(previousPage);
+    const next = Number(newStartPage);
+    if (!Number.isFinite(prev) || !Number.isFinite(next)) return true;
+
+    if (next > prev + 1) {
+      return window.confirm(
+        `이전 학습은 ${prev}p까지 진행되었습니다.\n\n` +
+        `${prev + 1}~${next - 1}p를 건너뛰고 ${next}p부터 시작하시겠습니까?`
+      );
+    }
+    if (next < prev + 1) {
+      return window.confirm(
+        `이전 학습은 ${prev}p까지 진행되었습니다.\n\n` +
+        `${next}p부터 다시 시작하시겠습니까?`
+      );
+    }
+    return true;
+  };
+})();
+</script>
+
 </body>
 </html>
