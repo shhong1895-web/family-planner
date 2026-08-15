@@ -14,8 +14,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20260815-build043 -->
-<title>Build 042 · 우리가족 플래너</title>
+<!-- v20260815-build044 -->
+<title>Build 044 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -783,7 +783,7 @@ body {
 </style>
 </head>
 <body>
-<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 042</div>
+<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 044</div>
 
 <!-- ONBOARDING -->
 <div id="onboardOverlay">
@@ -2209,7 +2209,7 @@ function emptyBox(ico,h,p) {
   return '<div class="empty"><div class="empty-ico">'+ico+'</div><div class="empty-h">'+h+'</div><div class="empty-p">'+p+'</div></div>';
 }
 
-// ── STUDY PROGRESS (Build 042) ──
+// ── STUDY PROGRESS (Build 044) ──
 // 학습 과제는 "완료/미완료"만 기록하지 않고 실제 도달 페이지를 날짜별로 기록합니다.
 function studyProgressForDate(t, ds) {
   var map=t.progressByDate||{};
@@ -2232,7 +2232,7 @@ function studyProgressText(t, ds) {
   var end=t.pageEnd ? Number(t.pageEnd) : null;
   return '📖 '+esc(String(p.page))+'p까지 실행'+(end!==null && isFinite(end) ? ' · '+pct+'%':'');
 }
-// Build 042: 학습 진도 이어가기
+// Build 044: 학습 진도 이어가기
 // 다음 학습일을 자동 생성하지 않습니다.
 // 사용자가 실제로 다음 계획을 만들 때 이전 진도를 참고할 수 있도록 제안합니다.
 function studyLastProgressBefore(t, ds) {
@@ -2253,24 +2253,36 @@ function studyNextStartAfterDate(t, ds) {
   if (isFinite(end) && cur>=end) return null;
   return cur+1;
 }
+function studyPlanTasksForDateAndWorkbook(ds, workbook, level) {
+  if (!workbook) return [];
+  return tasksForDate(ds).filter(function(t){
+    return t.taskType==='study' && t.workbook===workbook && (t.workbookLevel||'')===(level||'');
+  });
+}
+// 새 계획을 세울 때만 바로 직전의 같은 문제집 계획이 미완료였는지를 참고합니다.
+// 오래된 미완료 기록을 계속 끌고 오지 않고 가장 최근 계획이 기준입니다.
 function studyContinuationForNewPlan(workbook, level, ds) {
   if (!workbook || workbook==='__custom__') return null;
-  var child=activeChildId(), best=null;
-  state.tasks.forEach(function(t){
-    if (t.taskType!=='study' || t.workbook!==workbook) return;
-    if ((t.workbookLevel||'') !== (level||'')) return;
-    if (child && t.childId && String(t.childId)!==String(child)) return;
-    Object.keys(t.progressByDate||{}).forEach(function(k){
-      if (k>=ds) return;
-      var v=t.progressByDate[k];
-      if (!v || v.page===undefined || v.page===null || v.page==='') return;
-      var pg=Number(v.page), en=Number(t.pageEnd);
-      if (!isFinite(pg)) return;
-      if (isFinite(en) && pg>=en) return;
-      if (!best || k>best.date) best={date:k,page:pg,end:isFinite(en)?en:null};
+  var d=parseDate(ds);
+  for (var i=1;i<=366;i++) {
+    d.setDate(d.getDate()-1);
+    var priorDs=fmt(d);
+    var list=studyPlanTasksForDateAndWorkbook(priorDs, workbook, level);
+    if (!list.length) continue;
+    var best=null;
+    list.forEach(function(t){
+      var p=studyProgressForDate(t,priorDs);
+      if (p && p.page!==undefined && p.page!==null && p.page!=='') {
+        var pg=Number(p.page), en=Number(t.pageEnd);
+        if (isFinite(pg) && (!isFinite(en) || pg<en)) best={date:priorDs,page:pg,end:isFinite(en)?en:null,taskId:t.id};
+      }
     });
-  });
-  return best;
+    // 가장 최근의 같은 문제집 계획이 완료되었거나 실행 기록이 없다면
+    // 그보다 오래된 계획을 다시 꺼내지 않습니다.
+    if (!best) return null;
+    return best;
+  }
+  return null;
 }
 function applyStudyContinuationStart() {
   var hint=window._studyContinuationHint;
@@ -2283,7 +2295,7 @@ function updateStudyContinuationHint() {
   var el=document.getElementById('mStudyContinueHint');
   if (!el) return;
   var wrap=document.getElementById('mStudyWrap');
-  if (!wrap || wrap.style.display==='none') { el.style.display='none'; return; }
+  if (!wrap || wrap.style.display==='none' || _editTaskId) { el.style.display='none'; el.innerHTML=''; window._studyContinuationHint=null; return; }
   var wb=document.getElementById('mWorkbook').value;
   if (wb==='__custom__') wb=(document.getElementById('mWorkbookCustom').value||'').trim();
   var level=(document.getElementById('mWorkbookLevel').value||'').trim();
@@ -2293,9 +2305,37 @@ function updateStudyContinuationHint() {
   if (!hint) { el.style.display='none'; el.innerHTML=''; return; }
   el.style.display='';
   var endText=hint.end!==null ? ' ~ '+hint.end+'p' : '';
-  el.innerHTML='📖 이전 학습에서 <strong>'+esc(String(hint.page))+'p</strong>까지 진행했어요.'
-    +'<br>다음 계획을 만들 경우 <strong>'+esc(String(hint.page+1))+'p'+endText+'</strong>부터 이어갈 수 있습니다.'
+  el.innerHTML='📖 이전 계획에서 <strong>'+esc(String(hint.page))+'p</strong>까지 진행했어요.'
+    +'<br>이어서 한다면 <strong>'+esc(String(hint.page+1))+'p'+endText+'</strong>부터 시작할 수 있습니다.'
+    +'<br><span style="color:#475569">새로운 범위로 계획해도 괜찮아요. 이 안내는 참고용입니다.</span>'
     +'<br><button type="button" class="f-btn" style="margin-top:6px;background:#DBEAFE;color:#1D4ED8;font-size:12px;padding:6px 9px" onclick="applyStudyContinuationStart()">↪ '+esc(String(hint.page+1))+'p부터 입력</button>';
+}
+function studyRangeInfo(t) {
+  if (!t || t.taskType!=='study') return null;
+  var st=Number(t.pageStart), en=t.pageEnd!==''&&t.pageEnd!=null?Number(t.pageEnd):null;
+  if (!isFinite(st)) return null;
+  return {start:st,end:isFinite(en)?en:null};
+}
+function studyContinuityWarnings(date, workbook, level, start, end, excludeId) {
+  var warnings=[];
+  var d=parseDate(date);
+  [-1,1].forEach(function(offset){
+    var dd=new Date(d); dd.setDate(dd.getDate()+offset);
+    var ds=fmt(dd);
+    studyPlanTasksForDateAndWorkbook(ds,workbook,level).forEach(function(t){
+      if (excludeId && String(t.id)===String(excludeId)) return;
+      var r=studyRangeInfo(t); if (!r) return;
+      if (offset===1 && end!==null && r.start!==end+1) {
+        if (r.start>end+1) warnings.push('다음 날짜 '+koDateShort(ds)+' 계획이 '+r.start+'p부터 시작해 '+(end+1)+'~'+(r.start-1)+'p가 비어 있습니다.');
+        else if (r.start<=end) warnings.push('다음 날짜 '+koDateShort(ds)+' 계획이 '+r.start+'p부터 시작해 페이지 범위가 겹칩니다.');
+      }
+      if (offset===-1 && r.end!==null && start!==r.end+1) {
+        if (start>r.end+1) warnings.push('이전 날짜 '+koDateShort(ds)+' 계획 이후 '+(r.end+1)+'~'+(start-1)+'p가 비어 있습니다.');
+        else if (start<=r.end) warnings.push('이전 날짜 '+koDateShort(ds)+' 계획과 페이지 범위가 겹칩니다.');
+      }
+    });
+  });
+  return warnings;
 }
 function nextTaskDate(ds) {
   var d=parseDate(ds); d.setDate(d.getDate()+1); return fmt(d);
@@ -2361,7 +2401,7 @@ function updateStudyProgressPreview() {
   el.textContent=pct===null ? ('현재 '+cur+'p까지 실행') : ('현재 '+cur+'p까지 실행 · 계획량의 '+pct+'%');
 }
 document.addEventListener('input',function(e){ if(e.target&&e.target.id==='studyProgressPage') updateStudyProgressPreview(); });
-document.addEventListener('input',function(e){ if(e.target&&(['mWorkbookLevel','mWorkbookCustom'].indexOf(e.target.id)>=0)) updateStudyContinuationHint(); });
+document.addEventListener('input',function(e){ if(e.target&&(['mWorkbookLevel','mWorkbookCustom','mPageStart','mPageEnd'].indexOf(e.target.id)>=0)) updateStudyContinuationHint(); });
 function saveStudyProgress(markDone) {
   var id=_studyProgressTaskId, ds=_studyProgressDate;
   if (!id||!ds) return;
@@ -4197,6 +4237,16 @@ function saveTask() {
     if (!name) { showToast('⚠️ 제목을 입력해주세요'); return; }
   }
   var date = document.getElementById('mDate').value || fmt(state.selectedDate);
+  if (isStudy && pageStart) {
+    var stNum=Number(pageStart), enNum=pageEnd!==''?Number(pageEnd):null;
+    if (isFinite(stNum) && (enNum===null || (isFinite(enNum) && enNum>=stNum))) {
+      var continuityWarnings=studyContinuityWarnings(date,workbook,workbookLevel,stNum,enNum,isEdit?(_editTaskId||null):null);
+      if (continuityWarnings.length) {
+        var msg='⚠️ 앞뒤 날짜의 같은 문제집 계획과 진도가 자연스럽게 이어지지 않습니다.\n\n'+continuityWarnings.join('\n')+'\n\n그래도 이 계획으로 저장하시겠습니까?';
+        if (!window.confirm(msg)) return;
+      }
+    }
+  }
   var allday = document.getElementById('mAllday').checked;
   var errEl = document.getElementById('mTimeError');
   var timeVal = '';
@@ -4382,32 +4432,7 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 
-<script>
-/* Build 043: continuation-page skip confirmation.
-   A prior recorded page is allowed to be skipped, but the user is asked to
-   confirm when the new start page jumps beyond prior_page + 1. */
-(function () {
-  window.fpBuild043CheckContinuationStart = function (previousPage, newStartPage) {
-    const prev = Number(previousPage);
-    const next = Number(newStartPage);
-    if (!Number.isFinite(prev) || !Number.isFinite(next)) return true;
 
-    if (next > prev + 1) {
-      return window.confirm(
-        `이전 학습은 ${prev}p까지 진행되었습니다.\n\n` +
-        `${prev + 1}~${next - 1}p를 건너뛰고 ${next}p부터 시작하시겠습니까?`
-      );
-    }
-    if (next < prev + 1) {
-      return window.confirm(
-        `이전 학습은 ${prev}p까지 진행되었습니다.\n\n` +
-        `${next}p부터 다시 시작하시겠습니까?`
-      );
-    }
-    return true;
-  };
-})();
-</script>
 
 </body>
 </html>
