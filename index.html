@@ -15,7 +15,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <!-- v20260813-build031 -->
-<title>Build 033 · 우리가족 플래너</title>
+<title>Build 035 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -752,7 +752,7 @@ body {
 </style>
 </head>
 <body>
-<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 034</div>
+<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 035</div>
 
 <!-- ONBOARDING -->
 <div id="onboardOverlay">
@@ -3912,7 +3912,15 @@ document.getElementById('excModal').addEventListener('click', function(e){ if(e.
 function shiftDay(n) { state.selectedDate=new Date(state.selectedDate); state.selectedDate.setDate(state.selectedDate.getDate()+n); render(); }
 function shiftWeek(n) { state.weekStart=new Date(state.weekStart); state.weekStart.setDate(state.weekStart.getDate()+n*7); render(); }
 function shiftMonth(n) { state.month=new Date(state.month.getFullYear(),state.month.getMonth()+n,1); render(); }
-function selectDay(ds) { state.selectedDate=parseDate(ds); render(); }
+function selectDay(ds) {
+  state.selectedDate=parseDate(ds);
+  state.view='day';
+  document.querySelectorAll('.nav-item').forEach(function(el){
+    el.classList.toggle('active',el.id==='nav-day'&&state.mode!=='parent');
+    el.classList.toggle('p-active',el.id==='nav-day'&&state.mode==='parent');
+  });
+  render();
+}
 
 // ── URL COPY ──
 function showUrlPopupFn(url, type) {
