@@ -206,6 +206,22 @@ body {
 .weekly-review-bar {height:6px;background:#E5E7EB;border-radius:999px;overflow:hidden;margin-top:7px;}
 .weekly-review-fill {height:100%;background:var(--child);border-radius:999px;}
 .weekly-review-note {font-size:11px;color:var(--sub);margin-top:10px;line-height:1.45;}
+/* WEEK AT A GLANCE (Build 034) */
+.week-at-glance { background:var(--card); border-radius:var(--r); padding:14px; box-shadow:var(--sh); margin-bottom:14px; }
+.week-glance-title { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:13px; font-weight:800; color:var(--text); }
+.week-glance-sub { font-size:10px; color:var(--sub); font-weight:600; }
+.week-glance-list { display:flex; flex-direction:column; gap:7px; }
+.week-glance-row { display:grid; grid-template-columns:34px 1fr auto; gap:9px; align-items:center; padding:8px 6px; border-radius:11px; background:#F8FAFC; cursor:pointer; }
+.week-glance-row.today { background:color-mix(in srgb, var(--child) 9%, transparent); }
+.week-glance-day { text-align:center; font-size:10px; font-weight:800; color:var(--sub); line-height:1.15; }
+.week-glance-day strong { display:block; font-size:14px; color:var(--text); margin-top:2px; }
+.week-glance-main { min-width:0; }
+.week-glance-bar { height:5px; background:#E8EDF3; border-radius:99px; overflow:hidden; margin-top:5px; }
+.week-glance-fill { height:100%; background:var(--child); border-radius:99px; }
+.week-glance-meta { font-size:10px; color:var(--sub); white-space:nowrap; }
+.week-glance-right { text-align:right; font-size:10px; color:var(--sub); line-height:1.35; }
+.week-glance-right b { color:var(--text); font-size:11px; }
+
 /* TODAY SUMMARY (Build 030) */
 /* WEEKLY GOALS (Build 031) */
 .goal-card {
@@ -736,7 +752,7 @@ body {
 </style>
 </head>
 <body>
-<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 033</div>
+<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 034</div>
 
 <!-- ONBOARDING -->
 <div id="onboardOverlay">
@@ -2429,6 +2445,33 @@ function weeklyReviewHtml(ws) {
     +'</div>';
 }
 
+// ── WEEK AT A GLANCE (Build 034) ──
+function weekGlanceHtml(ws) {
+  var days=['일','월','화','수','목','금','토'];
+  var html='<div class="week-at-glance">'
+    +'<div class="week-glance-title"><span>📌 이번 주 한눈에</span><span class="week-glance-sub">날짜를 누르면 그날로 이동</span></div>'
+    +'<div class="week-glance-list">';
+  for (var i=0;i<7;i++) {
+    var d=new Date(ws); d.setDate(ws.getDate()+i);
+    var ds=fmt(d);
+    var tasks=tasksForDate(ds);
+    var done=tasks.filter(function(t){ return taskDoneForDate(t,ds); }).length;
+    var shared=sharedForDate(ds).length;
+    var pct=tasks.length?Math.round(done/tasks.length*100):0;
+    var isTod=isToday(d);
+    html+='<div class="week-glance-row'+(isTod?' today':'')+'" onclick="selectDay(\''+ds+'\')">'
+      +'<div class="week-glance-day">'+days[d.getDay()]+'<strong>'+d.getDate()+'</strong></div>'
+      +'<div class="week-glance-main">'
+      +'<div class="week-glance-meta">'+(tasks.length?('할 일 '+done+'/'+tasks.length+' 완료'):'할 일 없음')+'</div>'
+      +'<div class="week-glance-bar"><div class="week-glance-fill" style="width:'+pct+'%"></div></div>'
+      +'</div>'
+      +'<div class="week-glance-right"><b>'+shared+'</b> 일정<br><span>'+pct+'%</span></div>'
+      +'</div>';
+  }
+  html+='</div></div>';
+  return html;
+}
+
 // ── WEEK VIEW ──
 function renderWeek() {
   var ws=state.weekStart;
@@ -2440,6 +2483,7 @@ function renderWeek() {
     +'<button class="date-nav-btn" onclick="shiftWeek(1)">›</button></div>';
 
   html+=weeklyReviewHtml(fmt(ws));
+  html+=weekGlanceHtml(ws);
 
   var days=['일','월','화','수','목','금','토'];
   html+='<div class="week-grid">';
