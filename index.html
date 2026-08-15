@@ -15,7 +15,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <!-- v20260813-build031 -->
-<title>Build 032 · 우리가족 플래너</title>
+<title>Build 033 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -193,6 +193,19 @@ body {
 .goal-link-wrap { margin-top:10px; }
 .goal-link-note { font-size:10px; color:var(--sub); margin-top:5px; line-height:1.45; }
 .goal-linked { font-size:10px; color:var(--child); font-weight:700; margin-top:4px; }
+/* WEEKLY REVIEW (Build 033) */
+.weekly-review {
+  background:var(--card); border-radius:16px; padding:16px; margin:0 0 14px;
+  box-shadow:var(--sh);
+}
+.weekly-review-title {font-size:15px;font-weight:800;color:var(--text);margin-bottom:10px;}
+.weekly-review-grid {display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+.weekly-review-item {background:var(--bg);border-radius:12px;padding:11px 10px;}
+.weekly-review-label {font-size:10px;color:var(--sub);font-weight:600;margin-bottom:4px;}
+.weekly-review-value {font-size:17px;font-weight:800;color:var(--text);}
+.weekly-review-bar {height:6px;background:#E5E7EB;border-radius:999px;overflow:hidden;margin-top:7px;}
+.weekly-review-fill {height:100%;background:var(--child);border-radius:999px;}
+.weekly-review-note {font-size:11px;color:var(--sub);margin-top:10px;line-height:1.45;}
 /* TODAY SUMMARY (Build 030) */
 /* WEEKLY GOALS (Build 031) */
 .goal-card {
@@ -723,7 +736,7 @@ body {
 </style>
 </head>
 <body>
-<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 032</div>
+<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 033</div>
 
 <!-- ONBOARDING -->
 <div id="onboardOverlay">
@@ -2378,6 +2391,44 @@ function renderMessages(ds, isP) {
   return html;
 }
 
+// ── WEEKLY REVIEW (Build 033) ──
+function weeklyReviewHtml(ws) {
+  var we=new Date(parseDate(ws)); we.setDate(we.getDate()+7);
+  var end=fmt(we);
+  var weekTasks=state.tasks.filter(function(t){
+    if (t.date<ws || t.date>=end) return false;
+    return isForActiveChild(t);
+  });
+  var taskDone=weekTasks.filter(function(t){return !!t.done;}).length;
+  var taskPct=weekTasks.length?Math.round(taskDone/weekTasks.length*100):0;
+  var goals=state.goals.filter(function(g){
+    return g.weekStart===ws && (!g.childId || g.childId===activeChildId());
+  });
+  var goalDone=goals.filter(function(g){return !!g.done;}).length;
+  var goalPct=goals.length?Math.round(goalDone/goals.length*100):0;
+  var linked=weekTasks.filter(function(t){return !!t.goalId;});
+  var linkedDone=linked.filter(function(t){return !!t.done;}).length;
+  var linkedPct=linked.length?Math.round(linkedDone/linked.length*100):0;
+  return '<div class="weekly-review">'
+    +'<div class="weekly-review-title">📊 이번 주 돌아보기</div>'
+    +'<div class="weekly-review-grid">'
+    +'<div class="weekly-review-item"><div class="weekly-review-label">할 일 실행</div>'
+    +'<div class="weekly-review-value">'+taskDone+'/'+weekTasks.length+'</div>'
+    +'<div class="weekly-review-bar"><div class="weekly-review-fill" style="width:'+taskPct+'%"></div></div></div>'
+    +'<div class="weekly-review-item"><div class="weekly-review-label">목표 완료</div>'
+    +'<div class="weekly-review-value">'+goalDone+'/'+goals.length+'</div>'
+    +'<div class="weekly-review-bar"><div class="weekly-review-fill" style="width:'+goalPct+'%"></div></div></div>'
+    +'<div class="weekly-review-item"><div class="weekly-review-label">목표 연결 할 일</div>'
+    +'<div class="weekly-review-value">'+linkedDone+'/'+linked.length+'</div>'
+    +'<div class="weekly-review-bar"><div class="weekly-review-fill" style="width:'+linkedPct+'%"></div></div></div>'
+    +'<div class="weekly-review-item"><div class="weekly-review-label">이번 주 목표</div>'
+    +'<div class="weekly-review-value">'+goals.length+'개</div>'
+    +'<div class="weekly-review-note">계획한 목표와 실제 실행을 함께 확인해 보세요.</div></div>'
+    +'</div>'
+    +'<div class="weekly-review-note">자녀가 스스로 계획하고, 실행한 결과를 돌아보는 화면입니다.</div>'
+    +'</div>';
+}
+
 // ── WEEK VIEW ──
 function renderWeek() {
   var ws=state.weekStart;
@@ -2387,6 +2438,8 @@ function renderWeek() {
     +'<div class="date-nav-center"><div class="date-nav-main">'+(ws.getMonth()+1)+'/'+(ws.getDate())+' – '+(we.getMonth()+1)+'/'+(we.getDate())+'</div>'
     +'<div class="date-nav-sub">주간 계획</div></div>'
     +'<button class="date-nav-btn" onclick="shiftWeek(1)">›</button></div>';
+
+  html+=weeklyReviewHtml(fmt(ws));
 
   var days=['일','월','화','수','목','금','토'];
   html+='<div class="week-grid">';
