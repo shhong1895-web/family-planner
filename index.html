@@ -14,8 +14,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20260813-build031 -->
-<title>Build 039 · 우리가족 플래너</title>
+<!-- v20260815-build040 -->
+<title>Build 040 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -222,7 +222,7 @@ body {
 .week-glance-right { text-align:right; font-size:10px; color:var(--sub); line-height:1.35; }
 .week-glance-right b { color:var(--text); font-size:11px; }
 
-/* WEEKLY PLAN (Build 039) */
+/* WEEKLY PLAN (Build 040) */
 .week-plan { background:var(--card); border-radius:var(--r); padding:14px; box-shadow:var(--sh); margin-bottom:14px; }
 .week-plan-title { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:13px; font-weight:800; color:var(--text); }
 .week-plan-sub { font-size:10px; color:var(--sub); font-weight:600; }
@@ -355,6 +355,14 @@ body {
 }
 .sec-title::after { content:''; flex:1; height:1px; background:var(--border); }
 
+/* Build 040: 학습 할 일의 부분 실행 기록 */
+.study-progress-note { font-size:12px; color:var(--child); margin-top:5px; font-weight:700; }
+.study-progress-bar { height:5px; background:#E2E8F0; border-radius:99px; overflow:hidden; margin-top:7px; }
+.study-progress-fill { height:100%; background:var(--child); border-radius:99px; transition:width .2s; }
+.study-progress-modal-note { font-size:13px; color:var(--sub); line-height:1.6; margin-top:6px; }
+.study-progress-plan { background:var(--child-l); border-radius:12px; padding:12px 14px; margin-bottom:14px; }
+.study-progress-plan strong { color:var(--child); }
+.study-progress-result { font-size:14px; font-weight:700; margin-top:10px; min-height:20px; }
 .task-card {
   background:var(--card); border-radius:var(--r); padding:10px 12px;
   margin-bottom:7px; box-shadow:var(--sh);
@@ -774,7 +782,7 @@ body {
 </style>
 </head>
 <body>
-<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 039</div>
+<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 040</div>
 
 <!-- ONBOARDING -->
 <div id="onboardOverlay">
@@ -982,6 +990,29 @@ body {
         <button class="m-cancel" onclick="closeModal()">취소</button>
         <button class="m-save" id="mSave" onclick="saveTask()">추가하기</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Build 040: 학습 부분 실행 기록 모달 -->
+<div class="modal-overlay" id="studyProgressModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-body">
+      <div class="modal-h" id="studyProgressTitle">📖 학습 실행 기록</div>
+      <div class="study-progress-plan" id="studyProgressPlan"></div>
+      <div class="m-label">오늘 어디까지 했나요?</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input class="m-field" id="studyProgressPage" type="number" inputmode="numeric" placeholder="실제 완료 페이지" style="flex:1">
+        <span style="font-weight:700;color:var(--sub)">p까지</span>
+      </div>
+      <div class="study-progress-modal-note">계획한 끝 페이지까지 하지 못했어도 실제로 한 만큼 기록할 수 있어요.<br>예: 20~30p 계획 → 25p까지 실행</div>
+      <div class="study-progress-result" id="studyProgressResult"></div>
+      <div class="m-btns" style="margin-top:16px">
+        <button class="m-cancel" onclick="closeStudyProgressModal()">취소</button>
+        <button class="m-save" id="studyProgressSave" onclick="saveStudyProgress(false)">기록 저장</button>
+      </div>
+      <button class="f-btn" style="width:100%;margin-top:8px;background:#ECFDF5;color:#047857" onclick="saveStudyProgress(true)">✅ 계획 완료로 표시</button>
     </div>
   </div>
 </div>
@@ -2176,6 +2207,94 @@ function emptyBox(ico,h,p) {
   return '<div class="empty"><div class="empty-ico">'+ico+'</div><div class="empty-h">'+h+'</div><div class="empty-p">'+p+'</div></div>';
 }
 
+// ── STUDY PROGRESS (Build 040) ──
+// 학습 과제는 "완료/미완료"만 기록하지 않고 실제 도달 페이지를 날짜별로 기록합니다.
+function studyProgressForDate(t, ds) {
+  var map=t.progressByDate||{};
+  var v=map[ds];
+  return v || null;
+}
+function studyProgressPercent(t, ds) {
+  if (t.taskType!=='study' || !t.pageStart || !t.pageEnd) return null;
+  var p=studyProgressForDate(t,ds);
+  if (!p || p.page===undefined || p.page===null || p.page==='') return null;
+  var st=Number(t.pageStart), en=Number(t.pageEnd), cur=Number(p.page);
+  if (!isFinite(st)||!isFinite(en)||!isFinite(cur)||en<st) return null;
+  return Math.max(0,Math.min(100,Math.round((cur-st+1)/(en-st+1)*100)));
+}
+function studyProgressText(t, ds) {
+  if (t.taskType!=='study') return '';
+  var p=studyProgressForDate(t,ds);
+  if (!p || p.page===undefined || p.page===null || p.page==='') return '';
+  var pct=studyProgressPercent(t,ds);
+  var end=t.pageEnd ? Number(t.pageEnd) : null;
+  return '📖 '+esc(String(p.page))+'p까지 실행'+(end!==null && isFinite(end) ? ' · '+pct+'%':'');
+}
+var _studyProgressTaskId=null, _studyProgressDate=null;
+function openStudyProgressModal(id, ds) {
+  var t=state.tasks.find(function(x){return String(x.id)===String(id);});
+  if (!t) return;
+  if (state.mode==='parent') { showToast('⚠️ 완료 체크는 자녀가 직접 해요'); return; }
+  _studyProgressTaskId=id; _studyProgressDate=ds;
+  document.getElementById('studyProgressTitle').textContent='📖 학습 실행 기록';
+  var planned=esc(t.pageStart||'')+(t.pageEnd?'~'+esc(t.pageEnd):'')+'p';
+  var p=studyProgressForDate(t,ds);
+  document.getElementById('studyProgressPlan').innerHTML='<div style="font-size:13px;color:var(--sub);margin-bottom:4px">'+esc(t.workbook||t.name)+'</div><div style="font-size:17px;font-weight:800"><strong>'+planned+'</strong> 계획</div>';
+  document.getElementById('studyProgressPage').value=p&&p.page!==undefined?p.page:'';
+  updateStudyProgressPreview();
+  document.getElementById('studyProgressModal').classList.add('open');
+  setTimeout(function(){document.getElementById('studyProgressPage').focus();},100);
+}
+function closeStudyProgressModal() {
+  document.getElementById('studyProgressModal').classList.remove('open');
+  _studyProgressTaskId=null; _studyProgressDate=null;
+}
+function updateStudyProgressPreview() {
+  var el=document.getElementById('studyProgressResult');
+  if (!el || !_studyProgressTaskId) return;
+  var t=state.tasks.find(function(x){return String(x.id)===String(_studyProgressTaskId);});
+  if (!t) return;
+  var cur=Number(document.getElementById('studyProgressPage').value);
+  if (!isFinite(cur)) { el.textContent=''; return; }
+  var st=Number(t.pageStart), en=t.pageEnd!==''&&t.pageEnd!=null?Number(t.pageEnd):null;
+  if (isFinite(st) && cur<st) { el.textContent='⚠️ 시작 페이지보다 작을 수 없어요.'; return; }
+  if (en!==null && isFinite(en) && cur>en) { el.textContent='⚠️ 계획한 끝 페이지보다 클 수 없어요.'; return; }
+  var pct=(en!==null&&isFinite(st)&&isFinite(en))?Math.max(0,Math.min(100,Math.round((cur-st+1)/(en-st+1)*100))):null;
+  el.textContent=pct===null ? ('현재 '+cur+'p까지 실행') : ('현재 '+cur+'p까지 실행 · 계획량의 '+pct+'%');
+}
+document.addEventListener('input',function(e){ if(e.target&&e.target.id==='studyProgressPage') updateStudyProgressPreview(); });
+function saveStudyProgress(markDone) {
+  var id=_studyProgressTaskId, ds=_studyProgressDate;
+  if (!id||!ds) return;
+  var t=state.tasks.find(function(x){return String(x.id)===String(id);});
+  if (!t) return;
+  var input=document.getElementById('studyProgressPage').value.trim();
+  var cur=input===''?null:Number(input);
+  var st=Number(t.pageStart), en=t.pageEnd!==''&&t.pageEnd!=null?Number(t.pageEnd):null;
+  if (cur!==null) {
+    if (!isFinite(cur) || !isFinite(st) || cur<st) { showToast('⚠️ 시작 페이지 이상을 입력해주세요'); return; }
+    if (en!==null && isFinite(en) && cur>en) { showToast('⚠️ 계획한 끝 페이지 이하로 입력해주세요'); return; }
+  }
+  var map=Object.assign({},t.progressByDate||{});
+  if (cur===null && !markDone) delete map[ds];
+  else map[ds]={page:cur, done:!!markDone, updatedAt:Date.now()};
+  t.progressByDate=map;
+  if (t.repeat && t.repeat!=='none') {
+    var doneDates=(t.doneDates||[]).slice();
+    var idx=doneDates.indexOf(ds);
+    if (markDone && idx<0) doneDates.push(ds);
+    if (!markDone && idx>=0) doneDates.splice(idx,1);
+    t.doneDates=doneDates;
+  } else {
+    t.done=!!markDone;
+  }
+  fsSet('tasks',t.id,t).then(function(){
+    closeStudyProgressModal();
+    if (markDone) { playCompleteAnimation(); showToast('🎉 학습 계획을 완료했어요!'); }
+    else showToast(cur===null?'기록을 지웠어요':'📖 실제 실행량을 기록했어요!');
+  }).catch(function(){ showToast('⚠️ 저장 실패. 네트워크를 확인해주세요'); });
+}
+
 function taskCard(t, ds) {
   var done=taskDoneForDate(t, ds);
   var isP=state.mode==='parent';
@@ -2189,15 +2308,21 @@ function taskCard(t, ds) {
   if (t.fromParent) tags+='<span class="tag pfrom">👨‍👩‍👧 부모등록</span>';
   if (t.repeat&&t.repeat!=='none') tags+='<span class="tag rep">🔄 '+esc(repeatSummary(t))+'</span>';
   if (done) tags+='<span class="tag done-t">✅ 완료</span>';
+  var studyPartial = t.taskType==='study' ? studyProgressForDate(t,ds) : null;
+  var studyProgress = t.taskType==='study' ? studyProgressPercent(t,ds) : null;
+  var studyNote = t.taskType==='study' ? studyProgressText(t,ds) : '';
   var chkHtml = canToggle
-    ? '<button class="chk'+(done?' checked':'')+'" onclick="toggleTask(\''+t.id+'\',\''+ds+'\');event.stopPropagation()">'+(done?'✓':'')+'</button>'
-    : '<button class="chk'+(done?' checked':'')+' chk-disabled" onclick="event.stopPropagation();showToast(\'⚠️ 완료 체크는 자녀가 직접 해요\')">'+(done?'✓':'')+'</button>';
+    ? (t.taskType==='study'
+      ? '<button class="chk"'+(done?' checked':'')+' onclick="openStudyProgressModal(\''+t.id+'\',\''+ds+'\');event.stopPropagation()">'+(done?'✓':'')+'</button>'
+      : '<button class="chk"'+(done?' checked':'')+' onclick="toggleTask(\''+t.id+'\',\''+ds+'\');event.stopPropagation()">'+(done?'✓':'')+'</button>')
+    : '<button class="chk"'+(done?' checked':'')+' chk-disabled onclick="event.stopPropagation();showToast(\'⚠️ 완료 체크는 자녀가 직접 해요\')">'+(done?'✓':'')+'</button>';
   return '<div class="task-card'+(done?' done':'')+(t.fromParent?' from-parent':'')+'"'
     +(canEdit?' data-dbtap="task:'+t.id+'"':'')+'>'
     +chkHtml
     +'<div class="task-body"><div class="task-name">'+esc(t.name)+'</div>'
     +'<div class="tags">'+tags+'</div>'
     +(t.desc?'<div class="task-desc">'+esc(t.desc)+'</div>':'')
+    +(studyNote?'<div class="study-progress-note">'+studyNote+'</div>'+(studyProgress!==null&&!done?'<div class="study-progress-bar"><div class="study-progress-fill" style="width:'+studyProgress+'%"></div></div>':''):'')
     +'</div>'
     +(canEdit?'<button class="task-edit" onclick="openModal('+t.id+');event.stopPropagation()">✏️</button>':'')
     +(canEdit?'<button class="task-del" onclick="deleteTask('+t.id+');event.stopPropagation()">🗑</button>':'')
@@ -2533,7 +2658,7 @@ function weekGlanceHtml(ws) {
   return html;
 }
 
-// ── WEEKLY PLAN (Build 039) ──
+// ── WEEKLY PLAN (Build 040) ──
 function weekPlanHtml(ws) {
   var days=['일','월','화','수','목','금','토'];
   var html='<div class="week-plan">'
@@ -2593,7 +2718,7 @@ function renderWeek() {
   html+=weekPlanHtml(ws);
   html+=weekGlanceHtml(ws);
 
-  // Build 039: 기존 하단 월~일 날짜 선택 영역과 선택 날짜 상세 영역은 제거했습니다.
+  // Build 040: 기존 하단 월~일 날짜 선택 영역과 선택 날짜 상세 영역은 제거했습니다.
   // 날짜별 계획/일정 확인은 '이번 주 계획'에서 담당합니다.
   // '이번 주 한눈에'는 주간 실행 현황을 빠르게 비교하는 용도로 유지합니다.
 
@@ -3998,6 +4123,7 @@ function saveTask() {
 }
 
 document.getElementById('addModal').addEventListener('click', function(e){ if(e.target===this) closeModal(); });
+document.getElementById('studyProgressModal').addEventListener('click', function(e){ if(e.target===this) closeStudyProgressModal(); });
 document.getElementById('excModal').addEventListener('click', function(e){ if(e.target===this) closeExcModal(); });
 
 // ── NAV ──
