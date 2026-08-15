@@ -15,7 +15,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <!-- v20260813-build031 -->
-<title>Build 035 · 우리가족 플래너</title>
+<title>Build 036 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -752,7 +752,7 @@ body {
 </style>
 </head>
 <body>
-<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 035</div>
+<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 036</div>
 
 <!-- ONBOARDING -->
 <div id="onboardOverlay">
@@ -2020,7 +2020,7 @@ function setView(v) {
 // 실제로 화면(view/mode)이 바뀐 게 아니라 다른 기기의 변경사항 때문에 재렌더링되는 경우엔
 // 입력 중이던 값과 포커스를 스냅샷했다가 그대로 복원한다.
 var _prevRenderedView=null, _prevRenderedMode=null, _prevRenderedDate=null;
-var STICKY_FIELDS=['msgInput','msgReplyInput','se-name','se-desc','se-allday','se-icon','se-editId','se-dateStart','se-dateEnd','sch-name','sch-cat','sch-editId','sch-repeatStart','sch-repeatEnd','devNewChildName','devPinInput'];
+var STICKY_FIELDS=['msgInput','msgReplyInput','se-name','se-desc','se-allday','se-icon','se-target','se-editId','se-dateStart','se-dateEnd','sch-name','sch-cat','sch-editId','sch-repeatStart','sch-repeatEnd','devNewChildName','devPinInput'];
 
 function snapshotStickyFields(sa) {
   var snap={};
@@ -2217,13 +2217,30 @@ function excChooseRevert() {
   _excSaveExceptions(exceptions, '✅ 원래대로 되돌렸어요');
 }
 
+function sharedTargetLabel(e) {
+  if (e.childId) {
+    var c=state.children.find(function(x){ return String(x.id)===String(e.childId); });
+    return c ? ((c.emoji||'🧒')+' '+(c.name||'자녀')) : '👤 자녀 일정';
+  }
+  return '👨‍👩‍👧 가족 전체';
+}
+function renderSharedTargetSelect(selectedId) {
+  var html='<select class="f-field" id="se-target">'
+    +'<option value="">👨‍👩‍👧 가족 전체</option>';
+  state.children.forEach(function(c){
+    html+='<option value="'+esc(c.id)+'">'+esc((c.emoji||'🧒')+' '+(c.name||'자녀'))+'</option>';
+  });
+  html+='</select>';
+  return html;
+}
+
 function sharedCard(e, showDel) {
   var isP=state.mode==='parent';
   var timeStr=e.allday?'하루종일':(e.time?'🕐 '+prettyTime(e.time):'');
   return '<div class="shared-card'+(e._cancelled?' cancelled':'')+'"'+(isP&&!e.isSchool?' data-dbtap="shared:'+e.id+'"':'')+'>'
     +'<div class="shared-icon">'+(e.icon||'📅')+'</div>'
     +'<div class="shared-body"><div class="shared-title">'+esc(e.name)+(e.isSchool?' <span style="font-size:10px;font-weight:600;color:var(--sub)">· 학교/학원</span>':'')+'</div>'
-    +'<div class="shared-meta">'+timeStr+(e.desc?' · '+esc(e.desc):'')+'</div></div>'
+    +'<div class="shared-meta">'+timeStr+(e.desc?' · '+esc(e.desc):'')+' · '+esc(sharedTargetLabel(e))+'</div></div>'
     +(isP&&e.isSchool?'<button class="task-edit" onclick="openExcModal(\''+e._schoolId+'\',\''+e._origDate+'\');event.stopPropagation()">✏️</button>':'')
     +(showDel&&!e.isSchool?'<button class="task-del" onclick="deleteShared('+e.id+');event.stopPropagation()">🗑</button>':'')
     +'</div>';
@@ -2600,6 +2617,8 @@ function renderShared() {
       +'<div class="drum-time-error" id="se-timeError2" style="display:none"></div>'
       +'</div>'
 
+      +'<div class="f-label">일정 대상</div>'
+      +renderSharedTargetSelect('')
       +'<div class="f-label">아이콘</div>'
       +'<select class="f-field" id="se-icon">'
       +'<option value="📅">📅 일반</option><option value="🍽️">🍽️ 식사</option>'
@@ -3178,6 +3197,7 @@ function cancelEditShared() {
   var editId=document.getElementById('se-editId'); if(editId) editId.value='';
   var n=document.getElementById('se-name'); if(n) n.value='';
   var d=document.getElementById('se-desc'); if(d) d.value='';
+  var tg=document.getElementById('se-target'); if(tg) tg.value='';
   var a=document.getElementById('se-allday'); if(a) a.checked=false;
   var tw=document.getElementById('se-timeWrap'); if(tw) tw.style.display='';
   var t=document.getElementById('se-formTitle'); if(t) t.textContent='공유 일정 추가';
@@ -3213,6 +3233,7 @@ function editShared(id) {
   if(descEl) descEl.value=e.desc||'';
   if(alldayEl){ alldayEl.checked=!!e.allday; }
   if(iconEl) iconEl.value=e.icon||'📅';
+  var targetEl=document.getElementById('se-target'); if(targetEl) targetEl.value=e.childId||'';
 
   var tw=document.getElementById('se-timeWrap');
   if(tw) tw.style.display=e.allday?'none':'';
@@ -3242,6 +3263,7 @@ function addShared() {
   var nameEl=document.getElementById('se-name');
   var alldayEl=document.getElementById('se-allday');
   var iconEl=document.getElementById('se-icon');
+  var targetEl=document.getElementById('se-target');
   var descEl=document.getElementById('se-desc');
   var editIdEl=document.getElementById('se-editId');
   if (!nameEl) { showToast('⚠️ 오류가 발생했어요. 다시 시도해주세요'); return; }
@@ -3266,7 +3288,8 @@ function addShared() {
     name:name, date:dateStart, dateEnd:dateEnd,
     allday:allday, time:timeVal,
     icon:iconEl?iconEl.value:'📅',
-    desc:descEl?descEl.value:''
+    desc:descEl?descEl.value:'',
+    childId:targetEl&&targetEl.value ? targetEl.value : null
   });
   fsSet('sharedEvents',ev.id,ev).then(function(){
     showToast(isEdit?'✏️ 수정됐어요!':'📅 공유 일정이 추가됐어요!');
