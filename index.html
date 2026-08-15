@@ -14,8 +14,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20260815-build044 -->
-<title>Build 044 · 우리가족 플래너</title>
+<!-- v20260815-build045 -->
+<title>Build 045 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -783,7 +783,7 @@ body {
 </style>
 </head>
 <body>
-<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 044</div>
+<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 045</div>
 
 <!-- ONBOARDING -->
 <div id="onboardOverlay">
@@ -2209,7 +2209,7 @@ function emptyBox(ico,h,p) {
   return '<div class="empty"><div class="empty-ico">'+ico+'</div><div class="empty-h">'+h+'</div><div class="empty-p">'+p+'</div></div>';
 }
 
-// ── STUDY PROGRESS (Build 044) ──
+// ── STUDY PROGRESS (Build 045) ──
 // 학습 과제는 "완료/미완료"만 기록하지 않고 실제 도달 페이지를 날짜별로 기록합니다.
 function studyProgressForDate(t, ds) {
   var map=t.progressByDate||{};
@@ -2232,7 +2232,7 @@ function studyProgressText(t, ds) {
   var end=t.pageEnd ? Number(t.pageEnd) : null;
   return '📖 '+esc(String(p.page))+'p까지 실행'+(end!==null && isFinite(end) ? ' · '+pct+'%':'');
 }
-// Build 044: 학습 진도 이어가기
+// Build 045: 학습 진도 이어가기
 // 다음 학습일을 자동 생성하지 않습니다.
 // 사용자가 실제로 다음 계획을 만들 때 이전 진도를 참고할 수 있도록 제안합니다.
 function studyLastProgressBefore(t, ds) {
@@ -4237,12 +4237,34 @@ function saveTask() {
     if (!name) { showToast('⚠️ 제목을 입력해주세요'); return; }
   }
   var date = document.getElementById('mDate').value || fmt(state.selectedDate);
+  var isEdit = !!_editTaskId;
   if (isStudy && pageStart) {
     var stNum=Number(pageStart), enNum=pageEnd!==''?Number(pageEnd):null;
     if (isFinite(stNum) && (enNum===null || (isFinite(enNum) && enNum>=stNum))) {
+      var warnings=[];
+
+      // 새 계획을 처음 만들 때: 가장 최근의 같은 문제집 계획이 미완료라면
+      // 사용자가 이전 진도를 건너뛰어 새 범위를 잡는 경우를 확인합니다.
+      // 단, 기존 계획을 수정하는 경우에는 이 "이전 진도" 경고를 띄우지 않습니다.
+      if (!isEdit && workbook && workbook!=='__custom__') {
+        var priorHint = studyContinuationForNewPlan(workbook, workbookLevel, date);
+        if (priorHint && priorHint.page < (priorHint.end===null ? Infinity : priorHint.end)) {
+          var suggested = priorHint.page + 1;
+          if (stNum !== suggested) {
+            if (stNum > suggested) {
+              warnings.push('이전 계획에서는 '+priorHint.page+'p까지 진행했습니다. 이어서 한다면 '+suggested+'p부터입니다. 현재 계획은 '+stNum+'p부터 시작합니다.');
+            } else {
+              warnings.push('이전 계획에서는 '+priorHint.page+'p까지 진행했습니다. 현재 계획은 '+stNum+'p부터 시작하여 이전 진도와 겹칠 수 있습니다.');
+            }
+          }
+        }
+      }
+
       var continuityWarnings=studyContinuityWarnings(date,workbook,workbookLevel,stNum,enNum,isEdit?(_editTaskId||null):null);
-      if (continuityWarnings.length) {
-        var msg='⚠️ 앞뒤 날짜의 같은 문제집 계획과 진도가 자연스럽게 이어지지 않습니다.\n\n'+continuityWarnings.join('\n')+'\n\n그래도 이 계획으로 저장하시겠습니까?';
+      warnings=warnings.concat(continuityWarnings);
+
+      if (warnings.length) {
+        var msg='⚠️ 학습 진도를 확인해주세요.\n\n'+warnings.join('\n')+'\n\n그래도 이 계획으로 저장하시겠습니까?';
         if (!window.confirm(msg)) return;
       }
     }
@@ -4263,7 +4285,6 @@ function saveTask() {
     if (!repeatDays.length) { showToast('⚠️ 반복할 요일을 선택해주세요'); return; }
   }
   var repeatEnd = repeat!=='none' ? (document.getElementById('mRepeatEnd').value || '') : '';
-  var isEdit = !!_editTaskId;
   var existing = isEdit ? (state.tasks.find(function(x){ return String(x.id)===String(_editTaskId); })||{}) : {};
   var task = Object.assign({}, existing, {
     id: isEdit ? existing.id : Date.now(),
