@@ -14,7 +14,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20260815-build045 -->
+<!-- v20260815-build046 -->
 <title>Build 045 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
@@ -2318,23 +2318,47 @@ function studyRangeInfo(t) {
 }
 function studyContinuityWarnings(date, workbook, level, start, end, excludeId) {
   var warnings=[];
-  var d=parseDate(date);
-  [-1,1].forEach(function(offset){
-    var dd=new Date(d); dd.setDate(dd.getDate()+offset);
-    var ds=fmt(dd);
-    studyPlanTasksForDateAndWorkbook(ds,workbook,level).forEach(function(t){
-      if (excludeId && String(t.id)===String(excludeId)) return;
-      var r=studyRangeInfo(t); if (!r) return;
-      if (offset===1 && end!==null && r.start!==end+1) {
-        if (r.start>end+1) warnings.push('다음 날짜 '+koDateShort(ds)+' 계획이 '+r.start+'p부터 시작해 '+(end+1)+'~'+(r.start-1)+'p가 비어 있습니다.');
-        else if (r.start<=end) warnings.push('다음 날짜 '+koDateShort(ds)+' 계획이 '+r.start+'p부터 시작해 페이지 범위가 겹칩니다.');
+  if (!workbook || workbook==='__custom__') return warnings;
+  var base=parseDate(date);
+  var baseMs=base.getTime();
+  var seen={};
+
+  // 인접한 날짜만 보지 않고, 저장되어 있는 같은 문제집의 모든 학습 계획을 확인합니다.
+  // 새 계획과 날짜가 다른 모든 계획에 대해 페이지 공백/중복을 검사합니다.
+  for (var i=0;i<state.tasks.length;i++) {
+    var t=state.tasks[i];
+    if (!t || t.taskType!=='study' || t.workbook!==workbook || (t.workbookLevel||'')!==(level||'')) continue;
+    if (excludeId && String(t.id)===String(excludeId)) continue;
+    var ds=t.date;
+    if (!ds) continue;
+    var td=parseDate(ds);
+    if (!td || td.getTime()===baseMs) continue;
+    var r=studyRangeInfo(t);
+    if (!r) continue;
+
+    var key=String(t.id)+'|'+String(ds);
+    if (seen[key]) continue;
+    seen[key]=true;
+
+    if (td.getTime() < baseMs) {
+      // 과거 계획과 현재 계획 비교: 연결되지 않으면 공백, 겹치면 중복.
+      if (r.end!==null && start > r.end+1) {
+        warnings.push('이전 날짜 '+koDateShort(ds)+' 계획('+r.start+'~'+r.end+'p) 이후 '+(r.end+1)+'~'+(start-1)+'p가 비어 있습니다.');
+      } else if (r.end!==null && start <= r.end && end!==null && end >= r.start) {
+        var os=Math.max(start,r.start), oe=Math.min(end,r.end);
+        warnings.push('이전 날짜 '+koDateShort(ds)+' 계획('+r.start+'~'+r.end+'p)과 현재 계획('+start+'~'+end+'p)이 '+os+'~'+oe+'p에서 중복됩니다.');
       }
-      if (offset===-1 && r.end!==null && start!==r.end+1) {
-        if (start>r.end+1) warnings.push('이전 날짜 '+koDateShort(ds)+' 계획 이후 '+(r.end+1)+'~'+(start-1)+'p가 비어 있습니다.');
-        else if (start<=r.end) warnings.push('이전 날짜 '+koDateShort(ds)+' 계획과 페이지 범위가 겹칩니다.');
+    } else {
+      // 미래 계획과 현재 계획 비교.
+      if (end!==null && r.start > end+1) {
+        warnings.push('다음 날짜 '+koDateShort(ds)+' 계획('+r.start+'~'+(r.end!==null?r.end:'')+'p) 전 '+(end+1)+'~'+(r.start-1)+'p가 비어 있습니다.');
+      } else if (end!==null && r.start <= end && (r.end===null || r.end >= start)) {
+        var os2=Math.max(start,r.start), oe2=Math.min(end,r.end===null?end:r.end);
+        warnings.push('다음 날짜 '+koDateShort(ds)+' 계획('+r.start+'~'+(r.end!==null?r.end:'')+'p)과 현재 계획('+start+'~'+end+'p)이 '+os2+'~'+oe2+'p에서 중복됩니다.');
       }
-    });
-  });
+    }
+  }
+
   return warnings;
 }
 function nextTaskDate(ds) {
