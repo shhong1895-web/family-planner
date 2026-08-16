@@ -14,8 +14,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20260816-build047 -->
-<title>Build 047 · 우리가족 플래너</title>
+<!-- v20260816-Build 048 -->
+<title>Build 048 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -781,9 +781,20 @@ body {
   padding-top:26px; flex-shrink:0; width:16px; text-align:center;
 }
 </style>
+
+<style id="build048-test-return-style">
+#build048-test-return {
+  position: fixed; top: 12px; right: 12px; z-index: 99999;
+  display: none; padding: 10px 14px; border: 0; border-radius: 999px;
+  background: #222; color: #fff; font-size: 14px; font-weight: 700;
+  box-shadow: 0 3px 12px rgba(0,0,0,.22); cursor: pointer;
+}
+#build048-test-return.show { display: block; }
+</style>
+
 </head>
 <body>
-<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 047</div>
+<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 048</div>
 
 <!-- ONBOARDING -->
 <div id="onboardOverlay">
@@ -1615,7 +1626,7 @@ function getAuthUid() {
   return u ? u.uid : null;
 }
 
-// ── PC TEST ROLE (Build 047) ──
+// ── PC TEST ROLE (Build 048) ──
 // 실제 Firebase 기기 권한/role 문서는 변경하지 않고,
 // 데스크톱 브라우저에서만 sessionStorage로 화면 역할을 임시 전환합니다.
 // 휴대폰에서는 이 기능을 사용할 수 없습니다.
@@ -4574,6 +4585,56 @@ if ('serviceWorker' in navigator) {
 </script>
 
 
+
+<button id="build048-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
+
+<script id="build048-test-return-script">
+(function () {
+  function isPc() {
+    return !/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
+  }
+  function getRole() {
+    try {
+      return localStorage.getItem('pcTestRole') ||
+             localStorage.getItem('familyPlannerPcTestRole') ||
+             localStorage.getItem('testRole') || '';
+    } catch (_) { return ''; }
+  }
+  function update() {
+    var b = document.getElementById('build048-test-return');
+    if (b) b.classList.toggle('show', isPc() && getRole() === 'child');
+  }
+  function returnToParent() {
+    if (typeof window.enterPcTestRole === 'function') {
+      window.enterPcTestRole('parent');
+    } else {
+      try {
+        localStorage.setItem('pcTestRole', 'parent');
+        localStorage.setItem('familyPlannerPcTestRole', 'parent');
+        localStorage.setItem('testRole', 'parent');
+      } catch (_) {}
+      window.location.reload();
+    }
+    setTimeout(update, 100);
+    setTimeout(update, 500);
+  }
+  document.addEventListener('DOMContentLoaded', function () {
+    var b = document.getElementById('build048-test-return');
+    if (b) b.addEventListener('click', returnToParent);
+    update();
+    setTimeout(update, 300);
+    setTimeout(update, 1000);
+  });
+  var oldSetItem = Storage.prototype.setItem;
+  Storage.prototype.setItem = function (key, value) {
+    oldSetItem.call(this, key, value);
+    if (key === 'pcTestRole' || key === 'familyPlannerPcTestRole' || key === 'testRole') {
+      setTimeout(update, 0);
+    }
+  };
+  window.build048UpdateTestReturnButton = update;
+})();
+</script>
 
 </body>
 </html>
