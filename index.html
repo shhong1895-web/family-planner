@@ -14,8 +14,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20260816-Build 048 -->
-<title>Build 048 · 우리가족 플래너</title>
+<!-- v20260816-Build 049 -->
+<title>Build 049 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -782,19 +782,40 @@ body {
 }
 </style>
 
-<style id="build048-test-return-style">
-#build048-test-return {
+<style id="Build 049-test-return-style">
+#Build 049-test-return {
   position: fixed; top: 12px; right: 12px; z-index: 99999;
   display: none; padding: 10px 14px; border: 0; border-radius: 999px;
   background: #222; color: #fff; font-size: 14px; font-weight: 700;
   box-shadow: 0 3px 12px rgba(0,0,0,.22); cursor: pointer;
 }
-#build048-test-return.show { display: block; }
+#Build 049-test-return.show { display: block; }
+</style>
+
+
+<style id="build049-test-return-style">
+#build049-test-return {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 99999;
+  display: none;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: #222;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  box-shadow: 0 3px 12px rgba(0,0,0,.22);
+  cursor: pointer;
+}
+#build049-test-return.show { display: block; }
 </style>
 
 </head>
 <body>
-<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 048</div>
+<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 049</div>
 
 <!-- ONBOARDING -->
 <div id="onboardOverlay">
@@ -1626,7 +1647,7 @@ function getAuthUid() {
   return u ? u.uid : null;
 }
 
-// ── PC TEST ROLE (Build 048) ──
+// ── PC TEST ROLE (Build 049) ──
 // 실제 Firebase 기기 권한/role 문서는 변경하지 않고,
 // 데스크톱 브라우저에서만 sessionStorage로 화면 역할을 임시 전환합니다.
 // 휴대폰에서는 이 기능을 사용할 수 없습니다.
@@ -4586,9 +4607,9 @@ if ('serviceWorker' in navigator) {
 
 
 
-<button id="build048-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
+<button id="Build 049-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
 
-<script id="build048-test-return-script">
+<script id="Build 049-test-return-script">
 (function () {
   function isPc() {
     return !/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
@@ -4601,7 +4622,7 @@ if ('serviceWorker' in navigator) {
     } catch (_) { return ''; }
   }
   function update() {
-    var b = document.getElementById('build048-test-return');
+    var b = document.getElementById('Build 049-test-return');
     if (b) b.classList.toggle('show', isPc() && getRole() === 'child');
   }
   function returnToParent() {
@@ -4619,7 +4640,7 @@ if ('serviceWorker' in navigator) {
     setTimeout(update, 500);
   }
   document.addEventListener('DOMContentLoaded', function () {
-    var b = document.getElementById('build048-test-return');
+    var b = document.getElementById('Build 049-test-return');
     if (b) b.addEventListener('click', returnToParent);
     update();
     setTimeout(update, 300);
@@ -4633,6 +4654,64 @@ if ('serviceWorker' in navigator) {
     }
   };
   window.build048UpdateTestReturnButton = update;
+})();
+</script>
+
+<button id="build049-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
+
+<script id="build049-test-return-script">
+(function () {
+  function isPc() {
+    return !/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
+  }
+
+  function getPcTestRole() {
+    try {
+      // The existing PC test mode uses sessionStorage.
+      return sessionStorage.getItem('fp_pc_test_role') || '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function updateReturnButton() {
+    var b = document.getElementById('build049-test-return');
+    if (!b) return;
+    var isChildTest = isPc() && getPcTestRole() === 'child';
+    b.classList.toggle('show', isChildTest);
+  }
+
+  function returnToParent() {
+    // Use the existing test-mode function when available.
+    if (typeof window.enterPcTestRole === 'function') {
+      window.enterPcTestRole('parent');
+    } else {
+      try {
+        sessionStorage.setItem('fp_pc_test_role', 'parent');
+      } catch (_) {}
+      window.location.reload();
+    }
+    setTimeout(updateReturnButton, 100);
+    setTimeout(updateReturnButton, 500);
+    setTimeout(updateReturnButton, 1000);
+  }
+
+  function install() {
+    var b = document.getElementById('build049-test-return');
+    if (b && !b.dataset.bound) {
+      b.addEventListener('click', returnToParent);
+      b.dataset.bound = '1';
+    }
+    updateReturnButton();
+  }
+
+  document.addEventListener('DOMContentLoaded', install);
+  window.addEventListener('load', install);
+  setTimeout(install, 300);
+  setTimeout(install, 1000);
+
+  // Also expose a small hook so the existing test-mode UI can refresh it.
+  window.build049UpdateTestReturnButton = updateReturnButton;
 })();
 </script>
 
