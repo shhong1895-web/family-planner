@@ -14,8 +14,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20260815-build046 -->
-<title>Build 045 · 우리가족 플래너</title>
+<!-- v20260816-build047 -->
+<title>Build 047 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -783,7 +783,7 @@ body {
 </style>
 </head>
 <body>
-<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 045</div>
+<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 047</div>
 
 <!-- ONBOARDING -->
 <div id="onboardOverlay">
@@ -1455,6 +1455,7 @@ function initDeviceRole() {
         var existingRole=(d.role==='child'||d.role==='parent') ? d.role : 'parent';
         localStorage.setItem(ROLE_KEY,existingRole);
         localStorage.setItem('device_approved_'+did,'1');
+        applyPcTestRoleIfPresent();
         showApp();
         return;
       }
@@ -1612,6 +1613,68 @@ function continueWithRole() { if (_forcedRole) chooseRole(_forcedRole); }
 function getAuthUid() {
   var u = firebase.auth().currentUser;
   return u ? u.uid : null;
+}
+
+// ── PC TEST ROLE (Build 047) ──
+// 실제 Firebase 기기 권한/role 문서는 변경하지 않고,
+// 데스크톱 브라우저에서만 sessionStorage로 화면 역할을 임시 전환합니다.
+// 휴대폰에서는 이 기능을 사용할 수 없습니다.
+function isDesktopDevice() {
+  var ua=navigator.userAgent||'';
+  var isMobileUA=/Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+  var uaMobile=(navigator.userAgentData && navigator.userAgentData.mobile===true);
+  return !isMobileUA && !uaMobile;
+}
+function getPcTestRole() {
+  if (!isDesktopDevice()) return null;
+  var r=sessionStorage.getItem('fp_pc_test_role');
+  return (r==='parent'||r==='child') ? r : null;
+}
+function getUiRole() {
+  var testRole=getPcTestRole();
+  return testRole || (localStorage.getItem(ROLE_KEY)==='parent' ? 'parent' : 'child');
+}
+function applyPcTestRoleIfPresent() {
+  var r=getPcTestRole();
+  if (!r || !isDesktopDevice()) return false;
+  localStorage.setItem(ROLE_KEY,r);
+  var cid=sessionStorage.getItem('fp_pc_test_child_id');
+  if (r==='child' && cid) localStorage.setItem('fp_pc_test_child_id',cid);
+  return true;
+}
+function enterPcTestRole(role, childId) {
+  if (!isDesktopDevice()) { showToast('📱 휴대폰에서는 PC 테스트 역할을 사용할 수 없어요'); return; }
+  if (role!=='parent' && role!=='child') return;
+  var realRole=localStorage.getItem('fp_pc_real_role') || (localStorage.getItem(ROLE_KEY)==='parent'?'parent':'child');
+  if (!sessionStorage.getItem('fp_pc_test_role')) {
+    localStorage.setItem('fp_pc_real_role',realRole);
+  }
+  sessionStorage.setItem('fp_pc_test_role',role);
+  if (role==='child') {
+    var cid=childId || sessionStorage.getItem('fp_pc_test_child_id') || firstChildId();
+    if (cid) sessionStorage.setItem('fp_pc_test_child_id',cid);
+  } else {
+    sessionStorage.removeItem('fp_pc_test_child_id');
+  }
+  localStorage.setItem(ROLE_KEY,role);
+  document.getElementById('onboardOverlay').style.display='none';
+  document.getElementById('approvalOverlay').style.display='none';
+  document.getElementById('childPickOverlay').style.display='none';
+  state.view='day';
+  applyMode(role);
+  render();
+  showToast('🧪 PC 테스트 모드: '+(role==='parent'?'부모':'자녀')+' 화면');
+}
+function exitPcTestRole() {
+  if (!isDesktopDevice()) return;
+  var real=localStorage.getItem('fp_pc_real_role') || 'parent';
+  sessionStorage.removeItem('fp_pc_test_role');
+  sessionStorage.removeItem('fp_pc_test_child_id');
+  localStorage.removeItem('fp_pc_real_role');
+  localStorage.setItem(ROLE_KEY,real);
+  applyMode(real);
+  render();
+  showToast('✅ 실제 기기 역할로 돌아왔어요');
 }
 
 // 온보딩 버튼은 항상 이걸 통해서 호출한다: 로그인(익명 로그인)이 아직 안 끝났으면
@@ -1897,8 +1960,9 @@ function showApp() {
   var ob = document.getElementById('onboardOverlay');
   if (ob) ob.style.display = 'none';
 document.getElementById('approvalOverlay').style.display='none';
-  var role = localStorage.getItem(ROLE_KEY)==='parent' ? 'parent' : 'child';
+  var role = getUiRole();
   if (role!=='child') { completeShowApp(); return; }
+  if (getPcTestRole()==='child') { completeShowApp(); return; }
   var uid=getAuthUid();
   db.collection('devices').doc(uid).get().then(function(snap){
     var d = snap.exists ? snap.data() : {};
@@ -1914,7 +1978,7 @@ document.getElementById('approvalOverlay').style.display='none';
 function completeShowApp() {
   document.getElementById('childPickOverlay').style.display='none';
   setupFamilyListeners();
-  applyMode(localStorage.getItem(ROLE_KEY)==='parent' ? 'parent' : 'child');
+  applyMode(getUiRole());
   render();
   maybeShowWelcome(function(){
     document.getElementById('appWrapper').style.display='flex';
@@ -1948,7 +2012,7 @@ function maybeShowWelcome(onDone) {
 }
 function finishWelcome() { window._finishWelcomeCb && window._finishWelcomeCb(); }
 function renderWelcomeOverlay() {
-  var role=localStorage.getItem(ROLE_KEY)==='parent' ? 'parent' : 'child';
+  var role=getUiRole();
   var overlay=document.getElementById('welcomeOverlay');
   var emoji, name, line, particles;
   if (role==='child') {
@@ -2017,6 +2081,10 @@ function assignChildToDevice(childId) {
 }
 function firstChildId() { return state.children.length ? state.children[0].id : null; }
 function myChildId() {
+  if (getPcTestRole()==='child') {
+    var testCid=sessionStorage.getItem('fp_pc_test_child_id');
+    return testCid || firstChildId();
+  }
   var uid=getAuthUid();
   var mine=devicesState.find(function(d){ return d.uid===uid; });
   return mine ? (mine.childId||null) : null;
@@ -2066,11 +2134,11 @@ function applyMode(m) {
   document.getElementById('fab').className='fab'+(m==='parent'?' p':'');
   var nd=document.getElementById('nav-devices');
   if (nd) nd.style.display=m==='parent'?'':'none';
-  document.body.className=m===localStorage.getItem(ROLE_KEY)?m+'-device':'';
+  document.body.className=m===getUiRole()?m+'-device':'';
 }
 
 function setMode(m) {
-  var role=localStorage.getItem(ROLE_KEY);
+  var role=getUiRole();
   if (role==='child'&&m==='parent') return;
   if (role==='parent'&&m==='child') return;
   applyMode(m); render();
@@ -3069,6 +3137,34 @@ function renderDevices() {
   var html='<div class="progress-card p-mode">'
     +'<div class="pc-row"><div><div class="pc-label">기기 관리</div><div class="pc-date">접속 기기 승인 🔐</div></div>'
     +'<div><div class="pc-big">'+pending.length+'</div><div class="pc-unit">대기중</div></div></div></div>';
+
+  // PC 테스트 역할: 데스크톱에서만 표시되며 실제 devices 문서는 변경하지 않습니다.
+  if (isDesktopDevice()) {
+    var tr=getPcTestRole();
+    html+='<div class="sec-title">🧪 노트북 테스트 모드</div>';
+    html+='<div class="form-box">'
+      +'<div style="font-size:12px;color:var(--sub);line-height:1.6;margin-bottom:10px">'
+      +'현재 노트북에서만 부모/자녀 화면을 번갈아 테스트할 수 있습니다.<br>'
+      +'<b>실제 기기의 가족 등록·승인 정보는 변경되지 않습니다.</b>'
+      +'</div>'
+      +'<div style="display:flex;gap:8px;margin-bottom:8px">'
+      +'<button class="f-btn p" style="flex:1" onclick="enterPcTestRole(\'parent\')">👨 부모 화면</button>'
+      +'<button class="f-btn" style="flex:1" onclick="enterPcTestRole(\'child\')">👦 자녀 화면</button>'
+      +'</div>';
+    if (tr==='child' && state.children.length) {
+      html+='<div style="font-size:11px;color:var(--sub);margin:6px 0">테스트할 자녀</div>'
+        +'<div style="display:flex;gap:6px;flex-wrap:wrap">'
+        +state.children.map(function(c){
+          var active=sessionStorage.getItem('fp_pc_test_child_id')===c.id || (!sessionStorage.getItem('fp_pc_test_child_id') && c.id===firstChildId());
+          return '<button class="child-switch-btn'+(active?' active':'')+'" onclick="enterPcTestRole(\'child\',\''+String(c.id).replace(/'/g,"\\'")+'\')">'+esc(c.emoji||'🧒')+' '+esc(c.name)+'</button>';
+        }).join('')
+        +'</div>';
+    }
+    if (tr) {
+      html+='<button class="f-btn" style="margin-top:8px" onclick="exitPcTestRole()">↩ 실제 기기 역할로 돌아가기</button>';
+    }
+    html+='</div>';
+  }
 
   // URL Share
   html+='<div class="sec-title">초대 URL 공유</div>';
