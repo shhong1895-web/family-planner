@@ -14,8 +14,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20260816-Build 049 -->
-<title>Build 049 · 우리가족 플래너</title>
+<!-- v20260816-Build 050 -->
+<title>Build 050 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -782,19 +782,19 @@ body {
 }
 </style>
 
-<style id="Build 049-test-return-style">
-#Build 049-test-return {
+<style id="Build 050-test-return-style">
+#Build 050-test-return {
   position: fixed; top: 12px; right: 12px; z-index: 99999;
   display: none; padding: 10px 14px; border: 0; border-radius: 999px;
   background: #222; color: #fff; font-size: 14px; font-weight: 700;
   box-shadow: 0 3px 12px rgba(0,0,0,.22); cursor: pointer;
 }
-#Build 049-test-return.show { display: block; }
+#Build 050-test-return.show { display: block; }
 </style>
 
 
-<style id="build049-test-return-style">
-#build049-test-return {
+<style id="Build 050-test-return-style">
+#Build 050-test-return {
   position: fixed;
   top: 12px;
   right: 12px;
@@ -810,17 +810,43 @@ body {
   box-shadow: 0 3px 12px rgba(0,0,0,.22);
   cursor: pointer;
 }
-#build049-test-return.show { display: block; }
+#Build 050-test-return.show { display: block; }
 </style>
 
+<style id="build050-test-return-style">
+#build050-test-return {
+  display:none;
+  margin-left:auto;
+  flex:0 0 auto;
+  padding:7px 11px;
+  border:0;
+  border-radius:999px;
+  background:#222;
+  color:#fff;
+  font-size:12px;
+  font-weight:700;
+  line-height:1.2;
+  cursor:pointer;
+  white-space:nowrap;
+}
+#build050-test-return.show {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+@media (max-width:767px) {
+  #build050-test-return,
+  #build050-test-return.show { display:none !important; }
+}
+</style>
 </head>
 <body>
-<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 049</div>
+<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 050</div>
 
 <!-- ONBOARDING -->
 <div id="onboardOverlay">
   <div style="font-size:52px;margin-bottom:14px">🏠</div>
-  <div style="font-size:24px;font-weight:800;color:#0F172A;margin-bottom:8px">우리가족 플래너</div>
+  <div style="font-size:24px;font-weight:800;color:#0F172A;margin-bottom:8px">우리가족 플래너</div><button id="build050-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
   <div id="obIntro" style="font-size:14px;color:#64748B;margin-bottom:20px;line-height:1.7">이 기기를 가족 공간에 연결해주세요.<br>관리자에게 받은 1회용 연결코드를 입력하면 역할이 자동으로 정해집니다.</div>
   <input id="deviceNickname" placeholder="이 기기 이름 (예: 엄마 폰, 첫째 아이패드)" style="width:100%;max-width:320px;padding:12px 14px;border-radius:12px;border:1.5px solid #E2E8F0;font-family:inherit;font-size:14px;margin-bottom:10px;text-align:center;background:#fff">
   <input id="inviteCodeInput" placeholder="1회용 연결코드 8자리" maxlength="8" autocapitalize="characters" autocomplete="one-time-code" style="width:100%;max-width:320px;padding:14px;border-radius:12px;border:1.5px solid #E2E8F0;font-family:inherit;font-size:18px;font-weight:800;letter-spacing:3px;margin-bottom:12px;text-align:center;background:#fff;text-transform:uppercase">
@@ -1647,7 +1673,7 @@ function getAuthUid() {
   return u ? u.uid : null;
 }
 
-// ── PC TEST ROLE (Build 049) ──
+// ── PC TEST ROLE (Build 050) ──
 // 실제 Firebase 기기 권한/role 문서는 변경하지 않고,
 // 데스크톱 브라우저에서만 sessionStorage로 화면 역할을 임시 전환합니다.
 // 휴대폰에서는 이 기능을 사용할 수 없습니다.
@@ -4607,9 +4633,9 @@ if ('serviceWorker' in navigator) {
 
 
 
-<button id="Build 049-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
+<button id="Build 050-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
 
-<script id="Build 049-test-return-script">
+<script id="Build 050-test-return-script">
 (function () {
   function isPc() {
     return !/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
@@ -4622,7 +4648,7 @@ if ('serviceWorker' in navigator) {
     } catch (_) { return ''; }
   }
   function update() {
-    var b = document.getElementById('Build 049-test-return');
+    var b = document.getElementById('Build 050-test-return');
     if (b) b.classList.toggle('show', isPc() && getRole() === 'child');
   }
   function returnToParent() {
@@ -4640,7 +4666,7 @@ if ('serviceWorker' in navigator) {
     setTimeout(update, 500);
   }
   document.addEventListener('DOMContentLoaded', function () {
-    var b = document.getElementById('Build 049-test-return');
+    var b = document.getElementById('Build 050-test-return');
     if (b) b.addEventListener('click', returnToParent);
     update();
     setTimeout(update, 300);
@@ -4657,9 +4683,9 @@ if ('serviceWorker' in navigator) {
 })();
 </script>
 
-<button id="build049-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
+<button id="Build 050-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
 
-<script id="build049-test-return-script">
+<script id="Build 050-test-return-script">
 (function () {
   function isPc() {
     return !/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
@@ -4675,7 +4701,7 @@ if ('serviceWorker' in navigator) {
   }
 
   function updateReturnButton() {
-    var b = document.getElementById('build049-test-return');
+    var b = document.getElementById('Build 050-test-return');
     if (!b) return;
     var isChildTest = isPc() && getPcTestRole() === 'child';
     b.classList.toggle('show', isChildTest);
@@ -4697,7 +4723,7 @@ if ('serviceWorker' in navigator) {
   }
 
   function install() {
-    var b = document.getElementById('build049-test-return');
+    var b = document.getElementById('Build 050-test-return');
     if (b && !b.dataset.bound) {
       b.addEventListener('click', returnToParent);
       b.dataset.bound = '1';
@@ -4715,5 +4741,45 @@ if ('serviceWorker' in navigator) {
 })();
 </script>
 
+<script id="build050-test-return-script">
+(function(){
+  function isPc(){
+    return !/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
+  }
+  function role(){
+    try { return sessionStorage.getItem('fp_pc_test_role') || ''; }
+    catch(e){ return ''; }
+  }
+  function update(){
+    var b=document.getElementById('build050-test-return');
+    if(!b) return;
+    b.classList.toggle('show', isPc() && role()==='child');
+  }
+  function back(){
+    if(typeof window.enterPcTestRole==='function'){
+      window.enterPcTestRole('parent');
+    } else {
+      try { sessionStorage.setItem('fp_pc_test_role','parent'); } catch(e){}
+      window.location.reload();
+    }
+    setTimeout(update,100);
+    setTimeout(update,500);
+    setTimeout(update,1000);
+  }
+  function install(){
+    var b=document.getElementById('build050-test-return');
+    if(b && !b.dataset.bound){
+      b.addEventListener('click',back);
+      b.dataset.bound='1';
+    }
+    update();
+  }
+  document.addEventListener('DOMContentLoaded',install);
+  window.addEventListener('load',install);
+  setTimeout(install,300);
+  setTimeout(install,1000);
+  window.build050UpdateTestReturnButton=update;
+})();
+</script>
 </body>
 </html>
