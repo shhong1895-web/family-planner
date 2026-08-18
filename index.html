@@ -1137,6 +1137,30 @@ var firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 var db = firebase.firestore();
 
+function pcTestModeActive(){
+  return isPc() && sessionStorage.getItem('fp_pc_test_role')==='child';
+}
+function pcTestLoad(){
+  try{
+    var raw=localStorage.getItem('fp_pc_test_data');
+    if(!raw) return;
+    var d=JSON.parse(raw);
+    if(Array.isArray(d.tasks)) state.tasks=d.tasks;
+    if(Array.isArray(d.goals)) state.goals=d.goals;
+  }catch(e){}
+}
+function pcTestSave(col,id,data){
+  try{
+    var d={tasks:[],goals:[]};
+    var raw=localStorage.getItem('fp_pc_test_data');
+    if(raw) d=JSON.parse(raw);
+    if(!Array.isArray(d[col])) d[col]=[];
+    var idx=d[col].findIndex(function(x){return String(x.id)===String(id);});
+    if(idx>=0) d[col][idx]=data; else d[col].push(data);
+    localStorage.setItem('fp_pc_test_data',JSON.stringify(d));
+    return Promise.resolve();
+  }catch(e){return Promise.reject(e);}
+}
 function fsSet(col, id, data) { return db.collection(col).doc(String(id)).set(data); }
 function fsUpdate(col, id, data) { return db.collection(col).doc(String(id)).update(data); }
 function fsDel(col, id) { return db.collection(col).doc(String(id)).delete(); }
@@ -1375,6 +1399,7 @@ function setupListeners() {
 // 나중에 승인돼도 새로고침 전까지 데이터가 안 보이는 문제가 생긴다)
 var _familyListenersStarted=false;
 function setupFamilyListeners() {
+  if (pcTestModeActive()) { pcTestLoad(); render(); return; }
   if (_familyListenersStarted) return;
   _familyListenersStarted=true;
   var bar = document.getElementById('syncBar');
@@ -4469,7 +4494,7 @@ function saveTask() {
     done: existing.done || false,
     fromParent: isEdit ? existing.fromParent : (state.mode==='parent')
   });
-  fsSet('tasks', task.id, task).then(function(){
+  (pcTestModeActive() ? pcTestSave('tasks', task.id, task) : fsSet('tasks', task.id, task)).then(function(){
     state.selectedDate = parseDate(date);
     closeModal();
     showToast(isEdit ? '✏️ 수정됐어요!' : '✅ 추가됐어요!');
