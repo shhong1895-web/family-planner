@@ -14,8 +14,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20260817-Build 054 -->
-<title>Build 054 · 우리가족 플래너</title>
+<!-- v20260817-Build 057 -->
+<title>Build 057 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -818,7 +818,7 @@ body {
 </style>
 </head>
 <body>
-<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 054</div>
+<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 057</div>
 
 <!-- ONBOARDING -->
 <div id="onboardOverlay">
@@ -1137,31 +1137,6 @@ var firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 var db = firebase.firestore();
 
-function pcTestModeActive(){
-  return (typeof isPc==='function' ? isPc() : false) && sessionStorage.getItem('fp_pc_test_role')==='child';
-}
-function pcTestLoad(){
-  try{
-    if(typeof state==='undefined') return;
-    var raw=localStorage.getItem('fp_pc_test_data');
-    if(!raw) return;
-    var d=JSON.parse(raw);
-    if(Array.isArray(d.tasks)) state.tasks=d.tasks;
-    if(Array.isArray(d.goals)) state.goals=d.goals;
-  }catch(e){}
-}
-function pcTestSave(col,id,data){
-  try{
-    var d={tasks:[],goals:[]};
-    var raw=localStorage.getItem('fp_pc_test_data');
-    if(raw) d=JSON.parse(raw);
-    if(!Array.isArray(d[col])) d[col]=[];
-    var idx=d[col].findIndex(function(x){return String(x.id)===String(id);});
-    if(idx>=0) d[col][idx]=data; else d[col].push(data);
-    localStorage.setItem('fp_pc_test_data',JSON.stringify(d));
-    return Promise.resolve();
-  }catch(e){return Promise.reject(e);}
-}
 function fsSet(col, id, data) { return db.collection(col).doc(String(id)).set(data); }
 function fsUpdate(col, id, data) { return db.collection(col).doc(String(id)).update(data); }
 function fsDel(col, id) { return db.collection(col).doc(String(id)).delete(); }
@@ -1400,7 +1375,6 @@ function setupListeners() {
 // 나중에 승인돼도 새로고침 전까지 데이터가 안 보이는 문제가 생긴다)
 var _familyListenersStarted=false;
 function setupFamilyListeners() {
-  if (pcTestModeActive()) { pcTestLoad(); render(); return; }
   if (_familyListenersStarted) return;
   _familyListenersStarted=true;
   var bar = document.getElementById('syncBar');
@@ -4413,6 +4387,22 @@ function toggleAlldayShared() {
   if (wrap) wrap.style.display = document.getElementById('se-allday').checked ? 'none' : '';
 }
 
+
+// ── PC child test storage (Build057) ──
+function isPcChildTestMode(){
+  return typeof getPcTestRole === 'function' && getPcTestRole()==='child';
+}
+function pcTestSaveTask(task){
+  try{
+    var box=JSON.parse(localStorage.getItem('fp_pc_test_data')||'{"tasks":[]}');
+    if(!box.tasks) box.tasks=[];
+    var idx=box.tasks.findIndex(function(x){return String(x.id)===String(task.id);});
+    if(idx>=0) box.tasks[idx]=task; else box.tasks.push(task);
+    localStorage.setItem('fp_pc_test_data',JSON.stringify(box));
+    return true;
+  }catch(e){ return false; }
+}
+
 function saveTask() {
   var isStudy = _taskType === 'study';
   var name, workbook = '', workbookLevel = '', pageStart = '', pageEnd = '';
@@ -4495,9 +4485,20 @@ function saveTask() {
     done: existing.done || false,
     fromParent: isEdit ? existing.fromParent : (state.mode==='parent')
   });
-  (pcTestModeActive() ? pcTestSave('tasks', task.id, task) : fsSet('tasks', task.id, task)).then(function(){
+  var savePromise;
+  if (isPcChildTestMode()) {
+    savePromise = pcTestSaveTask(task) ? Promise.resolve() : Promise.reject();
+  } else {
+    savePromise = fsSet('tasks', task.id, task);
+  }
+  savePromise.then(function(){
+    if (isPcChildTestMode()) {
+      var idx=state.tasks.findIndex(function(x){return String(x.id)===String(task.id);});
+      if(idx>=0) state.tasks[idx]=task; else state.tasks.push(task);
+    }
     state.selectedDate = parseDate(date);
     closeModal();
+    render();
     showToast(isEdit ? '✏️ 수정됐어요!' : '✅ 추가됐어요!');
   }).catch(function(){ showToast('⚠️ 저장 실패. 네트워크를 확인해주세요'); });
 }
