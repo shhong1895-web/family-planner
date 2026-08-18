@@ -14,8 +14,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20260816-Build 051 -->
-<title>Build 051 · 우리가족 플래너</title>
+<!-- v20260817-Build 052 -->
+<title>Build 052 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -782,67 +782,8 @@ body {
 }
 </style>
 
-<style id="Build 051-test-return-style">
-#Build 051-test-return {
-  position: fixed; top: 12px; right: 12px; z-index: 99999;
-  display: none; padding: 10px 14px; border: 0; border-radius: 999px;
-  background: #222; color: #fff; font-size: 14px; font-weight: 700;
-  box-shadow: 0 3px 12px rgba(0,0,0,.22); cursor: pointer;
-}
-#Build 051-test-return.show { display: block; }
-</style>
-
-
-<style id="Build 051-test-return-style">
-#Build 051-test-return {
-  position: fixed;
-  top: 12px;
-  right: 12px;
-  z-index: 99999;
-  display: none;
-  padding: 10px 14px;
-  border: 0;
-  border-radius: 999px;
-  background: #222;
-  color: #fff;
-  font-size: 14px;
-  font-weight: 700;
-  box-shadow: 0 3px 12px rgba(0,0,0,.22);
-  cursor: pointer;
-}
-#Build 051-test-return.show { display: block; }
-</style>
-
-<style id="build051-test-return-style">
-#build051-test-return {
-  display:none;
-  margin-left:auto;
-  flex:0 0 auto;
-  padding:7px 11px;
-  border:0;
-  border-radius:999px;
-  background:#222;
-  color:#fff;
-  font-size:12px;
-  font-weight:700;
-  line-height:1.2;
-  cursor:pointer;
-  white-space:nowrap;
-}
-#build051-test-return.show {
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-}
-@media (max-width:767px) {
-  #build051-test-return,
-  #build051-test-return.show { display:none !important; }
-}
-</style>
-<style id="build051-test-return-style">
-/* PC test-mode only: return button sits in the app header, beside the title. */
-.header-top { position:relative; }
-#build051-test-return {
+<style id="build052-pc-test-return-style">
+#pc-test-return {
   display:none;
   margin-left:auto;
   flex:0 0 auto;
@@ -858,19 +799,24 @@ body {
   cursor:pointer;
   white-space:nowrap;
 }
-#build051-test-return.show { display:inline-flex; align-items:center; justify-content:center; }
+#pc-test-return.show {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
 @media (max-width:767px) {
-  #build051-test-return, #build051-test-return.show { display:none !important; }
+  #pc-test-return,
+  #pc-test-return.show { display:none !important; }
 }
 </style>
 </head>
 <body>
-<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 051</div>
+<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 052</div>
 
 <!-- ONBOARDING -->
 <div id="onboardOverlay">
   <div style="font-size:52px;margin-bottom:14px">🏠</div>
-  <div style="font-size:24px;font-weight:800;color:#0F172A;margin-bottom:8px">우리가족 플래너</div><button id="build051-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
+  <div style="font-size:24px;font-weight:800;color:#0F172A;margin-bottom:8px">우리가족 플래너</div>
   <div id="obIntro" style="font-size:14px;color:#64748B;margin-bottom:20px;line-height:1.7">이 기기를 가족 공간에 연결해주세요.<br>관리자에게 받은 1회용 연결코드를 입력하면 역할이 자동으로 정해집니다.</div>
   <input id="deviceNickname" placeholder="이 기기 이름 (예: 엄마 폰, 첫째 아이패드)" style="width:100%;max-width:320px;padding:12px 14px;border-radius:12px;border:1.5px solid #E2E8F0;font-family:inherit;font-size:14px;margin-bottom:10px;text-align:center;background:#fff">
   <input id="inviteCodeInput" placeholder="1회용 연결코드 8자리" maxlength="8" autocapitalize="characters" autocomplete="one-time-code" style="width:100%;max-width:320px;padding:14px;border-radius:12px;border:1.5px solid #E2E8F0;font-family:inherit;font-size:18px;font-weight:800;letter-spacing:3px;margin-bottom:12px;text-align:center;background:#fff;text-transform:uppercase">
@@ -930,9 +876,9 @@ body {
   <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중...</div>
   <div class="app-header">
     <div class="header-top">
-      <div class="app-logo">🏠 우리가족 플래너</div>
+      <div class="app-logo">🏠 우리가족 플래너</div><button id="pc-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
       <div class="child-switch-bar" id="childSwitchBar"></div>
-      <button id="build051-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
+      
     </div>
   </div>
   <div class="scroll-area" id="scrollArea"></div>
@@ -4658,188 +4604,45 @@ if ('serviceWorker' in navigator) {
 
 
 
-<button id="Build 051-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
 
-<script id="Build 051-test-return-script">
-(function () {
-  function isPc() {
-    return !/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
-  }
-  function getRole() {
-    try {
-      return localStorage.getItem('pcTestRole') ||
-             localStorage.getItem('familyPlannerPcTestRole') ||
-             localStorage.getItem('testRole') || '';
-    } catch (_) { return ''; }
-  }
-  function update() {
-    var b = document.getElementById('Build 051-test-return');
-    if (b) b.classList.toggle('show', isPc() && getRole() === 'child');
-  }
-  function returnToParent() {
-    if (typeof window.enterPcTestRole === 'function') {
-      window.enterPcTestRole('parent');
-    } else {
-      try {
-        localStorage.setItem('pcTestRole', 'parent');
-        localStorage.setItem('familyPlannerPcTestRole', 'parent');
-        localStorage.setItem('testRole', 'parent');
-      } catch (_) {}
-      window.location.reload();
-    }
-    setTimeout(update, 100);
-    setTimeout(update, 500);
-  }
-  document.addEventListener('DOMContentLoaded', function () {
-    var b = document.getElementById('Build 051-test-return');
-    if (b) b.addEventListener('click', returnToParent);
-    update();
-    setTimeout(update, 300);
-    setTimeout(update, 1000);
-  });
-  var oldSetItem = Storage.prototype.setItem;
-  Storage.prototype.setItem = function (key, value) {
-    oldSetItem.call(this, key, value);
-    if (key === 'pcTestRole' || key === 'familyPlannerPcTestRole' || key === 'testRole') {
-      setTimeout(update, 0);
-    }
-  };
-  window.build048UpdateTestReturnButton = update;
-})();
-</script>
 
-<button id="Build 051-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
 
-<script id="Build 051-test-return-script">
-(function () {
-  function isPc() {
-    return !/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
-  }
 
-  function getPcTestRole() {
-    try {
-      // The existing PC test mode uses sessionStorage.
-      return sessionStorage.getItem('fp_pc_test_role') || '';
-    } catch (_) {
-      return '';
-    }
-  }
-
-  function updateReturnButton() {
-    var b = document.getElementById('Build 051-test-return');
-    if (!b) return;
-    var isChildTest = isPc() && getPcTestRole() === 'child';
-    b.classList.toggle('show', isChildTest);
-  }
-
-  function returnToParent() {
-    // Use the existing test-mode function when available.
-    if (typeof window.enterPcTestRole === 'function') {
-      window.enterPcTestRole('parent');
-    } else {
-      try {
-        sessionStorage.setItem('fp_pc_test_role', 'parent');
-      } catch (_) {}
-      window.location.reload();
-    }
-    setTimeout(updateReturnButton, 100);
-    setTimeout(updateReturnButton, 500);
-    setTimeout(updateReturnButton, 1000);
-  }
-
-  function install() {
-    var b = document.getElementById('Build 051-test-return');
-    if (b && !b.dataset.bound) {
-      b.addEventListener('click', returnToParent);
-      b.dataset.bound = '1';
-    }
-    updateReturnButton();
-  }
-
-  document.addEventListener('DOMContentLoaded', install);
-  window.addEventListener('load', install);
-  setTimeout(install, 300);
-  setTimeout(install, 1000);
-
-  // Also expose a small hook so the existing test-mode UI can refresh it.
-  window.build049UpdateTestReturnButton = updateReturnButton;
-})();
-</script>
-
-<script id="build051-test-return-script">
+<script id="build052-pc-test-return-script">
 (function(){
   function isPc(){
     return !/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
   }
-  function role(){
-    try { return sessionStorage.getItem('fp_pc_test_role') || ''; }
-    catch(e){ return ''; }
-  }
-  function update(){
-    var b=document.getElementById('build051-test-return');
+  function updatePcTestReturn(){
+    var b=document.getElementById('pc-test-return');
     if(!b) return;
-    b.classList.toggle('show', isPc() && role()==='child');
+    var show=false;
+    try{
+      show=isPc() && sessionStorage.getItem('fp_pc_test_role')==='child';
+    }catch(e){}
+    b.classList.toggle('show',show);
   }
-  function back(){
+  function returnToParent(){
     if(typeof window.enterPcTestRole==='function'){
       window.enterPcTestRole('parent');
-    } else {
-      try { sessionStorage.setItem('fp_pc_test_role','parent'); } catch(e){}
-      window.location.reload();
+    }else{
+      try{sessionStorage.setItem('fp_pc_test_role','parent');}catch(e){}
+      location.reload();
     }
-    setTimeout(update,100);
-    setTimeout(update,500);
-    setTimeout(update,1000);
+    setTimeout(updatePcTestReturn,300);
   }
-  function install(){
-    var b=document.getElementById('build051-test-return');
+  function initPcTestReturn(){
+    var b=document.getElementById('pc-test-return');
     if(b && !b.dataset.bound){
-      b.addEventListener('click',back);
+      b.addEventListener('click',returnToParent);
       b.dataset.bound='1';
     }
-    update();
+    updatePcTestReturn();
   }
-  document.addEventListener('DOMContentLoaded',install);
-  window.addEventListener('load',install);
-  setTimeout(install,300);
-  setTimeout(install,1000);
-  window.build051UpdateTestReturnButton=update;
-})();
-</script>
-<script id="build051-test-return-script">
-(function(){
-  function isDesktop(){
-    var ua=navigator.userAgent||'';
-    var mobile=/Android|iPhone|iPad|iPod|Mobile/i.test(ua);
-    var uaMobile=(navigator.userAgentData && navigator.userAgentData.mobile===true);
-    return !mobile && !uaMobile;
-  }
-  function isChildTest(){
-    try { return isDesktop() && sessionStorage.getItem('fp_pc_test_role')==='child'; }
-    catch(e){ return false; }
-  }
-  function update(){
-    var b=document.getElementById('build051-test-return');
-    if(b) b.classList.toggle('show',isChildTest());
-  }
-  function backToParent(){
-    if(typeof window.enterPcTestRole==='function') {
-      window.enterPcTestRole('parent');
-    } else {
-      try { sessionStorage.setItem('fp_pc_test_role','parent'); } catch(e) {}
-      window.location.reload();
-    }
-    setTimeout(update,100); setTimeout(update,500); setTimeout(update,1000);
-  }
-  function install(){
-    var b=document.getElementById('build051-test-return');
-    if(b && !b.dataset.bound){ b.addEventListener('click',backToParent); b.dataset.bound='1'; }
-    update();
-  }
-  document.addEventListener('DOMContentLoaded',install);
-  window.addEventListener('load',install);
-  setTimeout(install,300); setTimeout(install,1000);
-  window.build051UpdateTestReturnButton=update;
+  document.addEventListener('DOMContentLoaded',initPcTestReturn);
+  window.addEventListener('load',initPcTestReturn);
+  setTimeout(initPcTestReturn,500);
+  window.build052UpdatePcTestReturn=updatePcTestReturn;
 })();
 </script>
 </body>
