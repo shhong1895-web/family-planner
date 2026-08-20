@@ -4405,6 +4405,20 @@ function pcTestSaveTask(task){
   }catch(e){ return false; }
 }
 
+// Build059: PC child test data restore
+function pcTestLoadTasks(){
+  try{
+    if(!isPcChildTestMode()) return;
+    var box=JSON.parse(localStorage.getItem('fp_pc_test_data')||'{"tasks":[]}');
+    if(!box.tasks || !Array.isArray(box.tasks)) return;
+    var map={};
+    state.tasks.forEach(function(t){ map[String(t.id)]=true; });
+    box.tasks.forEach(function(t){
+      if(!map[String(t.id)]) state.tasks.push(t);
+    });
+  }catch(e){}
+}
+
 function saveTask() {
   var isStudy = _taskType === 'study';
   var name, workbook = '', workbookLevel = '', pageStart = '', pageEnd = '';
@@ -4631,6 +4645,7 @@ function startApp() {
   _appInited=true;
   setupListeners();
   initDeviceRole();
+  pcTestLoadTasks();
 }
 firebase.auth().onAuthStateChanged(function(user){
   if (user) startApp();
