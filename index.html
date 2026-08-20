@@ -4390,7 +4390,9 @@ function toggleAlldayShared() {
 
 // ── PC child test storage (Build057) ──
 function isPcChildTestMode(){
-  return typeof getPcTestRole === 'function' && getPcTestRole()==='child';
+  // PC child test mode: use sessionStorage directly as the source of truth.
+  // This avoids role state being overwritten by localStorage during testing.
+  return isDesktopDevice() && sessionStorage.getItem('fp_pc_test_role')==='child';
 }
 function pcTestSaveTask(task){
   try{
