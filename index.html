@@ -14,8 +14,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20260821-Build 061 -->
-<title>Build 061 · 우리가족 플래너</title>
+<!-- v20260821-Build 062 -->
+<title>Build 062 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -816,9 +816,70 @@ body {
 .mission-rate{font-size:26px;font-weight:900;margin:6px 0;}
 .mission-msg{font-size:14px;color:#475569;}
 </style>
+
+<style id="build062-child-design">
+:root {
+  --child:#7C83F5; --child-l:#F1F2FF;
+  --success:#63C7A5; --success-l:#EAFBF4;
+  --bg:#FBFAFF; --card:#FFFFFF; --text:#27304A; --sub:#7B849A; --border:#E8EAF3;
+  --r:18px; --sh:0 4px 18px rgba(91,99,145,.07);
+}
+body.child-device { background:linear-gradient(180deg,#FBFAFF 0%,#F7F8FF 100%); }
+body.child-device .app-header { background:rgba(255,255,255,.88); border-bottom:1px solid #EEEFFD; backdrop-filter:blur(14px); }
+body.child-device .app-logo { color:#343B5B; font-weight:900; letter-spacing:-.5px; }
+body.child-device .fab { width:58px; height:58px; border-radius:20px; background:linear-gradient(135deg,#8E94FF,#6F78E8); box-shadow:0 10px 24px rgba(124,131,245,.28); font-size:28px; }
+body.child-device .nav-item.active { color:#6871DD; background:#F1F2FF; }
+body.child-device .nav-icon { filter:saturate(.8); }
+body.child-device .task-card { border:1px solid #EEF0F7; border-left:4px solid #D9DCFF; border-radius:18px; padding:13px 12px; box-shadow:0 5px 18px rgba(91,99,145,.06); }
+body.child-device .task-card.done { border-left-color:#63C7A5; background:#FCFFFD; }
+body.child-device .task-name { font-size:15px; letter-spacing:-.2px; }
+body.child-device .chk { width:36px; height:36px; border-radius:13px; border-color:#D9DCEF; background:#FAFBFF; }
+body.child-device .chk.checked { background:#63C7A5; border-color:#63C7A5; }
+body.child-device .mission-card { background:linear-gradient(135deg,#FFF7D9,#FFF1F5); border:1px solid #F8E9C6; border-radius:22px; box-shadow:0 8px 22px rgba(231,186,112,.08); padding:17px; }
+body.child-device .mission-title { color:#4D536B; }
+body.child-device .progress-card { border-radius:22px; background:linear-gradient(135deg,#EEF0FF,#F9F7FF); border:1px solid #E8E9FF; box-shadow:0 7px 20px rgba(124,131,245,.08); }
+body.child-device .prog-fill { background:linear-gradient(90deg,#8D94FF,#6BCFA9); }
+body.child-device .goal-card { border-left:4px solid #F4C77A; border-radius:18px; box-shadow:0 5px 18px rgba(91,99,145,.06); }
+body.child-device .goal-check.checked { background:#F4C77A; border-color:#F4C77A; }
+body.child-device .modal { border-radius:28px 28px 0 0; }
+body.child-device .modal-h { font-size:20px; letter-spacing:-.4px; }
+body.child-device .m-field { background:#FBFCFF; border-color:#E4E6F1; min-height:48px; }
+body.child-device .tt-btn.active { background:#EEF0FF; border-color:#BFC4FF; color:#5D66D7; }
+body.child-device .m-save { background:linear-gradient(135deg,#858CFA,#6D77E5); border-radius:16px; }
+.child-hero { position:relative; overflow:hidden; margin:10px 0 14px; padding:18px 18px 17px; border-radius:24px; background:linear-gradient(135deg,#EEF0FF 0%,#FFF5FA 100%); border:1px solid #E9E9FB; }
+.child-hero:after { content:'✦'; position:absolute; right:20px; top:12px; font-size:26px; color:#C6CAFF; transform:rotate(12deg); }
+.child-hero-title { font-size:18px; font-weight:900; color:#39405C; letter-spacing:-.4px; }
+.child-hero-sub { margin-top:5px; font-size:12px; color:#747D96; line-height:1.6; max-width:280px; }
+.child-hero-mini { display:flex; gap:7px; margin-top:12px; flex-wrap:wrap; }
+.child-hero-pill { padding:7px 10px; border-radius:999px; background:rgba(255,255,255,.72); border:1px solid rgba(255,255,255,.9); font-size:11px; font-weight:800; color:#626B84; }
+.quick-plan-note { margin:-2px 0 12px; padding:11px 13px; border-radius:14px; background:#F7F8FF; color:#68718B; font-size:12px; line-height:1.55; border:1px solid #ECEEFF; }
+.study-quick-actions { display:flex; gap:7px; margin-top:9px; flex-wrap:wrap; }
+.study-quick-btn { border:1px solid #E2E5F2; background:#F8F9FF; color:#5F6881; border-radius:999px; padding:7px 10px; font:700 11px/1.2 inherit; cursor:pointer; }
+.study-quick-btn.primary { background:#EEF0FF; border-color:#C9CDFF; color:#5D66D7; }
+@media(max-width:430px){ .child-hero { margin-left:1px; margin-right:1px; } }
+</style>
+
+<style id="build062-child-simple-form">
+body.child-device #mStudyWrap .mStudyAdvanced,
+body.child-device #mTimeWrap,
+body.child-device #mCatWrap,
+body.child-device #mGoalWrap,
+body.child-device .mRepeatLabel,
+body.child-device #mRepeat,
+body.child-device #mRepeat + #mWeekdayWrap,
+body.child-device #mRepeatEndWrap,
+body.child-device #mDesc { display:none !important; }
+body.child-device #mStudyWrap .wb-manage-toggle { margin-top:2px; }
+body.child-device #mStudyWrap .wb-row { margin-bottom:8px; }
+body.child-device #mStudyWrap .m-label { margin-top:8px; }
+body.child-device #mNameWrap { display:block; }
+body.child-device .child-quick-done { display:flex; gap:8px; margin-top:10px; }
+body.child-device .child-quick-done button { flex:1; border:1px solid #E3E5F1; background:#F8F9FF; color:#5D6680; border-radius:13px; padding:11px 7px; font:800 12px/1.25 inherit; }
+body.child-device .child-quick-done button.primary { background:#EEF0FF; border-color:#C9CDFF; color:#5963D4; }
+</style>
 </head>
 <body>
-<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 061</div>
+<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 062</div>
 
 <!-- ONBOARDING -->
 <div id="onboardOverlay">
@@ -936,9 +997,9 @@ body {
             <button type="button" class="wb-add-btn" onclick="addWorkbookToList()">추가</button>
           </div>
         </div>
-        <div class="m-label">단계 / 권 (선택)</div>
-        <input class="m-field" id="mWorkbookLevel" placeholder="예: 5-2">
-        <div class="m-label">페이지</div>
+        <div class="m-label mStudyAdvanced">단계 / 권 (선택)</div>
+        <input class="m-field mStudyAdvanced" id="mWorkbookLevel" placeholder="예: 5-2">
+        <div class="m-label">페이지 <span style="font-size:10px;color:var(--sub);font-weight:500">(선택)</span></div>
         <div class="wb-row">
           <input class="m-field" id="mPageStart" type="number" inputmode="numeric" placeholder="시작p">
           <span class="wb-tilde">~</span>
@@ -988,7 +1049,7 @@ body {
         <div class="goal-link-note">이 할 일을 완료하면 연결된 목표의 실행 내역에 반영됩니다.</div>
       </div>
 
-      <div class="m-label">반복</div>
+      <div class="m-label mRepeatLabel">반복</div>
       <select class="m-field" id="mRepeat" onchange="onRepeatTypeChange()">
         <option value="none">반복 없음</option>
         <option value="weekday">요일 반복</option>
@@ -1039,18 +1100,22 @@ body {
     <div class="modal-body">
       <div class="modal-h" id="studyProgressTitle">📖 학습 실행 기록</div>
       <div class="study-progress-plan" id="studyProgressPlan"></div>
-      <div class="m-label">오늘 어디까지 했나요?</div>
+      <div class="m-label">오늘 얼마나 했나요?</div>
       <div style="display:flex;align-items:center;gap:8px">
-        <input class="m-field" id="studyProgressPage" type="number" inputmode="numeric" placeholder="실제 완료 페이지" style="flex:1">
-        <span style="font-weight:700;color:var(--sub)">p까지</span>
+        <input class="m-field" id="studyProgressPage" type="number" inputmode="numeric" placeholder="페이지를 기록하고 싶다면 입력" style="flex:1">
+        <span style="font-weight:700;color:var(--sub)">p</span>
       </div>
-      <div class="study-progress-modal-note">계획한 끝 페이지까지 하지 못했어도 실제로 한 만큼 기록할 수 있어요.<br>예: 20~30p 계획 → 25p까지 실행</div>
+      <div class="study-progress-modal-note">페이지를 꼭 입력하지 않아도 돼요. 오늘 공부했다면 <strong>완료</strong>만 눌러도 기록됩니다.</div>
+      <div class="child-quick-done">
+        <button type="button" onclick="saveStudyProgress(true)" class="primary">🌱 오늘 했어요</button>
+        <button type="button" onclick="saveStudyProgress(true)">✨ 계획까지 했어요</button>
+      </div>
       <div class="study-progress-result" id="studyProgressResult"></div>
       <div class="m-btns" style="margin-top:16px">
         <button class="m-cancel" onclick="closeStudyProgressModal()">취소</button>
         <button class="m-save" id="studyProgressSave" onclick="saveStudyProgress(false)">기록 저장</button>
       </div>
-      <button class="f-btn" style="width:100%;margin-top:8px;background:#ECFDF5;color:#047857" onclick="saveStudyProgress(true)">✅ 계획 완료로 표시</button>
+      <button class="f-btn" style="width:100%;margin-top:8px;background:#F8F9FF;color:#69728B" onclick="saveStudyProgress(false)">페이지 기록 없이 닫기</button>
     </div>
   </div>
 </div>
@@ -2605,7 +2670,9 @@ function taskCard(t, ds) {
   var studyNote = t.taskType==='study' ? studyProgressText(t,ds) : '';
   var chkHtml = canToggle
     ? (t.taskType==='study'
-      ? '<button class="chk"'+(done?' checked':'')+' onclick="openStudyProgressModal(\''+t.id+'\',\''+ds+'\');event.stopPropagation()">'+(done?'✓':'')+'</button>'
+      ? ((state.mode==='child' && !t.pageStart)
+        ? '<button class="chk"'+(done?' checked':'')+' aria-label="학습 완료" onclick="toggleTask(\''+t.id+'\',\''+ds+'\');event.stopPropagation()">'+(done?'✓':'')+'</button>'
+        : '<button class="chk"'+(done?' checked':'')+' aria-label="학습 실행 기록" onclick="openStudyProgressModal(\''+t.id+'\',\''+ds+'\');event.stopPropagation()">'+(done?'✓':'')+'</button>')
       : '<button class="chk"'+(done?' checked':'')+' onclick="toggleTask(\''+t.id+'\',\''+ds+'\');event.stopPropagation()">'+(done?'✓':'')+'</button>')
     : '<button class="chk"'+(done?' checked':'')+' chk-disabled onclick="event.stopPropagation();showToast(\'⚠️ 완료 체크는 자녀가 직접 해요\')">'+(done?'✓':'')+'</button>';
   return '<div class="task-card'+(done?' done':'')+(t.fromParent?' from-parent':'')+'"'
@@ -2801,6 +2868,15 @@ function renderDay() {
   var todayMsgCount=state.messages.filter(function(m){
     return m.date===ds && !m.parentId && isForActiveChild(m);
   }).length;
+  if (!isP) {
+    var childDoneMsg = tasks.length ? (done===tasks.length ? '오늘 계획을 모두 해냈어요 ✨' : '내가 정한 계획을 하나씩 해봐요') : '오늘 내가 하고 싶은 일을 하나 정해볼까요?';
+    html+='<div class="child-hero">'
+      +'<div class="child-hero-title">🌷 오늘은 내가 계획하는 날</div>'
+      +'<div class="child-hero-sub">'+childDoneMsg+'<br>작은 계획도 직접 세우고 실천하면, 어제보다 한 걸음 자란 거예요.</div>'
+      +'<div class="child-hero-mini"><span class="child-hero-pill">📝 직접 계획하기</span><span class="child-hero-pill">🌱 실천하기</span><span class="child-hero-pill">✨ 돌아보기</span></div>'
+    +'</div>';
+  }
+
   html+='<div class="today-summary">'
     +'<div class="today-summary-card"><div class="today-summary-icon">📝</div>'
     +'<div class="today-summary-num">'+done+'/'+tasks.length+'</div>'
@@ -2849,8 +2925,9 @@ function renderDay() {
       +'<div style="font-size:13px;color:var(--sub);margin-bottom:10px;line-height:1.5">자녀 할일 등록 화면과 똑같은 방식으로<br>날짜·시간·반복까지 한 번에 설정할 수 있어요</div>'
       +'<button class="f-btn p" onclick="openModal()">+ 할일 추가</button></div>';
   } else {
-    html+='<div class="sec-title">오늘 할 일</div>';
-    if (!tasks.length) html+=emptyBox('📝','할일이 없어요','+ 버튼으로 할일을 추가해보세요');
+    html+='<div class="sec-title">오늘 내가 할 일</div>';
+    html+='<div class="quick-plan-note">💡 계획은 어렵게 세울 필요 없어요. <strong>오늘 할 일 한 가지</strong>만 정해도 충분해요.</div>';
+    if (!tasks.length) html+=emptyBox('🌱','아직 오늘 계획이 없어요','아래 + 버튼을 눌러 내가 할 일을 정해보세요');
     tasks.forEach(function(t){ html+=taskCard(t, ds); });
 
     html+=renderMessages(ds, false);
@@ -4390,7 +4467,7 @@ function openModal(taskId) {
   var wbPanel = document.getElementById('wbManagePanel');
   if (wbPanel) wbPanel.style.display = 'none';
 
-  document.getElementById('modalH').textContent = isEdit ? '일정 수정' : (isP ? '할일 추가 (부모 등록)' : '할일 추가');
+  document.getElementById('modalH').textContent = isEdit ? '내 계획 수정' : (isP ? '할일 추가 (부모 등록)' : '🌱 오늘 계획 세우기');
   document.getElementById('mSave').textContent = isEdit ? '수정하기' : '추가하기';
   document.getElementById('mSave').className = 'm-save' + (isP ? ' p' : '');
   document.getElementById('mTimeError').style.display = 'none';
@@ -4492,7 +4569,7 @@ function toggleAlldayShared() {
 }
 
 
-// ── PC child test storage (Build060) ──
+// ── PC child test storage (Build062) ──
 function isPcChildTestMode(){
   // PC child test mode: use sessionStorage directly as the source of truth.
   // This avoids role state being overwritten by localStorage during testing.
@@ -4508,7 +4585,7 @@ function pcTestSaveTask(task){
   }catch(e){ return false; }
 }
 
-// Build060: PC child test data restore. This is also called after the Firestore
+// Build062: PC child test data restore. This is also called after the Firestore
 // task snapshot so a later snapshot cannot erase the local PC-test tasks.
 function pcTestLoadTasks(){
   try{
@@ -4532,8 +4609,8 @@ function saveTask() {
     workbookLevel = document.getElementById('mWorkbookLevel').value.trim();
     pageStart = document.getElementById('mPageStart').value.trim();
     pageEnd = document.getElementById('mPageEnd').value.trim();
-    if (!pageStart) { showToast('⚠️ 시작 페이지를 입력해주세요'); return; }
-    name = workbook + (workbookLevel ? '(' + workbookLevel + ')' : '') + ', ' + pageStart + (pageEnd ? '~' + pageEnd : '') + 'p';
+    if (!pageStart && state.mode==='parent') { showToast('⚠️ 시작 페이지를 입력해주세요'); return; }
+    name = workbook + (workbookLevel ? '(' + workbookLevel + ')' : '') + (pageStart ? ', ' + pageStart + (pageEnd ? '~' + pageEnd : '') + 'p' : ' 학습');
   } else {
     name = document.getElementById('mName').value.trim();
     if (!name) { showToast('⚠️ 제목을 입력해주세요'); return; }

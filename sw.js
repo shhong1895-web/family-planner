@@ -1,4 +1,4 @@
-const CACHE = 'family-planner-build061-v1';
+const CACHE = 'family-planner-build062-v1';
 const APP_SHELL = './index.html';
 
 self.addEventListener('install', event => {
