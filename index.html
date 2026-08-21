@@ -14,8 +14,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20260821-Build 060 -->
-<title>Build 060 · 우리가족 플래너</title>
+<!-- v20260821-Build 061 -->
+<title>Build 061 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -818,7 +818,7 @@ body {
 </style>
 </head>
 <body>
-<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 060</div>
+<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 061</div>
 
 <!-- ONBOARDING -->
 <div id="onboardOverlay">
@@ -2540,15 +2540,19 @@ document.addEventListener('input',function(e){ if(e.target&&(['mWorkbookLevel','
 function saveStudyProgress(markDone) {
   var id=_studyProgressTaskId, ds=_studyProgressDate;
   if (!id||!ds) return;
-  var t=state.tasks.find(function(x){return String(x.id)===String(id);});
-  if (!t) return;
+  var original=state.tasks.find(function(x){return String(x.id)===String(id);});
+  if (!original) return;
   var input=document.getElementById('studyProgressPage').value.trim();
   var cur=input===''?null:Number(input);
-  var st=Number(t.pageStart), en=t.pageEnd!==''&&t.pageEnd!=null?Number(t.pageEnd):null;
+  var st=Number(original.pageStart), en=original.pageEnd!==''&&original.pageEnd!=null?Number(original.pageEnd):null;
   if (cur!==null) {
     if (!isFinite(cur) || !isFinite(st) || cur<st) { showToast('⚠️ 시작 페이지 이상을 입력해주세요'); return; }
     if (en!==null && isFinite(en) && cur>en) { showToast('⚠️ 계획한 끝 페이지 이하로 입력해주세요'); return; }
   }
+
+  // 원본 객체를 먼저 변경하지 않고 저장할 객체를 만들어 둡니다.
+  // PC 자녀 테스트 모드에서는 Firestore 대신 localStorage에 저장해야 합니다.
+  var t=Object.assign({}, original);
   var map=Object.assign({},t.progressByDate||{});
   if (cur===null && !markDone) delete map[ds];
   else map[ds]={page:cur, done:!!markDone, updatedAt:Date.now()};
@@ -2562,11 +2566,25 @@ function saveStudyProgress(markDone) {
   } else {
     t.done=!!markDone;
   }
-  fsSet('tasks',t.id,t).then(function(){
+
+  var savePromise;
+  if (isPcChildTestMode()) {
+    savePromise=pcTestSaveTask(t) ? Promise.resolve() : Promise.reject(new Error('PC test local save failed'));
+  } else {
+    savePromise=fsSet('tasks',t.id,t);
+  }
+
+  savePromise.then(function(){
+    var idx=state.tasks.findIndex(function(x){return String(x.id)===String(t.id);});
+    if (idx>=0) state.tasks[idx]=t; else state.tasks.push(t);
     closeStudyProgressModal();
+    render();
     if (markDone) { playCompleteAnimation(); showToast('🎉 학습 계획을 완료했어요!'); }
     else showToast(cur===null?'기록을 지웠어요':'📖 실제 실행량을 기록했어요!');
-  }).catch(function(){ showToast('⚠️ 저장 실패. 네트워크를 확인해주세요'); });
+  }).catch(function(err){
+    console.error('saveStudyProgress error:',err);
+    showToast(isPcChildTestMode() ? '⚠️ 테스트 데이터 저장에 실패했어요' : '⚠️ 저장 실패. 네트워크를 확인해주세요');
+  });
 }
 
 function taskCard(t, ds) {
