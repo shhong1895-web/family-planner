@@ -14,8 +14,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20260817-Build 057 -->
-<title>Build 057 · 우리가족 플래너</title>
+<!-- v20260821-Build 060 -->
+<title>Build 060 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -818,7 +818,7 @@ body {
 </style>
 </head>
 <body>
-<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 057</div>
+<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 060</div>
 
 <!-- ONBOARDING -->
 <div id="onboardOverlay">
@@ -1380,6 +1380,9 @@ function setupFamilyListeners() {
   var bar = document.getElementById('syncBar');
   db.collection('tasks').onSnapshot(function(snap) {
     state.tasks = snap.docs.map(function(d){ return d.data(); });
+    // PC 자녀 테스트 데이터는 Firebase가 아니라 localStorage에 있으므로
+    // Firestore snapshot이 도착한 뒤에도 반드시 다시 합쳐준다.
+    pcTestLoadTasks();
     bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중';
     render();
   }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드'; });
@@ -1698,6 +1701,7 @@ function enterPcTestRole(role, childId) {
   document.getElementById('childPickOverlay').style.display='none';
   state.view='day';
   applyMode(role);
+  renderWorkbookSelect();
   render();
   if (window.build053UpdatePcTestReturn) {
     setTimeout(window.build053UpdatePcTestReturn, 50);
@@ -4201,7 +4205,45 @@ function clearRepeatEnd(inputId, btnId) {
   document.getElementById(btnId).textContent='종료일 설정 안 함 (계속 반복)';
 }
 
+function pcTestDataBox(){
+  try {
+    var box=JSON.parse(localStorage.getItem('fp_pc_test_data')||'{}');
+    if (!box || typeof box!=='object') box={};
+    if (!Array.isArray(box.tasks)) box.tasks=[];
+    if (!Array.isArray(box.workbooks)) box.workbooks=[];
+    return box;
+  } catch(e) { return {tasks:[],workbooks:[]}; }
+}
+function childWorkbookKey(){
+  var cid=activeChildId();
+  return cid ? 'fp_child_workbooks_'+String(cid) : 'fp_child_workbooks_default';
+}
+function isLocalWorkbookMode(){
+  return getUiRole()==='child';
+}
+function localChildWorkbookList(){
+  try {
+    var raw=localStorage.getItem(childWorkbookKey());
+    if (!raw) return null;
+    var list=JSON.parse(raw);
+    return Array.isArray(list) ? list : null;
+  } catch(e) { return null; }
+}
+function saveLocalChildWorkbookList(list){
+  try { localStorage.setItem(childWorkbookKey(),JSON.stringify(list)); return true; }
+  catch(e) { return false; }
+}
 function currentWorkbookList() {
+  // 자녀는 자신의 기기에서 문제집 목록을 추가/삭제할 수 있게 한다.
+  // 부모가 관리하는 가족 공용 목록(Firestore)은 그대로 유지한다.
+  if (isPcChildTestMode()) {
+    var box=pcTestDataBox();
+    if (box.workbooks.length) return box.workbooks;
+  }
+  if (isLocalWorkbookMode()) {
+    var local=localChildWorkbookList();
+    if (local) return local;
+  }
   return (state.workbooks && state.workbooks.length) ? state.workbooks : DEFAULT_WORKBOOKS;
 }
 function renderWorkbookSelect() {
@@ -4230,19 +4272,63 @@ function renderWorkbookChips() {
 function addWorkbookToList() {
   var inp = document.getElementById('wbNewName');
   var name = inp.value.trim();
-  if (!name) return;
+  if (!name) { showToast('⚠️ 문제집 이름을 입력해주세요'); return; }
   var list = currentWorkbookList().slice();
   if (list.indexOf(name) >= 0) { showToast('⚠️ 이미 있는 문제집이에요'); return; }
   list.push(name);
+
+  // PC 자녀 테스트 / 실제 자녀: 기기별 자녀 목록으로 저장
+  // 부모: 기존 가족 공용 Firestore 목록으로 저장
+  if (isPcChildTestMode()) {
+    try {
+      var box=pcTestDataBox();
+      box.workbooks=list;
+      localStorage.setItem('fp_pc_test_data',JSON.stringify(box));
+      inp.value='';
+      renderWorkbookSelect();
+      renderWorkbookChips();
+      showToast('✅ 문제집이 추가됐어요');
+    } catch(e) { showToast('⚠️ 기기에 저장하지 못했어요'); }
+    return;
+  }
+  if (isLocalWorkbookMode()) {
+    if (!saveLocalChildWorkbookList(list)) { showToast('⚠️ 기기에 저장하지 못했어요'); return; }
+    inp.value='';
+    renderWorkbookSelect();
+    renderWorkbookChips();
+    showToast('✅ 문제집이 추가됐어요');
+    return;
+  }
   fsSet('meta','workbooks',{list:list}).then(function(){
-    inp.value = '';
+    inp.value='';
     showToast('✅ 추가됐어요');
-  }).catch(function(){ showToast('⚠️ 저장 실패. 네트워크를 확인해주세요'); });
+  }).catch(function(err){
+    console.error('workbook save failed:',err);
+    showToast('⚠️ 문제집 저장 권한을 확인해주세요');
+  });
 }
 function removeWorkbookFromList(name) {
   var list = currentWorkbookList().filter(function(w){ return w!==name; });
+  if (isPcChildTestMode()) {
+    try {
+      var box=pcTestDataBox();
+      box.workbooks=list;
+      localStorage.setItem('fp_pc_test_data',JSON.stringify(box));
+      renderWorkbookSelect();
+      renderWorkbookChips();
+      showToast('🗑 삭제됐어요');
+    } catch(e) { showToast('⚠️ 기기에서 삭제하지 못했어요'); }
+    return;
+  }
+  if (isLocalWorkbookMode()) {
+    if (!saveLocalChildWorkbookList(list)) { showToast('⚠️ 기기에서 삭제하지 못했어요'); return; }
+    renderWorkbookSelect();
+    renderWorkbookChips();
+    showToast('🗑 삭제됐어요');
+    return;
+  }
   fsSet('meta','workbooks',{list:list}).then(function(){ showToast('🗑 삭제됐어요'); })
-    .catch(function(){ showToast('⚠️ 삭제 실패. 네트워크를 확인해주세요'); });
+    .catch(function(err){ console.error('workbook delete failed:',err); showToast('⚠️ 문제집 삭제 권한을 확인해주세요'); });
 }
 var _taskType = 'etc';
 function selectTaskType(type) {
@@ -4388,7 +4474,7 @@ function toggleAlldayShared() {
 }
 
 
-// ── PC child test storage (Build057) ──
+// ── PC child test storage (Build060) ──
 function isPcChildTestMode(){
   // PC child test mode: use sessionStorage directly as the source of truth.
   // This avoids role state being overwritten by localStorage during testing.
@@ -4396,8 +4482,7 @@ function isPcChildTestMode(){
 }
 function pcTestSaveTask(task){
   try{
-    var box=JSON.parse(localStorage.getItem('fp_pc_test_data')||'{"tasks":[]}');
-    if(!box.tasks) box.tasks=[];
+    var box=pcTestDataBox();
     var idx=box.tasks.findIndex(function(x){return String(x.id)===String(task.id);});
     if(idx>=0) box.tasks[idx]=task; else box.tasks.push(task);
     localStorage.setItem('fp_pc_test_data',JSON.stringify(box));
@@ -4405,12 +4490,12 @@ function pcTestSaveTask(task){
   }catch(e){ return false; }
 }
 
-// Build059: PC child test data restore
+// Build060: PC child test data restore. This is also called after the Firestore
+// task snapshot so a later snapshot cannot erase the local PC-test tasks.
 function pcTestLoadTasks(){
   try{
     if(!isPcChildTestMode()) return;
-    var box=JSON.parse(localStorage.getItem('fp_pc_test_data')||'{"tasks":[]}');
-    if(!box.tasks || !Array.isArray(box.tasks)) return;
+    var box=pcTestDataBox();
     var map={};
     state.tasks.forEach(function(t){ map[String(t.id)]=true; });
     box.tasks.forEach(function(t){
