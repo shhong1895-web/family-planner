@@ -14,8 +14,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20260821-Build 062 -->
-<title>Build 062 · 우리가족 플래너</title>
+<!-- v20260821-Build 063 -->
+<title>Build 063 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -178,17 +178,17 @@ body {
 .date-nav-sub { font-size:12px; color:var(--sub); margin-top:2px; }
 
 .progress-card {
-  border-radius:var(--r); padding:18px; margin-bottom:14px;
-  background:linear-gradient(135deg, var(--child) 0%, #7C3AED 100%); color:#fff;
+  border-radius:var(--r); padding:13px 15px; margin-bottom:10px;
+  background:#DED3F2; color:#3B3150; border:1.5px solid #BFAFD8;
+  box-shadow:0 2px 8px rgba(91,70,120,.08);
 }
-.progress-card.p-mode { background:linear-gradient(135deg, var(--parent) 0%, #0369A1 100%); }
-.pc-row { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:12px; }
-.pc-label { font-size:13px; opacity:.8; margin-bottom:3px; }
-.pc-date { font-size:20px; font-weight:800; }
-.pc-big { font-size:32px; font-weight:800; line-height:1; }
-.pc-unit { font-size:13px; opacity:.75; }
-.prog-bar { height:8px; background:rgba(255,255,255,.25); border-radius:4px; overflow:hidden; }
-.prog-fill { height:100%; background:#fff; border-radius:4px; transition:width .5s; }
+.progress-card.p-mode { background:linear-gradient(135deg, var(--parent) 0%, #0369A1 100%); color:#fff; border:0; box-shadow:var(--sh); }
+.pc-row { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:8px; }
+.pc-label { font-size:12px; opacity:.78; margin-bottom:2px; font-weight:700; }
+.pc-big { font-size:28px; font-weight:800; line-height:1; }
+.pc-unit { font-size:12px; opacity:.72; }
+.progress-card:not(.p-mode) .prog-bar { height:7px; background:rgba(255,255,255,.58); border:1px solid rgba(95,76,122,.16); border-radius:4px; overflow:hidden; }
+.progress-card:not(.p-mode) .prog-fill { height:100%; background:#7C5AA6; border-radius:4px; transition:width .5s; }
 /* GOAL LINK (Build 032) */
 .goal-link-wrap { margin-top:10px; }
 .goal-link-note { font-size:10px; color:var(--sub); margin-top:5px; line-height:1.45; }
@@ -2890,8 +2890,7 @@ function renderDay() {
     +'</div>';
 
   html+='<div class="progress-card'+(isP?' p-mode':'')+'">'
-    +'<div class="pc-row"><div><div class="pc-label">'+(isP?(state.children.length>1?childLabel(activeChildId())+' 현황':'자녀 현황'):'나의 진행률')+'</div>'
-    +'<div class="pc-date">'+(isToday(state.selectedDate)?'오늘':koDate(state.selectedDate).replace(/\(.*\)/,'').trim())+'</div></div>'
+    +'<div class="pc-row"><div><div class="pc-label">'+(isP?(state.children.length>1?childLabel(activeChildId())+' 현황':'자녀 현황'):'나의 진행률')+'</div></div>'
     +'<div><div class="pc-big">'+pct+'<span class="pc-unit">%</span></div>'
     +'<div class="pc-unit">'+done+'/'+tasks.length+' 완료</div></div></div>'
     +'<div class="prog-bar"><div class="prog-fill" style="width:'+pct+'%"></div></div>'
