@@ -14,8 +14,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20260821-Build 066 -->
-<title>Build 066 · 우리가족 플래너</title>
+<!-- v20260821-Build 067 -->
+<title>Build 067 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -879,7 +879,7 @@ body.child-device .child-quick-done button.primary { background:#EEF0FF; border-
 </style>
 </head>
 <body>
-<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 066</div>
+<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 067</div>
 
 <!-- ONBOARDING -->
 <div id="onboardOverlay">
@@ -1188,7 +1188,7 @@ body.child-device .child-quick-done button.primary { background:#EEF0FF; border-
 <div class="toast" id="toast"></div>
 
 <style>@keyframes spin{to{transform:rotate(360deg)}}
-/* Build 066 child first-screen redesign */
+/* Build 067 child first-screen redesign */
 .child-hero {padding:10px 12px!important;margin-bottom:10px!important;}
 .child-hero-sub {font-size:12px!important;}
 .child-hero-mini {gap:6px!important;}
@@ -1200,12 +1200,38 @@ body.child-device .child-quick-done button.primary { background:#EEF0FF; border-
 .progress-card {padding:10px 12px!important;}
 .pc-row {align-items:center!important;}
 
-/* Build 066 compact first screen */
+/* Build 067 compact first screen */
 .pc-big .pc-unit {font-size:12px;font-weight:700;margin-left:4px;}
 .goal-title-row {display:flex;align-items:center;justify-content:space-between;}
 .goal-add-inline {border:0;background:var(--primary);color:white;border-radius:50%;width:28px;height:28px;font-size:18px;}
 .child-hero {padding:10px 14px;margin-bottom:10px;}
 .child-hero-sub {line-height:1.35;}
+
+/* Build 067 UX refinement */
+.build067-hide-duplicate {
+  display:none !important;
+}
+.build067-inline-date {
+  display:flex !important;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+}
+.build067-week-header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.build067-action-buttons {
+  display:flex;
+  gap:8px;
+}
+.build067-action-buttons button {
+  cursor:pointer;
+}
+.build067-help-message {
+  margin-top:8px;
+}
 </style>
 
 <script>
@@ -4576,7 +4602,7 @@ function toggleAlldayShared() {
 }
 
 
-// ── PC child test storage (Build062) ──
+// ── PC child test storage (Build 067) ──
 function isPcChildTestMode(){
   // PC child test mode: use sessionStorage directly as the source of truth.
   // This avoids role state being overwritten by localStorage during testing.
@@ -4592,7 +4618,7 @@ function pcTestSaveTask(task){
   }catch(e){ return false; }
 }
 
-// Build062: PC child test data restore. This is also called after the Firestore
+// Build 067: PC child test data restore. This is also called after the Firestore
 // task snapshot so a later snapshot cannot erase the local PC-test tasks.
 function pcTestLoadTasks(){
   try{
