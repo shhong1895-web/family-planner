@@ -14,8 +14,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20260821-Build 063 -->
-<title>Build 063 · 우리가족 플래너</title>
+<!-- v20260821-Build 064 -->
+<title>Build 064 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -1187,7 +1187,20 @@ body.child-device .child-quick-done button.primary { background:#EEF0FF; border-
 
 <div class="toast" id="toast"></div>
 
-<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+<style>@keyframes spin{to{transform:rotate(360deg)}}
+/* Build 064 UX refinement */
+.build064-card {
+  margin-bottom:10px;
+}
+.build064-progress-row {
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.build064-progress-bar {
+  flex:1;
+}
+</style>
 
 <script>
 // ── FIREBASE ──
