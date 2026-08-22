@@ -14,8 +14,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20260821-Build 064 -->
-<title>Build 064 · 우리가족 플래너</title>
+<!-- v20260821-Build 065 -->
+<title>Build 065 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -879,7 +879,7 @@ body.child-device .child-quick-done button.primary { background:#EEF0FF; border-
 </style>
 </head>
 <body>
-<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 062</div>
+<div id="buildBadge" style="position:fixed;top:6px;right:8px;z-index:12000;font-size:10px;color:#94A3B8;pointer-events:none">Build 065</div>
 
 <!-- ONBOARDING -->
 <div id="onboardOverlay">
@@ -1188,18 +1188,17 @@ body.child-device .child-quick-done button.primary { background:#EEF0FF; border-
 <div class="toast" id="toast"></div>
 
 <style>@keyframes spin{to{transform:rotate(360deg)}}
-/* Build 064 UX refinement */
-.build064-card {
-  margin-bottom:10px;
-}
-.build064-progress-row {
-  display:flex;
-  align-items:center;
-  gap:10px;
-}
-.build064-progress-bar {
-  flex:1;
-}
+/* Build 065 child first-screen redesign */
+.child-hero {padding:10px 12px!important;margin-bottom:10px!important;}
+.child-hero-sub {font-size:12px!important;}
+.child-hero-mini {gap:6px!important;}
+.child-hero-pill {padding:6px 8px!important;font-size:12px!important;cursor:pointer;}
+.today-summary {gap:6px!important;margin:8px 0!important;}
+.today-summary-card {padding:8px!important;display:flex!important;align-items:center!important;gap:5px!important;}
+.today-summary-icon {font-size:18px!important;}
+.today-summary-num {font-size:18px!important;}
+.progress-card {padding:10px 12px!important;}
+.pc-row {align-items:center!important;}
 </style>
 
 <script>
@@ -2884,8 +2883,8 @@ function renderDay() {
   if (!isP) {
     var childDoneMsg = tasks.length ? (done===tasks.length ? '오늘 계획을 모두 해냈어요 ✨' : '내가 정한 계획을 하나씩 해봐요') : '오늘 내가 하고 싶은 일을 하나 정해볼까요?';
     html+='<div class="child-hero">'
-      +'<div class="child-hero-title">🌷 오늘은 내가 계획하는 날</div>'
-      +'<div class="child-hero-sub">'+childDoneMsg+'<br>작은 계획도 직접 세우고 실천하면, 어제보다 한 걸음 자란 거예요.</div>'
+      +'<div class="child-hero-title">🌱 내가 만든 오늘</div>'
+      +'<div class="child-hero-sub">'+childDoneMsg+'<br>오늘의 작은 실천이 나를 성장시켜요.</div>'
       +'<div class="child-hero-mini"><span class="child-hero-pill">📝 직접 계획하기</span><span class="child-hero-pill">🌱 실천하기</span><span class="child-hero-pill">✨ 돌아보기</span></div>'
     +'</div>';
   }
@@ -2893,13 +2892,13 @@ function renderDay() {
   html+='<div class="today-summary">'
     +'<div class="today-summary-card"><div class="today-summary-icon">📝</div>'
     +'<div class="today-summary-num">'+done+'/'+tasks.length+'</div>'
-    +'<div class="today-summary-label">할 일 완료</div></div>'
+    +'<div class="today-summary-label">완료</div></div>'
     +'<div class="today-summary-card"><div class="today-summary-icon">📅</div>'
     +'<div class="today-summary-num">'+shared.length+'</div>'
-    +'<div class="today-summary-label">오늘 일정</div></div>'
+    +'<div class="today-summary-label">일정</div></div>'
     +'<div class="today-summary-card"><div class="today-summary-icon">💬</div>'
     +'<div class="today-summary-num">'+todayMsgCount+'</div>'
-    +'<div class="today-summary-label">새 메시지</div></div>'
+    +'<div class="today-summary-label">메시지</div></div>'
     +'</div>';
 
   html+='<div class="progress-card'+(isP?' p-mode':'')+'">'
@@ -2909,14 +2908,6 @@ function renderDay() {
     +'<div class="prog-bar"><div class="prog-fill" style="width:'+pct+'%"></div></div>'
     +(streak>0?'<div class="streak-badge">🔥 '+streak+'일 연속 완료 중!</div>':'')
     +'</div>';
-
-  var missionMsg = pct===100 ? '🎉 오늘 목표를 모두 달성했어요!' : (pct>=70 ? '🔥 거의 다 왔어요! 조금만 더 해봐요' : '💪 하나씩 완료해 봐요');
-  if (!isP) {
-    html+='<div class="mission-card"><div class="mission-title">🌟 오늘의 미션</div>'
-      +'<div>'+done+'/'+tasks.length+'개 완료</div>'
-      +'<div class="mission-rate">'+pct+'%</div>'
-      +'<div class="mission-msg">'+missionMsg+'</div></div>';
-  }
 
   html+=renderGoals();
 
