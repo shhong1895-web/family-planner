@@ -14,8 +14,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20260821-Build 068 -->
-<title>Build 068 · 우리가족 플래너</title>
+<!-- v20260821-Build 069 -->
+<title>Build 069 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -879,7 +879,7 @@ body.child-device .child-quick-done button.primary { background:#EEF0FF; border-
 </style>
 </head>
 <body>
-<div id="buildBadge" style="display:none">Build 068</div>
+<div id="buildBadge" style="display:none">Build 069</div>
 
 <!-- ONBOARDING -->
 <div id="onboardOverlay">
@@ -941,7 +941,7 @@ body.child-device .child-quick-done button.primary { background:#EEF0FF; border-
 
 <!-- APP -->
 <div id="appWrapper">
-  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 068</span></div>
+  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 069</span></div>
   <div class="app-header">
     <div class="header-top">
       <div class="app-logo">🏠 우리가족 플래너</div><button id="pc-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
@@ -1188,7 +1188,7 @@ body.child-device .child-quick-done button.primary { background:#EEF0FF; border-
 <div class="toast" id="toast"></div>
 
 <style>@keyframes spin{to{transform:rotate(360deg)}}
-/* Build 068 child first-screen redesign */
+/* Build 069 child first-screen redesign */
 .child-hero {padding:10px 12px!important;margin-bottom:10px!important;}
 .child-hero-sub {font-size:12px!important;}
 .child-hero-mini {gap:6px!important;}
@@ -1200,14 +1200,14 @@ body.child-device .child-quick-done button.primary { background:#EEF0FF; border-
 .progress-card {padding:10px 12px!important;}
 .pc-row {align-items:center!important;}
 
-/* Build 068 compact first screen */
+/* Build 069 compact first screen */
 .pc-big .pc-unit {font-size:12px;font-weight:700;margin-left:4px;}
 .goal-title-row {display:flex;align-items:center;justify-content:space-between;}
 .goal-add-inline {border:0;background:var(--primary);color:white;border-radius:50%;width:28px;height:28px;font-size:18px;}
 .child-hero {padding:10px 14px;margin-bottom:10px;}
 .child-hero-sub {line-height:1.35;}
 
-/* Build 068 UX refinement */
+/* Build 069 UX refinement */
 .build067-hide-duplicate {
   display:none !important;
 }
@@ -1233,7 +1233,7 @@ body.child-device .child-quick-done button.primary { background:#EEF0FF; border-
   margin-top:8px;
 }
 
-/* Build 068: compact child-first UX + iOS PWA safe area */
+/* Build 069: compact child-first UX + iOS PWA safe area */
 .sync-bar { justify-content:center; min-height:27px; padding-top:5px; padding-bottom:5px; }
 .sync-build { margin-left:8px; font-size:10px; opacity:.68; white-space:nowrap; }
 .date-nav-center.date-inline { display:flex; align-items:center; justify-content:center; gap:6px; }
@@ -1256,6 +1256,49 @@ body.child-device .child-quick-done button.primary { background:#EEF0FF; border-
 .goal-title-range { font-size:11px; color:var(--sub); font-weight:700; margin-left:auto; white-space:nowrap; }
 .goal-add-inline { flex:0 0 auto; }
 .month-selected-view-btn { width:100%; margin:2px 0 10px; border:1px solid #E2E5F2; background:#F8F9FF; color:var(--child); border-radius:12px; padding:9px 10px; font:800 12px/1.2 inherit; cursor:pointer; }
+
+/* ===== Build 069 child-first layout ===== */
+.b069-child-main .sec-title { margin-top:8px; margin-bottom:7px; }
+.b069-my-plan-title { margin-top:10px !important; }
+.b069-today-list { display:flex; flex-direction:column; gap:6px; margin-bottom:4px; }
+.b069-item {
+  display:flex; align-items:center; gap:8px;
+  min-height:34px; padding:7px 9px;
+  background:var(--card); border:1px solid var(--border);
+  border-radius:12px;
+}
+.b069-kind { width:24px; flex:0 0 24px; text-align:center; }
+.b069-title { flex:1; min-width:0; font-size:13px; }
+.b069-time { color:var(--sub); font-size:11px; font-weight:600; }
+.b069-progress-inline { display:flex; align-items:center; gap:9px; width:100%; }
+.b069-progress-track { flex:1; min-width:40px; }
+.b069-progress-text { white-space:nowrap; font-size:12px; font-weight:800; }
+.b069-shared-compact {
+  width:100%; border:1px solid var(--border); background:var(--card);
+  text-align:left; display:flex; align-items:center; gap:8px;
+  padding:8px 10px; margin-bottom:6px; border-radius:12px;
+  color:var(--text); cursor:pointer;
+}
+.b069-shared-compact .shared-body { flex:1; min-width:0; }
+.b069-shared-time { color:var(--sub); font-size:10px; white-space:nowrap; }
+.b069-detail-modal {
+  position:fixed; inset:0; z-index:10000;
+  background:rgba(15,23,42,.38);
+  display:flex; align-items:center; justify-content:center;
+  padding:24px;
+}
+.b069-detail-box {
+  width:min(360px,100%); background:var(--card);
+  border-radius:20px; padding:18px;
+  box-shadow:0 18px 50px rgba(15,23,42,.2);
+}
+.b069-detail-row {
+  display:flex; justify-content:space-between; gap:16px;
+  padding:10px 0; border-bottom:1px solid var(--border);
+  font-size:12px;
+}
+.b069-detail-row span { color:var(--sub); }
+.b069-detail-row strong { text-align:right; word-break:break-word; }
 </style>
 
 <script>
@@ -1518,9 +1561,9 @@ function setupFamilyListeners() {
     // PC 자녀 테스트 데이터는 Firebase가 아니라 localStorage에 있으므로
     // Firestore snapshot이 도착한 뒤에도 반드시 다시 합쳐준다.
     pcTestLoadTasks();
-    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 068</span>';
+    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 069</span>';
     render();
-  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 068</span>'; });
+  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 069</span>'; });
   db.collection('sharedEvents').onSnapshot(function(snap) {
     state.sharedEvents = snap.docs.map(function(d){ return d.data(); }); render();
   });
@@ -2917,6 +2960,8 @@ function renderDay() {
   var ds=fmt(state.selectedDate);
   var tasks=tasksForDate(ds);
   var shared=sharedForDate(ds);
+  var schoolItems=shared.filter(function(e){ return !!e.isSchool; });
+  var familyItems=shared.filter(function(e){ return !e.isSchool; });
   var done=tasks.filter(function(t){return taskDoneForDate(t,ds);}).length;
   var pct=tasks.length?Math.round(done/tasks.length*100):0;
   var isP=state.mode==='parent';
@@ -2924,9 +2969,11 @@ function renderDay() {
   var holiday=getHoliday(ds);
   var html='';
 
+  // Date + "오늘" are deliberately kept on one line to reduce vertical space.
   html+='<div class="date-nav">'
     +'<button class="date-nav-btn" onclick="shiftDay(-1)">‹</button>'
-    +'<div class="date-nav-center date-inline"><div class="date-nav-main'+(holiday?' holiday':'')+'">'+koDate(state.selectedDate)+'</div>'
+    +'<div class="date-nav-center date-inline">'
+    +'<div class="date-nav-main'+(holiday?' holiday':'')+'">'+koDate(state.selectedDate)+'</div>'
     +(isToday(state.selectedDate)?'<div class="date-nav-sub inline-today">오늘</div>':'')
     +'</div>'
     +'<button class="date-nav-btn" onclick="shiftDay(1)">›</button></div>';
@@ -2954,29 +3001,90 @@ function renderDay() {
     return html;
   }
 
-  // Child: put actionable plans immediately after the compact date/guide.
-  var childDoneMsg=tasks.length?(done===tasks.length?'오늘 계획을 모두 해냈어요 ✨':'내가 정한 계획을 하나씩 해봐요'):'오늘 내가 하고 싶은 일을 하나 정해볼까요?';
-  html+='<div class="child-hero child-hero-compact">'
-    +'<div class="child-hero-title">🌱 내가 만든 오늘</div>'
-    +'<div class="child-hero-sub">'+childDoneMsg+'</div>'
-    +'<div class="child-action-buttons">'
-    +'<button type="button" class="child-action-btn" onclick="openModal()">📝 계획하기</button>'
-    +'<button type="button" class="child-action-btn" onclick="focusTodayTasks()">🌱 실천하기</button>'
-    +'<button type="button" class="child-action-btn" onclick="focusTodayProgress()">✨ 돌아보기</button>'
-    +'</div></div>';
+  // Child view: one clear flow — what I have to do → what I planned → progress.
+  html+='<div class="child-today b069-child-main">';
 
-  html+='<div class="today-tasks-block" id="todayTasksBlock"><div class="sec-title">오늘 내가 할 일</div>';
-  if(!tasks.length) html+=emptyBox('🌱','아직 오늘 계획이 없어요','아래 + 버튼을 눌러 내가 할 일을 정해보세요');
-  tasks.forEach(function(t){html+=taskCard(t,ds);});
-  html+='<div class="today-help-bottom">💡 계획은 어렵게 세울 필요 없어요. <strong>오늘 할 일 한 가지</strong>만 정해도 충분해요.</div></div>';
+  html+='<div class="b069-section today-tasks-block" id="todayTasksBlock">';
+  html+='<div class="sec-title">오늘 내가 할 일</div>';
 
-  html+='<div class="progress-card compact-progress" id="todayProgressBlock"><div class="pc-row"><div><div class="pc-label">나의 진행률</div></div><div class="pc-big">'+pct+'<span class="pc-unit">'+done+'/'+tasks.length+' 완료</span></div></div><div class="prog-bar"><div class="prog-fill" style="width:'+pct+'%"></div></div>'+(streak>0?'<div class="streak-badge">🔥 '+streak+'일 연속 완료 중!</div>':'')+'</div>';
+  // School/academy schedules are actionable items for today, so they live here.
+  if (schoolItems.length) {
+    html+='<div class="b069-today-list">';
+    schoolItems.forEach(function(e){
+      var timeStr=e.allday?'하루종일':(e.time?prettyTime(e.time):'');
+      var icon=e.icon|| (e.name&&e.name.indexOf('학원')>=0?'🎒':'🏫');
+      html+='<div class="b069-item b069-school-item">'
+        +'<div class="b069-kind">'+icon+'</div>'
+        +'<div class="b069-title"><strong>'+esc(e.name)+'</strong>'
+        +(timeStr?'<span class="b069-time"> · '+esc(timeStr)+'</span>':'')
+        +'</div></div>';
+    });
+    html+='</div>';
+  }
 
-  html+=renderGoals();
-  if(shared.length){html+='<div class="sec-title">공유 일정</div>';shared.forEach(function(e){html+=sharedCard(e,false);});}
+  html+='<div class="sec-title b069-my-plan-title">🌱 내가 만든 오늘</div>';
+  if(!tasks.length) {
+    html+=emptyBox('🌱','아직 오늘 계획이 없어요','아래 + 버튼으로 내가 할 일을 정해보세요');
+  } else {
+    tasks.forEach(function(t){html+=taskCard(t,ds);});
+  }
+  html+='<div class="today-help-bottom">💡 계획은 어렵게 세울 필요 없어요. <strong>오늘 할 일 한 가지</strong>만 정해도 충분해요.</div>';
+  html+='</div>';
+
+  // Progress follows "내가 만든 오늘" immediately.
+  html+='<div class="progress-card compact-progress" id="todayProgressBlock">'
+    +'<div class="b069-progress-inline">'
+    +'<div class="pc-label">나의 진행률</div>'
+    +'<div class="b069-progress-track prog-bar"><div class="prog-fill" style="width:'+pct+'%"></div></div>'
+    +'<div class="b069-progress-text">'+pct+'% '+done+'/'+tasks.length+' 완료</div>'
+    +'</div>'
+    +(streak>0?'<div class="streak-badge">🔥 '+streak+'일 연속 완료 중!</div>':'')
+    +'</div>';
+
+  // Weekly goals are intentionally not shown on the child day screen.
+  // They remain available in the weekly/parent views for later review.
+  if(familyItems.length){
+    html+='<div class="sec-title">📅 공유 일정</div>';
+    familyItems.forEach(function(e){
+      html+=b069SharedCompactCard(e);
+    });
+  }
+
   html+=renderMessages(ds,false);
+  html+='</div>';
   return html;
 }
+
+function b069SharedCompactCard(e) {
+  var id=String(e.id||'');
+  var timeStr=e.allday?'하루종일':(e.time?prettyTime(e.time):'');
+  return '<button type="button" class="shared-card b069-shared-compact" onclick="showB069SharedDetail(\''+esc(id)+'\')">'
+    +'<span class="shared-icon">'+(e.icon||'📅')+'</span>'
+    +'<span class="shared-body"><span class="shared-title">'+esc(e.name)+'</span></span>'
+    +(timeStr?'<span class="b069-shared-time">'+esc(timeStr)+'</span>':'')
+    +'</button>';
+}
+
+function showB069SharedDetail(id) {
+  var items=sharedForDate(fmt(state.selectedDate));
+  var e=items.find(function(x){ return String(x.id)===String(id); });
+  if(!e) return;
+  var timeStr=e.allday?'하루종일':(e.time?prettyTime(e.time):'시간 미정');
+  var detail='<div class="b069-detail-modal" id="b069DetailModal" onclick="if(event.target===this)closeB069SharedDetail()">'
+    +'<div class="b069-detail-box">'
+    +'<div class="modal-h">📅 '+esc(e.name)+'</div>'
+    +'<div class="b069-detail-row"><span>날짜</span><strong>'+esc(koDate(state.selectedDate))+'</strong></div>'
+    +'<div class="b069-detail-row"><span>시간</span><strong>'+esc(timeStr)+'</strong></div>'
+    +(e.desc?'<div class="b069-detail-row"><span>상세</span><strong>'+esc(e.desc)+'</strong></div>':'')
+    +'<button type="button" class="f-btn p" onclick="closeB069SharedDetail()">확인</button>'
+    +'</div></div>';
+  document.body.insertAdjacentHTML('beforeend',detail);
+}
+function closeB069SharedDetail() {
+  var el=document.getElementById('b069DetailModal');
+  if(el) el.remove();
+}
+
 function focusTodayTasks(){
   var el=document.getElementById('todayTasksBlock');
   if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
@@ -4621,7 +4729,7 @@ function toggleAlldayShared() {
 }
 
 
-// ── PC child test storage (Build 068) ──
+// ── PC child test storage (Build 069) ──
 function isPcChildTestMode(){
   // PC child test mode: use sessionStorage directly as the source of truth.
   // This avoids role state being overwritten by localStorage during testing.
@@ -4637,7 +4745,7 @@ function pcTestSaveTask(task){
   }catch(e){ return false; }
 }
 
-// Build 068: PC child test data restore. This is also called after the Firestore
+// Build 069: PC child test data restore. This is also called after the Firestore
 // task snapshot so a later snapshot cannot erase the local PC-test tasks.
 function pcTestLoadTasks(){
   try{
@@ -4889,7 +4997,7 @@ firebase.auth().onAuthStateChanged(function(user){
 firebase.auth().signInAnonymously().catch(function(err){
   console.error('익명 로그인 실패:', err);
   var bar=document.getElementById('syncBar');
-  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 068</span>'; }
+  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 069</span>'; }
 });
 
 // 홈 화면에 추가했을 때 오프라인에서도 앱 화면이 뜨도록 서비스워커 등록
