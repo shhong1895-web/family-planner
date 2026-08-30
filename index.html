@@ -14,8 +14,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20260831b-Build 075 -->
-<title>Build 075 · 우리가족 플래너</title>
+<!-- v20260831c-Build 076 -->
+<title>Build 076 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -932,7 +932,7 @@ body.child-device .child-quick-done button.primary { background:#EEF0FF; border-
 </style>
 </head>
 <body>
-<div id="buildBadge" style="display:none">Build 075</div>
+<div id="buildBadge" style="display:none">Build 076</div>
 
 <!-- ONBOARDING -->
 <div id="onboardOverlay">
@@ -994,7 +994,7 @@ body.child-device .child-quick-done button.primary { background:#EEF0FF; border-
 
 <!-- APP -->
 <div id="appWrapper">
-  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 075</span></div>
+  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 076</span></div>
   <div class="app-header">
     <div class="header-top">
       <div class="app-logo">🏠 우리가족 플래너</div><button id="pc-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
@@ -1737,9 +1737,9 @@ function setupFamilyListeners() {
     // PC 자녀 테스트 데이터는 Firebase가 아니라 localStorage에 있으므로
     // Firestore snapshot이 도착한 뒤에도 반드시 다시 합쳐준다.
     pcTestLoadTasks();
-    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 075</span>';
+    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 076</span>';
     render();
-  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 075</span>'; });
+  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 076</span>'; });
   db.collection('sharedEvents').onSnapshot(function(snap) {
     state.sharedEvents = snap.docs.map(function(d){ return d.data(); }); render();
   });
@@ -3075,11 +3075,11 @@ function defaultNextSiupsik(year) {
   return d;
 }
 function academicEventsForChild(childId) {
-  // Build 075: 다른 기능들(isForActiveChild)과 동일하게, 자녀가 1명뿐인 가정은
-  // 학사일정에 childId가 안 붙어 있어도(또는 다른 값이어도) 걸러내지 않습니다.
+  // Build 076: 반드시 "학사일정 일괄 등록"으로 넣은 항목이 아니어도(desc 태그가 없어도)
+  // 이름에 시업식/개학식이 들어간 공유 일정이면 인식하도록 완화했습니다.
   var singleChild = state.children.length<2;
   return state.sharedEvents.filter(function(e){
-    if (e.desc!=='학사일정') return false;
+    if (!/시업식|개학식/.test(e.name||'')) return false;
     if (singleChild) return true;
     return e.childId===childId;
   }).map(function(e){ return {name:e.name||'', date:parseDate(e.date)}; });
@@ -3102,7 +3102,9 @@ function computeSemesterInfo(childId, refDate) {
   var nextSiupsik = nextSiupsikReal ? nextSiupsikReal.date : defaultNextSiupsik(curSiupsik.date.getFullYear()+1);
   var isFirstHalf = !gaehak || refDate < gaehak.date;
   var start = isFirstHalf ? curSiupsik.date : gaehak.date;
-  var end = isFirstHalf ? (gaehak?gaehak.date:nextSiupsik) : nextSiupsik;
+  // Build 076: 1학기는 개학식 전날까지, 2학기는 다음 시업식 전날까지로 계산합니다.
+  var endBoundary = isFirstHalf ? (gaehak?gaehak.date:nextSiupsik) : nextSiupsik;
+  var end = new Date(endBoundary); end.setDate(end.getDate()-1);
   var semesterIndex = isFirstHalf?1:2;
   var yearLabel = curSiupsik.date.getFullYear();
   return { semesterIndex:semesterIndex, label:yearLabel+'학년도 '+semesterIndex+'학기', start:fmt(start), end:fmt(end), key:yearLabel+'-'+semesterIndex };
@@ -5386,7 +5388,7 @@ firebase.auth().onAuthStateChanged(function(user){
 firebase.auth().signInAnonymously().catch(function(err){
   console.error('익명 로그인 실패:', err);
   var bar=document.getElementById('syncBar');
-  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 075</span>'; }
+  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 076</span>'; }
 });
 
 // 홈 화면에 추가했을 때 오프라인에서도 앱 화면이 뜨도록 서비스워커 등록
