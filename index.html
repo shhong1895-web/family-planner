@@ -14,8 +14,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20260829-Build 072 -->
-<title>Build 072 · 우리가족 플래너</title>
+<!-- v20260830-Build 073 -->
+<title>Build 073 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -23,7 +23,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&family=Jua&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap');
 :root {
   --child: #4F46E5; --child-l: #EEF2FF;
   --parent: #0EA5E9; --parent-l: #E0F2FE;
@@ -846,14 +846,7 @@ body.child-device .modal-h { font-size:20px; letter-spacing:-.4px; }
 body.child-device .m-field { background:#FBFCFF; border-color:#E4E6F1; min-height:48px; }
 body.child-device .tt-btn.active { background:#EEF0FF; border-color:#BFC4FF; color:#5D66D7; }
 body.child-device .m-save { background:linear-gradient(135deg,#858CFA,#6D77E5); border-radius:16px; }
-/* Build 072: 자녀 화면 디자인 확장 - 둥근 포인트 서체와 파스텔 톤을 앱 전반에 일관되게 적용 */
-body.child-device .app-logo,
-body.child-device .pc-big,
-body.child-device .weekly-review-value,
-body.child-device .today-summary-num,
-body.child-device .streak-badge,
-body.child-device .child-hero-title,
-body.child-device .modal-h { font-family:'Jua','Noto Sans KR',sans-serif; }
+/* Build 073: 서체는 앱 전체에서 Noto Sans KR로 통일 (Jua 적용 되돌림), 카드 모양/톤만 유지 */
 body.child-device .sec-title { text-transform:none; letter-spacing:0; font-size:13px; color:#5D66D7; font-weight:800; }
 body.child-device .sec-title::after { background:#E7E9FF; }
 body.child-device .today-summary-card { border-radius:18px; border:1px solid #EEF0FF; box-shadow:0 5px 16px rgba(124,131,245,.07); }
@@ -863,7 +856,7 @@ body.child-device .week-plan { border-radius:20px; border:1px solid #EEF0FF; box
 body.child-device .weekly-review-item { border-radius:14px; }
 body.child-device .weekly-review-fill,
 body.child-device .week-glance-fill { background:linear-gradient(90deg,#8D94FF,#6BCFA9); }
-body.child-device .streak-badge { background:linear-gradient(135deg,#FFE3A8,#FFD1DC); color:#7A4B1E; font-family:'Jua','Noto Sans KR',sans-serif; font-size:14px; padding:7px 16px; animation:streakPop .5s ease-out; }
+body.child-device .streak-badge { background:linear-gradient(135deg,#FFE3A8,#FFD1DC); color:#7A4B1E; font-size:14px; padding:7px 16px; animation:streakPop .5s ease-out; }
 @keyframes streakPop { 0%{transform:scale(.6);opacity:0;} 60%{transform:scale(1.08);opacity:1;} 100%{transform:scale(1);} }
 body.child-device .empty, body.child-device .goal-empty { border-radius:20px; background:#FBFBFF; border:1px dashed #E3E5F9; }
 body.child-device .bottom-nav { border-top:1px solid #EEEFFD; }
@@ -901,7 +894,7 @@ body.child-device .child-quick-done button.primary { background:#EEF0FF; border-
 </style>
 </head>
 <body>
-<div id="buildBadge" style="display:none">Build 072</div>
+<div id="buildBadge" style="display:none">Build 073</div>
 
 <!-- ONBOARDING -->
 <div id="onboardOverlay">
@@ -963,7 +956,7 @@ body.child-device .child-quick-done button.primary { background:#EEF0FF; border-
 
 <!-- APP -->
 <div id="appWrapper">
-  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 072</span></div>
+  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 073</span></div>
   <div class="app-header">
     <div class="header-top">
       <div class="app-logo">🏠 우리가족 플래너</div><button id="pc-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
@@ -1708,9 +1701,9 @@ function setupFamilyListeners() {
     // PC 자녀 테스트 데이터는 Firebase가 아니라 localStorage에 있으므로
     // Firestore snapshot이 도착한 뒤에도 반드시 다시 합쳐준다.
     pcTestLoadTasks();
-    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 072</span>';
+    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 073</span>';
     render();
-  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 072</span>'; });
+  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 073</span>'; });
   db.collection('sharedEvents').onSnapshot(function(snap) {
     state.sharedEvents = snap.docs.map(function(d){ return d.data(); }); render();
   });
@@ -5157,7 +5150,7 @@ firebase.auth().onAuthStateChanged(function(user){
 firebase.auth().signInAnonymously().catch(function(err){
   console.error('익명 로그인 실패:', err);
   var bar=document.getElementById('syncBar');
-  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 072</span>'; }
+  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 073</span>'; }
 });
 
 // 홈 화면에 추가했을 때 오프라인에서도 앱 화면이 뜨도록 서비스워커 등록
