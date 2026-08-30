@@ -14,8 +14,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20260821-Build 071 -->
-<title>Build 071 · 우리가족 플래너</title>
+<!-- v20260829-Build 072 -->
+<title>Build 072 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -23,7 +23,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&family=Jua&display=swap');
 :root {
   --child: #4F46E5; --child-l: #EEF2FF;
   --parent: #0EA5E9; --parent-l: #E0F2FE;
@@ -846,6 +846,28 @@ body.child-device .modal-h { font-size:20px; letter-spacing:-.4px; }
 body.child-device .m-field { background:#FBFCFF; border-color:#E4E6F1; min-height:48px; }
 body.child-device .tt-btn.active { background:#EEF0FF; border-color:#BFC4FF; color:#5D66D7; }
 body.child-device .m-save { background:linear-gradient(135deg,#858CFA,#6D77E5); border-radius:16px; }
+/* Build 072: 자녀 화면 디자인 확장 - 둥근 포인트 서체와 파스텔 톤을 앱 전반에 일관되게 적용 */
+body.child-device .app-logo,
+body.child-device .pc-big,
+body.child-device .weekly-review-value,
+body.child-device .today-summary-num,
+body.child-device .streak-badge,
+body.child-device .child-hero-title,
+body.child-device .modal-h { font-family:'Jua','Noto Sans KR',sans-serif; }
+body.child-device .sec-title { text-transform:none; letter-spacing:0; font-size:13px; color:#5D66D7; font-weight:800; }
+body.child-device .sec-title::after { background:#E7E9FF; }
+body.child-device .today-summary-card { border-radius:18px; border:1px solid #EEF0FF; box-shadow:0 5px 16px rgba(124,131,245,.07); }
+body.child-device .weekly-review,
+body.child-device .week-at-glance,
+body.child-device .week-plan { border-radius:20px; border:1px solid #EEF0FF; box-shadow:0 6px 18px rgba(124,131,245,.07); }
+body.child-device .weekly-review-item { border-radius:14px; }
+body.child-device .weekly-review-fill,
+body.child-device .week-glance-fill { background:linear-gradient(90deg,#8D94FF,#6BCFA9); }
+body.child-device .streak-badge { background:linear-gradient(135deg,#FFE3A8,#FFD1DC); color:#7A4B1E; font-family:'Jua','Noto Sans KR',sans-serif; font-size:14px; padding:7px 16px; animation:streakPop .5s ease-out; }
+@keyframes streakPop { 0%{transform:scale(.6);opacity:0;} 60%{transform:scale(1.08);opacity:1;} 100%{transform:scale(1);} }
+body.child-device .empty, body.child-device .goal-empty { border-radius:20px; background:#FBFBFF; border:1px dashed #E3E5F9; }
+body.child-device .bottom-nav { border-top:1px solid #EEEFFD; }
+body.child-device .date-nav { border-radius:20px; }
 .child-hero { position:relative; overflow:hidden; margin:10px 0 14px; padding:18px 18px 17px; border-radius:24px; background:linear-gradient(135deg,#EEF0FF 0%,#FFF5FA 100%); border:1px solid #E9E9FB; }
 .child-hero:after { content:'✦'; position:absolute; right:20px; top:12px; font-size:26px; color:#C6CAFF; transform:rotate(12deg); }
 .child-hero-title { font-size:18px; font-weight:900; color:#39405C; letter-spacing:-.4px; }
@@ -859,27 +881,27 @@ body.child-device .m-save { background:linear-gradient(135deg,#858CFA,#6D77E5); 
 @media(max-width:430px){ .child-hero { margin-left:1px; margin-right:1px; } }
 </style>
 
-<style id="build062-child-simple-form">
-body.child-device #mStudyWrap .mStudyAdvanced,
-body.child-device #mTimeWrap,
-body.child-device #mCatWrap,
-body.child-device #mGoalWrap,
-body.child-device .mRepeatLabel,
-body.child-device #mRepeat,
-body.child-device #mRepeat + #mWeekdayWrap,
-body.child-device #mRepeatEndWrap,
-body.child-device #mDesc { display:none !important; }
-body.child-device #mStudyWrap .wb-manage-toggle { margin-top:2px; }
-body.child-device #mStudyWrap .wb-row { margin-bottom:8px; }
-body.child-device #mStudyWrap .m-label { margin-top:8px; }
-body.child-device #mNameWrap { display:block; }
+<style id="build072-child-simple-form">
+/* Build 072: 자녀 화면의 '자세히 설정하기' 토글 - 고급 항목은 필요할 때만 펼침 (완전히 숨기지 않고 언제든 열 수 있음) */
+.m-advanced-toggle {
+  width:100%; display:flex; align-items:center; justify-content:center; gap:6px;
+  margin:2px 0 14px; padding:11px 10px; border-radius:14px;
+  border:1.5px dashed var(--border); background:#F8FAFC; color:var(--sub);
+  font-family:inherit; font-size:13px; font-weight:700; cursor:pointer;
+}
+.m-advanced-toggle.open { border-style:solid; color:var(--child); background:var(--child-l); border-color:transparent; }
+body.child-device .m-advanced-toggle { border-radius:16px; }
+body.child-device .m-advanced-toggle.open { background:#EEF0FF; color:#5D66D7; }
+#mStudyWrap .wb-manage-toggle { margin-top:2px; }
+#mStudyWrap .wb-row { margin-bottom:8px; }
+#mStudyWrap .m-label { margin-top:8px; }
 body.child-device .child-quick-done { display:flex; gap:8px; margin-top:10px; }
 body.child-device .child-quick-done button { flex:1; border:1px solid #E3E5F1; background:#F8F9FF; color:#5D6680; border-radius:13px; padding:11px 7px; font:800 12px/1.25 inherit; }
 body.child-device .child-quick-done button.primary { background:#EEF0FF; border-color:#C9CDFF; color:#5963D4; }
 </style>
 </head>
 <body>
-<div id="buildBadge" style="display:none">Build 071</div>
+<div id="buildBadge" style="display:none">Build 072</div>
 
 <!-- ONBOARDING -->
 <div id="onboardOverlay">
@@ -941,7 +963,7 @@ body.child-device .child-quick-done button.primary { background:#EEF0FF; border-
 
 <!-- APP -->
 <div id="appWrapper">
-  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 071</span></div>
+  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 072</span></div>
   <div class="app-header">
     <div class="header-top">
       <div class="app-logo">🏠 우리가족 플래너</div><button id="pc-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
@@ -1031,60 +1053,68 @@ body.child-device .child-quick-done button.primary { background:#EEF0FF; border-
       <!-- 숨겨진 날짜 input -->
       <input type="date" id="mDate" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" onchange="onModalDateChange()">
 
-      <div id="mCatWrap">
-        <div class="m-label">카테고리</div>
-        <select class="m-field" id="mCat">
-          <option value="학습">📚 학습</option>
-          <option value="운동">🏃 운동</option>
-          <option value="가사">🏠 가사</option>
-          <option value="취미">🎨 취미</option>
-          <option value="기타">⭐ 기타</option>
+      <!-- Build 072: 자녀 화면에서는 자세히 설정하기 전까지 아래 고급 항목을 접어둡니다 -->
+      <button type="button" class="m-advanced-toggle" id="mAdvancedToggleBtn" onclick="toggleAdvancedFields()">
+        <span id="mAdvancedToggleIcon">🔧</span> <span id="mAdvancedToggleLabel">자세히 설정하기</span>
+      </button>
+
+      <div id="mAdvancedWrap" style="display:none">
+        <div id="mCatWrap">
+          <div class="m-label">카테고리</div>
+          <select class="m-field" id="mCat">
+            <option value="학습">📚 학습</option>
+            <option value="운동">🏃 운동</option>
+            <option value="가사">🏠 가사</option>
+            <option value="취미">🎨 취미</option>
+            <option value="기타">⭐ 기타</option>
+          </select>
+        </div>
+        <div id="mGoalWrap" class="goal-link-wrap" style="display:none">
+          <div class="m-label">🎯 연결할 이번 주 목표 <span style="font-size:10px;color:var(--sub);font-weight:500">(선택)</span></div>
+          <select class="m-field" id="mGoalSelect">
+            <option value="">연결하지 않음</option>
+          </select>
+          <div class="goal-link-note">이 할 일을 완료하면 연결된 목표의 실행 내역에 반영됩니다.</div>
+        </div>
+
+        <div class="m-label mRepeatLabel">반복</div>
+        <select class="m-field" id="mRepeat" onchange="onRepeatTypeChange()">
+          <option value="none">반복 없음</option>
+          <option value="weekday">요일 반복</option>
+          <option value="monthly">매월 (같은 날짜)</option>
         </select>
-      </div>
-      <div id="mGoalWrap" class="goal-link-wrap" style="display:none">
-        <div class="m-label">🎯 연결할 이번 주 목표 <span style="font-size:10px;color:var(--sub);font-weight:500">(선택)</span></div>
-        <select class="m-field" id="mGoalSelect">
-          <option value="">연결하지 않음</option>
-        </select>
-        <div class="goal-link-note">이 할 일을 완료하면 연결된 목표의 실행 내역에 반영됩니다.</div>
-      </div>
 
-      <div class="m-label mRepeatLabel">반복</div>
-      <select class="m-field" id="mRepeat" onchange="onRepeatTypeChange()">
-        <option value="none">반복 없음</option>
-        <option value="weekday">요일 반복</option>
-        <option value="monthly">매월 (같은 날짜)</option>
-      </select>
-
-      <div id="mWeekdayWrap" style="display:none">
-        <div class="m-label">반복할 요일</div>
-        <div class="weekday-picker">
-          <button type="button" class="wd-btn" data-day="1" onclick="toggleWeekday(this)">월</button>
-          <button type="button" class="wd-btn" data-day="2" onclick="toggleWeekday(this)">화</button>
-          <button type="button" class="wd-btn" data-day="3" onclick="toggleWeekday(this)">수</button>
-          <button type="button" class="wd-btn" data-day="4" onclick="toggleWeekday(this)">목</button>
-          <button type="button" class="wd-btn" data-day="5" onclick="toggleWeekday(this)">금</button>
-          <button type="button" class="wd-btn" data-day="6" onclick="toggleWeekday(this)">토</button>
-          <button type="button" class="wd-btn" data-day="0" onclick="toggleWeekday(this)">일</button>
+        <div id="mWeekdayWrap" style="display:none">
+          <div class="m-label">반복할 요일</div>
+          <div class="weekday-picker">
+            <button type="button" class="wd-btn" data-day="1" onclick="toggleWeekday(this)">월</button>
+            <button type="button" class="wd-btn" data-day="2" onclick="toggleWeekday(this)">화</button>
+            <button type="button" class="wd-btn" data-day="3" onclick="toggleWeekday(this)">수</button>
+            <button type="button" class="wd-btn" data-day="4" onclick="toggleWeekday(this)">목</button>
+            <button type="button" class="wd-btn" data-day="5" onclick="toggleWeekday(this)">금</button>
+            <button type="button" class="wd-btn" data-day="6" onclick="toggleWeekday(this)">토</button>
+            <button type="button" class="wd-btn" data-day="0" onclick="toggleWeekday(this)">일</button>
+          </div>
+          <div class="wd-presets">
+            <button type="button" class="wd-preset-btn" onclick="setWeekdayPreset('all')">매일</button>
+            <button type="button" class="wd-preset-btn" onclick="setWeekdayPreset('weekday')">평일만</button>
+            <button type="button" class="wd-preset-btn" onclick="setWeekdayPreset('weekend')">주말만</button>
+          </div>
         </div>
-        <div class="wd-presets">
-          <button type="button" class="wd-preset-btn" onclick="setWeekdayPreset('all')">매일</button>
-          <button type="button" class="wd-preset-btn" onclick="setWeekdayPreset('weekday')">평일만</button>
-          <button type="button" class="wd-preset-btn" onclick="setWeekdayPreset('weekend')">주말만</button>
+
+        <div id="mRepeatEndWrap" style="display:none">
+          <div class="m-label">반복 종료일 (선택)</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="repeat-end-btn" id="mBtnRepeatEnd" onclick="focusRepeatEndDate()" style="flex:1">종료일 설정 안 함 (계속 반복)</button>
+            <button type="button" class="wd-preset-btn" onclick="clearRepeatEnd()">해제</button>
+          </div>
+          <input type="date" id="mRepeatEnd" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" onchange="onRepeatEndDateChange()">
         </div>
+
+        <div class="m-label">메모</div>
+        <textarea class="m-field" id="mDesc" placeholder="메모 (선택)" style="height:65px;resize:none"></textarea>
       </div>
 
-      <div id="mRepeatEndWrap" style="display:none">
-        <div class="m-label">반복 종료일 (선택)</div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <button class="repeat-end-btn" id="mBtnRepeatEnd" onclick="focusRepeatEndDate()" style="flex:1">종료일 설정 안 함 (계속 반복)</button>
-          <button type="button" class="wd-preset-btn" onclick="clearRepeatEnd()">해제</button>
-        </div>
-        <input type="date" id="mRepeatEnd" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" onchange="onRepeatEndDateChange()">
-      </div>
-
-      <div class="m-label">메모</div>
-      <textarea class="m-field" id="mDesc" placeholder="메모 (선택)" style="height:65px;resize:none"></textarea>
       <div class="m-btns">
         <button class="m-cancel" onclick="closeModal()">취소</button>
         <button class="m-save" id="mSave" onclick="saveTask()">추가하기</button>
@@ -1181,6 +1211,36 @@ body.child-device .child-quick-done button.primary { background:#EEF0FF; border-
     <div style="display:flex;gap:10px;margin-top:14px">
       <button onclick="closeUrlPopup()" style="flex:1;padding:12px;border-radius:10px;border:1.5px solid #E2E8F0;background:transparent;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer">닫기</button>
       <button onclick="doCopy()" style="flex:2;padding:12px;border-radius:10px;border:none;background:#4F46E5;color:#fff;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer">📋 복사하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- Build 072: 시스템 prompt()/confirm() 대체용 앱 내 입력·확인 시트 -->
+<div class="modal-overlay" id="textPromptModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-body">
+      <div class="modal-h" id="tpTitle">입력해주세요</div>
+      <div id="tpDesc" style="font-size:12px;color:var(--sub);margin:-8px 0 12px;line-height:1.55;white-space:pre-line"></div>
+      <textarea class="m-field" id="tpInput" style="height:60px;resize:none" maxlength="60"></textarea>
+      <div class="m-btns">
+        <button class="m-cancel" onclick="closeTextPrompt()">취소</button>
+        <button class="m-save" id="tpSaveBtn" onclick="confirmTextPrompt()">확인</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="confirmSheet">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-body" style="text-align:center;padding-top:4px">
+      <div style="font-size:38px;margin-bottom:8px" id="csEmoji">🤔</div>
+      <div class="modal-h" id="csTitle" style="margin-bottom:20px">확인해주세요</div>
+      <div class="m-btns">
+        <button class="m-cancel" id="csCancelBtn" onclick="closeConfirmSheet(false)">아니요</button>
+        <button class="m-save" id="csOkBtn" onclick="closeConfirmSheet(true)">네</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1648,9 +1708,9 @@ function setupFamilyListeners() {
     // PC 자녀 테스트 데이터는 Firebase가 아니라 localStorage에 있으므로
     // Firestore snapshot이 도착한 뒤에도 반드시 다시 합쳐준다.
     pcTestLoadTasks();
-    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 071</span>';
+    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 072</span>';
     render();
-  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 071</span>'; });
+  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 072</span>'; });
   db.collection('sharedEvents').onSnapshot(function(snap) {
     state.sharedEvents = snap.docs.map(function(d){ return d.data(); }); render();
   });
@@ -3018,14 +3078,14 @@ function addGoalPrompt() {
   if (state.mode!=='child') { showToast('🔒 자녀가 직접 목표를 세워요'); return; }
   var uid=getAuthUid(), childId=activeChildId();
   if (!uid || !childId) { showToast('⚠️ 연결된 자녀 정보를 확인해주세요'); return; }
-  var title=window.prompt('이번 주 목표를 입력해주세요.\n기간: 월요일~일요일 ('+weekRangeLabel(contextWeekStart())+')\n예: 수학 문제집 3회 하기');
-  if (!title) return;
-  title=title.trim();
-  if (!title) return;
-  if (title.length>60) { showToast('⚠️ 목표는 60자 이내로 입력해주세요'); return; }
-  var id='goal_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
-  var g={id:id,title:title,weekStart:fmt(contextWeekStart()),childId:childId,done:false,createdBy:uid,createdAt:Date.now()};
-  fsSet('goals',id,g).then(function(){ showToast('🎯 이번 주 목표를 추가했어요'); }).catch(function(){ showToast('⚠️ 목표 저장에 실패했어요'); });
+  // Build 072: 시스템 prompt() 대신 앱 안의 말풍선 입력 시트를 사용
+  openTextPrompt('🎯 이번 주 목표 세우기', '기간: 월요일~일요일 ('+weekRangeLabel(contextWeekStart())+')\n예: 수학 문제집 3회 하기', '', function(title){
+    if (!title) return;
+    if (title.length>60) { showToast('⚠️ 목표는 60자 이내로 입력해주세요'); return; }
+    var id='goal_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+    var g={id:id,title:title,weekStart:fmt(contextWeekStart()),childId:childId,done:false,createdBy:uid,createdAt:Date.now()};
+    fsSet('goals',id,g).then(function(){ showToast('🎯 이번 주 목표를 추가했어요'); }).catch(function(){ showToast('⚠️ 목표 저장에 실패했어요'); });
+  });
 }
 function toggleGoal(id) {
   if (state.mode!=='child') { showToast('🔒 자녀가 직접 완료해요'); return; }
@@ -3037,8 +3097,11 @@ function deleteGoal(id) {
   if (state.mode!=='child') { showToast('🔒 자녀가 직접 관리해요'); return; }
   var g=state.goals.find(function(x){return String(x.id)===String(id);});
   if (!g) return;
-  if (!confirm('이번 주 목표를 삭제할까요?')) return;
-  fsDel('goals',g.id).then(function(){ showToast('🗑 목표를 삭제했어요'); }).catch(function(){ showToast('⚠️ 삭제에 실패했어요'); });
+  // Build 072: 시스템 confirm() 대신 앱 안의 확인 시트를 사용
+  openConfirmSheet('이번 주 목표를 삭제할까요?', '🗑️', '삭제할게요', '아니요', function(ok){
+    if (!ok) return;
+    fsDel('goals',g.id).then(function(){ showToast('🗑 목표를 삭제했어요'); }).catch(function(){ showToast('⚠️ 삭제에 실패했어요'); });
+  });
 }
 
 // ── DAY VIEW ──
@@ -3961,9 +4024,18 @@ function deleteTask(id) {
   var isP=state.mode==='parent';
   var canEdit=(t.fromParent && isP)||(!t.fromParent && !isP);
   if (!canEdit) { showToast('⚠️ 본인이 등록한 일정만 삭제할 수 있어요'); return; }
-  if (!confirm('이 할일을 삭제할까요?')) return;
-  fsDel('tasks',t.id);
-  showToast('🗑 삭제됐어요');
+  if (isP) {
+    if (!confirm('이 할일을 삭제할까요?')) return;
+    fsDel('tasks',t.id);
+    showToast('🗑 삭제됐어요');
+  } else {
+    // Build 072: 자녀 화면에서는 앱 안의 확인 시트를 사용
+    openConfirmSheet('이 계획을 삭제할까요?', '🗑️', '삭제할게요', '아니요', function(ok){
+      if (!ok) return;
+      fsDel('tasks',t.id);
+      showToast('🗑 삭제됐어요');
+    });
+  }
 }
 function deleteShared(id) {
   if (!confirm('공유 일정을 삭제할까요?')) return;
@@ -4388,6 +4460,7 @@ function initTimeBtns(startKey,endKey,startBtnId,endBtnId,defaultStart,defaultEn
 function buildTimeOptions(selId,defaultVal){}
 
 var _editTaskId = null;
+var _advancedOpen = false; // Build 072: 계획 등록 모달의 '자세히 설정하기' 펼침 상태
 
 function koDateShort(d) {
   if (!d) return '';
@@ -4701,15 +4774,20 @@ function openModal(taskId) {
       document.getElementById('mPageStart').value = t.pageStart || '';
       document.getElementById('mPageEnd').value = t.pageEnd || '';
     }
+    // Build 072: 이미 설정된 고급 항목이 있으면(부모이거나, 자녀가 예전에 세운 계획이라도) 접지 않고 그대로 보여준다
+    var hasAdvancedValues = !!((t.cat && t.cat!=='기타') || t.goalId || (t.repeat && t.repeat!=='none') || (t.desc && t.desc.trim()) || t.workbookLevel);
+    toggleAdvancedFields(isP || hasAdvancedValues);
   } else {
     document.getElementById('mName').value = '';
     document.getElementById('mCat').value = '기타';
     document.getElementById('mRepeat').value = 'none';
     document.getElementById('mDesc').value = '';
     renderGoalSelect('');
-    document.getElementById('mAllday').checked = false;
+    // Build 072: 자녀가 새 계획을 세울 때는 기본을 '하루종일'로 두어 시간까지 정하지 않아도 되게 한다
+    document.getElementById('mAllday').checked = !isP;
     document.getElementById('mDate').value = dateStr;
-    document.getElementById('mTimeWrap').style.display = '';
+    document.getElementById('mTimeWrap').style.display = isP ? '' : 'none';
+    toggleAdvancedFields(isP);
     setSelectedWeekdays([]);
     document.getElementById('mRepeatEnd').value = '';
     onRepeatEndDateChange();
@@ -4745,6 +4823,25 @@ function closeModal() {
 
 function toggleAlldayModal() {
   document.getElementById('mTimeWrap').style.display = document.getElementById('mAllday').checked ? 'none' : '';
+}
+
+// Build 072: 계획 등록 모달의 고급 항목(카테고리/목표 연결/반복/메모/문제집 단계) 펼치기·접기.
+// 부모 모드에서는 처음부터 항상 펼쳐두고, 자녀 모드에서는 기본은 접어두되 필요하면 언제든 열 수 있다.
+function toggleAdvancedFields(forceOpen) {
+  var isP = state.mode === 'parent';
+  _advancedOpen = (typeof forceOpen === 'boolean') ? forceOpen : !_advancedOpen;
+  var wrap = document.getElementById('mAdvancedWrap');
+  var btn = document.getElementById('mAdvancedToggleBtn');
+  var icon = document.getElementById('mAdvancedToggleIcon');
+  var label = document.getElementById('mAdvancedToggleLabel');
+  if (wrap) wrap.style.display = _advancedOpen ? '' : 'none';
+  document.querySelectorAll('.mStudyAdvanced').forEach(function(el){ el.style.display = _advancedOpen ? '' : 'none'; });
+  if (btn) {
+    btn.style.display = isP ? 'none' : ''; // 부모 모드는 토글 버튼 없이 항상 전체 노출
+    btn.classList.toggle('open', _advancedOpen);
+  }
+  if (icon) icon.textContent = _advancedOpen ? '🔽' : '🔧';
+  if (label) label.textContent = _advancedOpen ? '접기' : '자세히 설정하기';
 }
 
 function toggleAlldayShared() {
@@ -4944,6 +5041,45 @@ function showToast(msg) {
   setTimeout(function(){ t.classList.remove('show'); },2200);
 }
 
+// ── Build 072: 시스템 prompt()/confirm() 대체용 입력·확인 시트 ──
+var _textPromptCb=null;
+function openTextPrompt(title, desc, defaultVal, cb) {
+  document.getElementById('tpTitle').textContent = title || '입력해주세요';
+  var descEl=document.getElementById('tpDesc');
+  descEl.textContent = desc || '';
+  descEl.style.display = desc ? '' : 'none';
+  document.getElementById('tpInput').value = defaultVal || '';
+  _textPromptCb = cb || null;
+  document.getElementById('textPromptModal').classList.add('open');
+  setTimeout(function(){ document.getElementById('tpInput').focus(); }, 150);
+}
+function closeTextPrompt() {
+  document.getElementById('textPromptModal').classList.remove('open');
+  _textPromptCb = null;
+}
+function confirmTextPrompt() {
+  var v = document.getElementById('tpInput').value.trim();
+  var cb = _textPromptCb;
+  closeTextPrompt();
+  if (cb) cb(v);
+}
+
+var _confirmSheetCb=null;
+function openConfirmSheet(title, emoji, okLabel, cancelLabel, cb) {
+  document.getElementById('csTitle').textContent = title || '확인해주세요';
+  document.getElementById('csEmoji').textContent = emoji || '🤔';
+  document.getElementById('csOkBtn').textContent = okLabel || '네';
+  document.getElementById('csCancelBtn').textContent = cancelLabel || '아니요';
+  _confirmSheetCb = cb || null;
+  document.getElementById('confirmSheet').classList.add('open');
+}
+function closeConfirmSheet(result) {
+  document.getElementById('confirmSheet').classList.remove('open');
+  var cb = _confirmSheetCb;
+  _confirmSheetCb = null;
+  if (cb) cb(result);
+}
+
 // ── DOUBLE TAP ENGINE (모바일 더블탭, 줌 방지) ──
 function selectDayAndAdd(ds) {
   state.selectedDate = parseDate(ds);
@@ -5021,7 +5157,7 @@ firebase.auth().onAuthStateChanged(function(user){
 firebase.auth().signInAnonymously().catch(function(err){
   console.error('익명 로그인 실패:', err);
   var bar=document.getElementById('syncBar');
-  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 071</span>'; }
+  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 072</span>'; }
 });
 
 // 홈 화면에 추가했을 때 오프라인에서도 앱 화면이 뜨도록 서비스워커 등록
