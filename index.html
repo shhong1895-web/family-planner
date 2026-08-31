@@ -14,8 +14,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20260831f-Build 079 -->
-<title>Build 079 · 우리가족 플래너</title>
+<!-- v20260901-Build 080 -->
+<title>Build 080 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -233,6 +233,9 @@ body {
 .week-plan-day-name span { font-size:10px; color:var(--sub); font-weight:600; margin-left:4px; }
 .week-plan-day.today .week-plan-day-name { color:var(--child); }
 .week-plan-add { border:1px solid var(--border); background:#fff; color:var(--child); border-radius:8px; padding:5px 8px; font-family:inherit; font-size:10px; font-weight:700; cursor:pointer; }
+.week-plan-day-pct { font-size:11px; font-weight:800; color:var(--child); flex-shrink:0; }
+.week-plan-day-bar { background:#EEF2F7; height:5px; border-radius:99px; overflow:hidden; margin:5px 0 2px; }
+.week-plan-day-fill { height:100%; background:var(--child); border-radius:99px; }
 .week-plan-items { margin-top:7px; display:flex; flex-direction:column; gap:5px; }
 .week-plan-item { display:flex; align-items:center; gap:7px; padding:7px 8px; border-radius:9px; background:var(--bg); cursor:pointer; }
 .week-plan-check { width:18px; height:18px; border-radius:50%; border:1px solid #CBD5E1; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:10px; background:#fff; }
@@ -575,7 +578,7 @@ body.child-device .goal-week-activity { border-radius:18px; }
 .stat-lbl { font-size:11px; font-weight:600; color:var(--sub); margin-top:3px; }
 
 /* EMPTY */
-.empty { text-align:center; padding:40px 20px; color:var(--sub); }
+.empty { text-align:center; padding:26px 20px; color:var(--sub); }
 .empty-ico { font-size:44px; margin-bottom:10px; }
 .empty-h { font-size:16px; font-weight:700; color:var(--text); margin-bottom:5px; }
 .empty-p { font-size:13px; line-height:1.5; }
@@ -620,7 +623,7 @@ body.child-device .goal-week-activity { border-radius:18px; }
 }
 @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
 .modal-handle { width:40px; height:4px; background:var(--border); border-radius:2px; margin:0 auto 16px; }
-.modal-body { padding:0 20px 40px; }
+.modal-body { padding:0 20px 26px; }
 .modal-h { font-size:18px; font-weight:800; margin-bottom:18px; }
 .m-field {
   width:100%; border:1.5px solid var(--border); border-radius:12px;
@@ -932,7 +935,7 @@ body.child-device .child-quick-done button.primary { background:#EEF0FF; border-
 </style>
 </head>
 <body>
-<div id="buildBadge" style="display:none">Build 079</div>
+<div id="buildBadge" style="display:none">Build 080</div>
 
 <!-- ONBOARDING -->
 <div id="onboardOverlay">
@@ -993,7 +996,7 @@ body.child-device .child-quick-done button.primary { background:#EEF0FF; border-
 
 <!-- APP -->
 <div id="appWrapper">
-  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 079</span></div>
+  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 080</span></div>
   <div class="app-header">
     <div class="header-top">
       <div class="app-logo">🏠 우리가족 플래너</div><button id="pc-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
@@ -1397,6 +1400,10 @@ body.child-device .child-quick-done button.primary { background:#EEF0FF; border-
 
 /* Month: keep the original 7-column calendar structure.
    Event text is clipped inside each cell instead of widening the calendar. */
+/* Build 080: 달력(요일 줄 포함)을 통째로 상단에 고정하고, 그 아래 선택한 날짜의
+   일정 목록만 스크롤되게 합니다 (아이폰 캘린더 방식). */
+.month-fixed-top { position:sticky!important; top:0!important; z-index:41!important; background:var(--bg)!important; padding-bottom:8px!important; margin-bottom:10px!important; }
+.month-fixed-top .date-nav.b070-sticky-nav { position:static!important; margin-top:0!important; padding-top:0!important; box-shadow:none!important; border-radius:var(--r)!important; }
 .month-header{
   display:grid!important;
   grid-template-columns:repeat(7,minmax(0,1fr))!important;
@@ -1453,11 +1460,11 @@ body.child-device .child-quick-done button.primary { background:#EEF0FF; border-
   min-width:0!important;
   max-width:100%!important;
   box-sizing:border-box!important;
-  padding:1px 2px!important;
-  border-radius:3px!important;
-  font-size:7px!important;
-  line-height:11px!important;
-  height:13px!important;
+  padding:1px 3px!important;
+  border-radius:4px!important;
+  font-size:9px!important;
+  line-height:13px!important;
+  height:15px!important;
   font-weight:700!important;
   text-align:left!important;
   white-space:nowrap!important;
@@ -1465,9 +1472,9 @@ body.child-device .child-quick-done button.primary { background:#EEF0FF; border-
   text-overflow:ellipsis!important;
 }
 .month-cell-more{
-  font-size:7px!important;
-  line-height:10px!important;
-  height:10px!important;
+  font-size:8.5px!important;
+  line-height:11px!important;
+  height:11px!important;
   padding:0 2px!important;
   text-align:left!important;
   white-space:nowrap!important;
@@ -1484,10 +1491,10 @@ body.child-device .child-quick-done button.primary { background:#EEF0FF; border-
 
 /* Small screens: preserve seven equal columns and reduce cell height slightly. */
 @media (max-width:600px){
-  .month-grid{grid-auto-rows:60px!important;}
-  .month-day{height:60px!important;min-height:60px!important;}
-  .month-cell-event{font-size:6.8px!important;height:12px!important;line-height:10px!important;}
-  .month-cell-more{font-size:6.8px!important;line-height:9px!important;height:9px!important;}
+  .month-grid{grid-auto-rows:64px!important;}
+  .month-day{height:64px!important;min-height:64px!important;}
+  .month-cell-event{font-size:8.5px!important;height:14px!important;line-height:12px!important;}
+  .month-cell-more{font-size:8px!important;line-height:10px!important;height:10px!important;}
 }
 
 </style>
@@ -1736,9 +1743,9 @@ function setupFamilyListeners() {
     // PC 자녀 테스트 데이터는 Firebase가 아니라 localStorage에 있으므로
     // Firestore snapshot이 도착한 뒤에도 반드시 다시 합쳐준다.
     pcTestLoadTasks();
-    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 079</span>';
+    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 080</span>';
     render();
-  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 079</span>'; });
+  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 080</span>'; });
   db.collection('sharedEvents').onSnapshot(function(snap) {
     state.sharedEvents = snap.docs.map(function(d){ return d.data(); }); render();
   });
@@ -3363,46 +3370,19 @@ function weeklyReviewHtml(ws) {
     +'<div class="weekly-review-bar"><div class="weekly-review-fill" style="width:'+linkedPct+'%"></div></div></div>'
     +'<div class="weekly-review-item"><div class="weekly-review-label">학습 진도</div>'
     +'<div class="weekly-review-value">'+(planned?(executed+'/'+planned+'p'):'-')+'</div>'
-    +'<div class="weekly-review-bar"><div class="weekly-review-fill" style="width:'+studyPct+'%"></div></div>'
-    +'<div class="weekly-review-note">계획한 페이지 대비 실제 실행량 '+studyPct+'%</div></div>'
+    +'<div class="weekly-review-bar"><div class="weekly-review-fill" style="width:'+studyPct+'%"></div></div></div>'
     +'</div>'
-    +'<div class="weekly-review-note">부분 실행도 학습 진도로 반영합니다. 계획을 끝내지 못했더라도 실제로 한 만큼 기록됩니다.</div>'
+    +'<div class="weekly-review-note">부분 실행도 학습 진도로 반영해요. 계획을 다 끝내지 못했어도 실제로 한 만큼 기록됩니다.</div>'
     +'</div>'
     +weekSemesterGoalsHtml(parseDate(ws));
 }
 
 // ── WEEK AT A GLANCE (Build 034) ──
-function weekGlanceHtml(ws) {
-  var days=['일','월','화','수','목','금','토'];
-  var html='<div class="week-at-glance">'
-    +'<div class="week-glance-title"><span>📌 이번 주 한눈에</span><span class="week-glance-sub">날짜를 누르면 그날로 이동</span></div>'
-    +'<div class="week-glance-list">';
-  for (var i=0;i<7;i++) {
-    var d=new Date(ws); d.setDate(ws.getDate()+i);
-    var ds=fmt(d);
-    var tasks=tasksForDate(ds);
-    var done=tasks.filter(function(t){ return taskDoneForDate(t,ds); }).length;
-    var shared=sharedForDate(ds).length;
-    var pct=tasks.length?Math.round(done/tasks.length*100):0;
-    var isTod=isToday(d);
-    html+='<div class="week-glance-row'+(isTod?' today':'')+'" onclick="selectDay(\''+ds+'\')">'
-      +'<div class="week-glance-day">'+days[d.getDay()]+'<strong>'+d.getDate()+'</strong></div>'
-      +'<div class="week-glance-main">'
-      +'<div class="week-glance-meta">'+(tasks.length?('할 일 '+done+'/'+tasks.length+' 완료'):'할 일 없음')+'</div>'
-      +'<div class="week-glance-bar"><div class="week-glance-fill" style="width:'+pct+'%"></div></div>'
-      +'</div>'
-      +'<div class="week-glance-right"><b>'+shared+'</b> 일정<br><span>'+pct+'%</span></div>'
-      +'</div>';
-  }
-  html+='</div></div>';
-  return html;
-}
-
-// ── WEEKLY PLAN (Build 042) ──
+// ── WEEKLY PLAN (Build 042, Build 080: 요일별 완료율을 이 안에 합쳐서 '이번 주 한눈에'와의 중복을 없앴습니다) ──
 function weekPlanHtml(ws) {
   var days=['일','월','화','수','목','금','토'];
   var html='<div class="week-plan">'
-    +'<div class="week-plan-title"><span>🗓️ 이번 주 계획</span><span class="week-plan-sub">월~일 · 날짜별로 계획하기</span></div>';
+    +'<div class="week-plan-title"><span>🗓️ 이번 주 계획</span><span class="week-plan-sub">날짜를 누르면 이동해요</span></div>';
   for (var i=0;i<7;i++) {
     var d=new Date(ws); d.setDate(ws.getDate()+i);
     var ds=fmt(d);
@@ -3410,11 +3390,15 @@ function weekPlanHtml(ws) {
     var shared=sharedForDate(ds);
     var isTod=isToday(d);
     var maxItems=4;
+    var done=tasks.filter(function(t){ return taskDoneForDate(t,ds); }).length;
+    var pct=tasks.length?Math.round(done/tasks.length*100):0;
     html+='<div class="week-plan-day'+(isTod?' today':'')+'">'
       +'<div class="week-plan-day-head" onclick="selectDay(\''+ds+'\')">'
       +'<div class="week-plan-day-name">'+days[d.getDay()]+'요일 <span>'+(d.getMonth()+1)+'월 '+d.getDate()+'일</span></div>'
+      +(tasks.length?'<div class="week-plan-day-pct">'+done+'/'+tasks.length+'</div>':'')
       +'<button class="week-plan-add" onclick="event.stopPropagation();selectDayAndAdd(\''+ds+'\')">+ 계획</button>'
       +'</div>'
+      +(tasks.length?'<div class="week-plan-day-bar"><div class="week-plan-day-fill" style="width:'+pct+'%"></div></div>':'')
       +'<div class="week-plan-items">';
     if (!tasks.length && !shared.length) {
       html+='<div class="week-plan-empty">계획이 없어요.</div>';
@@ -3460,11 +3444,6 @@ function renderWeek() {
 
   html+=weeklyReviewHtml(fmt(ws));
   html+=weekPlanHtml(ws);
-  html+=weekGlanceHtml(ws);
-
-  // Build 042: 기존 하단 월~일 날짜 선택 영역과 선택 날짜 상세 영역은 제거했습니다.
-  // 날짜별 계획/일정 확인은 '이번 주 계획'에서 담당합니다.
-  // '이번 주 한눈에'는 주간 실행 현황을 빠르게 비교하는 용도로 유지합니다.
 
   return html;
 }
@@ -3472,7 +3451,7 @@ function renderWeek() {
 // ── MONTH VIEW ──
 function renderMonth() {
   var ym=state.month, year=ym.getFullYear(), month=ym.getMonth();
-  var html='<div class="date-nav b070-sticky-nav">'
+  var html='<div class="month-fixed-top"><div class="date-nav b070-sticky-nav">'
     +'<button class="date-nav-btn" onclick="shiftMonth(-1)">‹</button>'
     +'<div class="date-nav-center"><div class="date-nav-main">'+year+'년 '+(month+1)+'월</div>'
     +'<div class="date-nav-sub">월간 계획</div></div>'
@@ -3489,7 +3468,7 @@ function renderMonth() {
   for (var d2=1;d2<=last.getDate();d2++) { html+=mdCell(new Date(year,month,d2),false); }
   var rem=(7-(start+last.getDate())%7)%7;
   for (var j=1;j<=rem;j++) { html+=mdCell(new Date(year,month+1,j),true); }
-  html+='</div>';
+  html+='</div></div>';
 
   var ds=fmt(state.selectedDate);
   var tasks=tasksForDate(ds), shared=sharedForDate(ds);
@@ -5257,7 +5236,7 @@ firebase.auth().onAuthStateChanged(function(user){
 firebase.auth().signInAnonymously().catch(function(err){
   console.error('익명 로그인 실패:', err);
   var bar=document.getElementById('syncBar');
-  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 079</span>'; }
+  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 080</span>'; }
 });
 
 // 홈 화면에 추가했을 때 오프라인에서도 앱 화면이 뜨도록 서비스워커 등록
