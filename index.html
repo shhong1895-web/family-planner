@@ -14,8 +14,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20260831e-Build 078 -->
-<title>Build 078 · 우리가족 플래너</title>
+<!-- v20260831f-Build 079 -->
+<title>Build 079 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -932,7 +932,7 @@ body.child-device .child-quick-done button.primary { background:#EEF0FF; border-
 </style>
 </head>
 <body>
-<div id="buildBadge" style="display:none">Build 078</div>
+<div id="buildBadge" style="display:none">Build 079</div>
 
 <!-- ONBOARDING -->
 <div id="onboardOverlay">
@@ -941,7 +941,6 @@ body.child-device .child-quick-done button.primary { background:#EEF0FF; border-
   <div id="obIntro" style="font-size:14px;color:#64748B;margin-bottom:20px;line-height:1.7">이 기기를 가족 공간에 연결해주세요.<br>관리자에게 받은 1회용 연결코드를 입력하면 역할이 자동으로 정해집니다.</div>
   <input id="deviceNickname" placeholder="이 기기 이름 (예: 엄마 폰, 첫째 아이패드)" style="width:100%;max-width:320px;padding:12px 14px;border-radius:12px;border:1.5px solid #E2E8F0;font-family:inherit;font-size:14px;margin-bottom:10px;text-align:center;background:#fff">
   <input id="inviteCodeInput" placeholder="1회용 연결코드 8자리" maxlength="8" autocapitalize="characters" autocomplete="one-time-code" style="width:100%;max-width:320px;padding:14px;border-radius:12px;border:1.5px solid #E2E8F0;font-family:inherit;font-size:18px;font-weight:800;letter-spacing:3px;margin-bottom:12px;text-align:center;background:#fff;text-transform:uppercase">
-  <input id="devicePin" type="password" placeholder="기존 가족 암호" style="display:none;width:100%;max-width:320px;padding:12px 14px;border-radius:12px;border:1.5px solid #E2E8F0;font-family:inherit;font-size:14px;margin-bottom:12px;text-align:center;background:#fff">
   <button id="inviteJoinBtn" onclick="joinWithInviteInput()" style="width:100%;max-width:320px;padding:16px;border-radius:14px;border:none;background:var(--child);color:#fff;font-family:inherit;font-size:16px;font-weight:800;cursor:pointer">🔗 가족에 연결하기</button>
   <div id="inviteRoleHint" style="font-size:12px;color:#64748B;margin-top:12px;line-height:1.6">초대 링크로 들어온 경우 연결코드가 자동으로 입력됩니다.</div>
   <div id="legacyAdminSetupWrap" style="display:none;width:100%;max-width:320px;margin-top:22px">
@@ -994,7 +993,7 @@ body.child-device .child-quick-done button.primary { background:#EEF0FF; border-
 
 <!-- APP -->
 <div id="appWrapper">
-  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 078</span></div>
+  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 079</span></div>
   <div class="app-header">
     <div class="header-top">
       <div class="app-logo">🏠 우리가족 플래너</div><button id="pc-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
@@ -1518,7 +1517,7 @@ var state = {
   selectedDate: new Date(TODAY),
   weekStart: getWeekStart(TODAY),
   month: new Date(TODAY.getFullYear(), TODAY.getMonth(), 1),
-  tasks: [], sharedEvents: [], messages: [], schoolSchedule: [], goals: [], workbooks: [], children: [], pinConfigured:false
+  tasks: [], sharedEvents: [], messages: [], schoolSchedule: [], goals: [], workbooks: [], children: []
 };
 var devicesState = [];
 
@@ -1737,9 +1736,9 @@ function setupFamilyListeners() {
     // PC 자녀 테스트 데이터는 Firebase가 아니라 localStorage에 있으므로
     // Firestore snapshot이 도착한 뒤에도 반드시 다시 합쳐준다.
     pcTestLoadTasks();
-    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 078</span>';
+    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 079</span>';
     render();
-  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 078</span>'; });
+  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 079</span>'; });
   db.collection('sharedEvents').onSnapshot(function(snap) {
     state.sharedEvents = snap.docs.map(function(d){ return d.data(); }); render();
   });
@@ -1769,10 +1768,6 @@ function setupFamilyListeners() {
     renderWorkbookSelect();
     var panel = document.getElementById('wbManagePanel');
     if (panel && panel.style.display !== 'none') renderWorkbookChips();
-  });
-  db.collection('meta').doc('pinHash').onSnapshot(function(snap) {
-    state.pinConfigured = snap.exists;
-    render();
   });
   seedIfEmpty();
 }
@@ -1862,99 +1857,23 @@ function initDeviceRole() {
     }
 
     // 구버전 기기 문서는 DID를 document ID로 사용했습니다.
-    // Build 027 Rules에서 승인된 legacy 관리자 문서의 읽기를 제한적으로 허용하므로
-    // 기존 관리자 노트북을 역할 선택 화면으로 보내지 않고 복구 절차로 연결합니다.
-    db.collection('devices').doc(did).get().then(function(legacySnap){
-      var legacy=legacySnap.exists ? legacySnap.data() : null;
-      if (legacy && legacy.isAdmin===true && legacy.status==='approved') {
-        showLegacyAdminRecovery(did,uid);
-        return;
-      }
-
-      // 이 브라우저에서 이미 승인받았던 흔적이 있으면 역할 선택을 생략합니다.
-      var role=localStorage.getItem(ROLE_KEY);
-      if (role && localStorage.getItem('device_approved_'+did)==='1') {
-        setDeviceRole(role);
-        return;
-      }
-
+    // 이 브라우저에서 이미 승인받았던 흔적이 있으면 역할 선택을 생략합니다.
+    var role=localStorage.getItem(ROLE_KEY);
+    if (role && localStorage.getItem('device_approved_'+did)==='1') {
+      setDeviceRole(role);
+    } else {
       // Build 029: 신규 기기는 부모/자녀를 직접 선택하지 않습니다.
       // 초대 링크/연결코드로 역할을 자동 결정합니다.
       var inviteCode=params.get('invite');
-      if (inviteCode) { startInviteFromUrl(inviteCode); return; }
-      showOnboard();
-    }).catch(function(){
-      var role=localStorage.getItem(ROLE_KEY);
-      if (role && localStorage.getItem('device_approved_'+did)==='1') setDeviceRole(role);
+      if (inviteCode) startInviteFromUrl(inviteCode);
       else showOnboard();
-    });
+    }
   }).catch(function(){
     var role=localStorage.getItem(ROLE_KEY);
     if (role && localStorage.getItem('device_approved_'+did)==='1') { setDeviceRole(role); return; }
     var inviteCode=params.get('invite');
     if (inviteCode) { startInviteFromUrl(inviteCode); return; }
     showOnboard();
-  });
-}
-
-var _legacyRecoveryDid=null;
-var _legacyRecoveryUid=null;
-
-function showLegacyAdminRecovery(did, uid) {
-  _legacyRecoveryDid=did;
-  _legacyRecoveryUid=uid;
-  document.getElementById('onboardOverlay').style.display='flex';
-  document.getElementById('approvalOverlay').style.display='none';
-  document.getElementById('appWrapper').style.display='none';
-  _forcedRole='parent';
-  var cardsWrap=document.getElementById('roleCardsWrap');
-  var contBtn=document.getElementById('continueRoleBtn');
-  var introEl=document.getElementById('obIntro');
-  if (cardsWrap) cardsWrap.style.display='none';
-  if (contBtn) {
-    contBtn.style.display='block';
-    contBtn.textContent='관리자 기기로 복구하기';
-    contBtn.onclick=recoverLegacyAdmin;
-  }
-  if (introEl) {
-    introEl.innerHTML='이 기기는 기존 가족 관리자 기기로 확인되었습니다.<br>기존에 설정한 가족 암호를 입력하면 이 기기를 관리자 기기로 한 번만 복구합니다.';
-  }
-  var pin=document.getElementById('devicePin');
-  if (pin) { pin.value=''; pin.style.display='block'; }
-  var codeEl=document.getElementById('inviteCodeInput');
-  var joinBtn=document.getElementById('inviteJoinBtn');
-  if (codeEl) codeEl.style.display='none';
-  if (joinBtn) joinBtn.style.display='none';
-  var hint=document.getElementById('inviteRoleHint');
-  if (hint) hint.style.display='none';
-}
-
-function recoverLegacyAdmin() {
-  var pinEl=document.getElementById('devicePin');
-  var pin=(pinEl&&pinEl.value||'').trim();
-  if (!pin) { showToast('⚠️ 기존 가족 암호를 입력해주세요'); return; }
-  if (!_legacyRecoveryDid || !_legacyRecoveryUid) { showToast('⚠️ 기존 기기 정보를 확인할 수 없어요'); return; }
-
-  hashPin(pin).then(function(hash){
-    return db.collection('devices').doc(_legacyRecoveryUid).set({
-      uid:_legacyRecoveryUid,
-      code:_legacyRecoveryDid,
-      role:'parent',
-      label:'부모 기기(관리자)',
-      status:'approved',
-      isAdmin:true,
-      migratedFrom:_legacyRecoveryDid,
-      migrationPinHash:hash,
-      registeredAt:Date.now()
-    });
-  }).then(function(){
-    localStorage.setItem(ROLE_KEY,'parent');
-    localStorage.setItem('device_approved_'+_legacyRecoveryDid,'1');
-    showApp();
-    showToast('👑 기존 관리자 기기로 복구됐어요');
-  }).catch(function(err){
-    console.error('legacy admin recovery error:',err);
-    showToast('❌ 가족 암호가 맞지 않거나 복구가 허용되지 않았어요');
   });
 }
 
@@ -1973,8 +1892,6 @@ function showOnboard(forcedRole) {
   if (contBtn) contBtn.style.display='none';
   if (joinBtn) joinBtn.style.display='block';
   if (codeEl) { codeEl.style.display='block'; codeEl.value=''; }
-  var pinEl=document.getElementById('devicePin');
-  if (pinEl) pinEl.style.display='none';
   var setupWrap=document.getElementById('legacyAdminSetupWrap');
   if (setupWrap) setupWrap.style.display=new URLSearchParams(location.search).has('setup')?'block':'none';
   if (forcedRole) {
@@ -2074,14 +1991,6 @@ function exitPcTestRole() {
   showToast('✅ 실제 기기 역할로 돌아왔어요');
 }
 
-// 온보딩 버튼은 항상 이걸 통해서 호출한다: 로그인(익명 로그인)이 아직 안 끝났으면
-// 기기 등록을 진행하지 않고 끝날 때까지 기다렸다가 진행한다 (uid 없이 문서가 만들어지는 걸 방지)
-function hashPin(pin) {
-  var enc=new TextEncoder().encode('family-planner-'+pin);
-  return crypto.subtle.digest('SHA-256', enc).then(function(buf){
-    return Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
-  });
-}
 function normalizeInviteCode(v) { return (v||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8); }
 function randomInviteCode() {
   var chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -2174,8 +2083,6 @@ function createInvite(role) {
 function chooseRole(role) {
   var nickEl=document.getElementById('deviceNickname');
   if (nickEl) localStorage.setItem('fp_nickname', nickEl.value.trim());
-  var pinEl=document.getElementById('devicePin');
-  if (pinEl && pinEl.value.trim()) localStorage.setItem('fp_pin_attempt', pinEl.value.trim());
   if (getAuthUid()) { setDeviceRole(role); return; }
   document.getElementById('onboardOverlay').style.display='none';
   document.getElementById('approvalOverlay').style.display='flex';
@@ -2252,7 +2159,6 @@ function setDeviceRole(role, skipRegister) {
           });
         }).then(function(){
           localStorage.setItem(APPROVED_KEY,'1');
-          localStorage.removeItem('fp_pin_attempt');
           showApp();
           showToast('👑 이 기기가 관리자로 등록됐어요');
         }).catch(function(){
@@ -2267,34 +2173,6 @@ function setDeviceRole(role, skipRegister) {
       if (mine && mine.data().status==='approved') {
         localStorage.setItem(APPROVED_KEY,'1');
         showApp();
-        return;
-      }
-      // mine이 없는 최초 접속이든, 예전에 만들어진 '대기중' 문서가 이미 있든 상관없이
-      // 암호를 입력했다면 항상 먼저 시도해본다 (예전엔 이미 대기중 문서가 있으면
-      // 암호 확인 자체를 건너뛰고 곧장 대기 화면으로 가버리는 문제가 있었다)
-      var pinAttempt=(localStorage.getItem('fp_pin_attempt')||'').trim();
-      if (pinAttempt) {
-        hashPin(pinAttempt).then(function(hash){
-          var base = mine ? mine.data() : { uid:uid, code:did, role:role, registeredAt:Date.now() };
-          var quickDoc=Object.assign({}, base, { label:label, status:'approved', isAdmin:false, pinHash:hash });
-          var writeOp = mine
-            ? db.collection('devices').doc(uid).update(quickDoc)
-            : db.collection('devices').doc(uid).set(quickDoc);
-          writeOp.then(function(){
-            localStorage.removeItem('fp_pin_attempt');
-            db.collection('devices').doc(uid).update({ pinHash: firebase.firestore.FieldValue.delete() }).catch(function(){});
-            localStorage.setItem(APPROVED_KEY,'1');
-            showApp();
-            showToast('✅ 가족 암호로 바로 연결됐어요!');
-          }).catch(function(){
-            // 암호가 틀렸거나 아직 설정되지 않음 -> 평소처럼 승인 대기로
-            localStorage.removeItem('fp_pin_attempt');
-            showToast('❌ 암호가 맞지 않거나 아직 설정 안 됨 - 승인 요청으로 전환했어요');
-            var write = mine ? Promise.resolve() : fsSet('devices', uid, { uid:uid, code:did, role:role, label:label, status:'pending', isAdmin:false, registeredAt:Date.now() });
-            write.then(function(){ showApprovalWait(uid, did); })
-              .catch(function(){ showRegisterError(); });
-          });
-        });
         return;
       }
       if (!mine) {
@@ -2561,7 +2439,7 @@ function setView(v) {
 // 실제로 화면(view/mode)이 바뀐 게 아니라 다른 기기의 변경사항 때문에 재렌더링되는 경우엔
 // 입력 중이던 값과 포커스를 스냅샷했다가 그대로 복원한다.
 var _prevRenderedView=null, _prevRenderedMode=null, _prevRenderedDate=null;
-var STICKY_FIELDS=['msgInput','msgReplyInput','se-name','se-desc','se-allday','se-icon','se-target','se-editId','se-dateStart','se-dateEnd','sch-name','sch-cat','sch-editId','sch-repeatStart','sch-repeatEnd','devNewChildName','devPinInput'];
+var STICKY_FIELDS=['msgInput','msgReplyInput','se-name','se-desc','se-allday','se-icon','se-target','se-editId','se-dateStart','se-dateEnd','sch-name','sch-cat','sch-editId','sch-repeatStart','sch-repeatEnd','devNewChildName'];
 
 function snapshotStickyFields(sa) {
   var snap={};
@@ -3727,18 +3605,6 @@ function renderShared() {
 }
 
 // ── DEVICES VIEW ──
-function setFamilyPin() {
-  if (!amIAdmin()) { showToast('🔒 관리자만 설정할 수 있어요'); return; }
-  var el=document.getElementById('devPinInput');
-  var pin=el.value.trim();
-  if (!pin || pin.length<4) { showToast('⚠️ 4자리 이상으로 입력해주세요'); return; }
-  hashPin(pin).then(function(hash){
-    fsSet('meta','pinHash',{hash:hash}).then(function(){
-      el.value='';
-      showToast('✅ 가족 암호가 설정됐어요');
-    }).catch(function(){ showToast('⚠️ 저장 실패. 네트워크를 확인해주세요'); });
-  });
-}
 function deleteChildProfile(id, name) {
   if (!amIAdmin()) { showToast('🔒 관리자만 삭제할 수 있어요'); return; }
   if (!confirm('"'+name+'" 자녀 프로필을 삭제할까요?\n(이미 등록된 할일/메시지는 남아있지만, 더 이상 이 자녀 것으로 표시되지 않아요)')) return;
@@ -3820,13 +3686,6 @@ function renderDevices() {
       +'<button class="f-btn" style="flex:1" onclick="createInvite(\'child\')">👦 자녀용 코드</button>'
       +'</div></div>';
 
-    html+='<div class="sec-title">🔑 가족 암호 (빠른 참여)</div>';
-    html+='<div class="form-box">'
-      +'<div style="font-size:12px;color:var(--sub);margin-bottom:10px;line-height:1.6">'
-      +(state.pinConfigured?'현재 암호가 설정돼 있어요. 새 기기가 온보딩 화면에서 이 암호를 입력하면 승인 없이 바로 들어올 수 있어요.':'암호를 설정하면, 새 기기가 승인 대기 없이 이 암호만으로 바로 들어올 수 있어요. (기기가 자주 새로 등록되는 걸 줄여줘요)')
-      +'</div>'
-      +'<input class="m-field" id="devPinInput" type="text" inputmode="numeric" placeholder="새 암호 (숫자 4~6자리 추천)">'
-      +'<button class="f-btn p" onclick="setFamilyPin()">'+(state.pinConfigured?'🔑 암호 변경':'🔑 암호 설정')+'</button></div>';
   }
 
   html+='<div class="sec-title">👨‍👩‍👧‍👦 자녀 관리</div>';
@@ -5398,7 +5257,7 @@ firebase.auth().onAuthStateChanged(function(user){
 firebase.auth().signInAnonymously().catch(function(err){
   console.error('익명 로그인 실패:', err);
   var bar=document.getElementById('syncBar');
-  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 078</span>'; }
+  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 079</span>'; }
 });
 
 // 홈 화면에 추가했을 때 오프라인에서도 앱 화면이 뜨도록 서비스워커 등록
