@@ -14,8 +14,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20260907-Build 086 -->
-<title>Build 086 · 우리가족 플래너</title>
+<!-- v20260908-Build 087 -->
+<title>Build 087 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -958,7 +958,7 @@ body.child-device .child-quick-done button.primary { background:var(--child-l); 
 </style>
 </head>
 <body>
-<div id="buildBadge" style="display:none">Build 086</div>
+<div id="buildBadge" style="display:none">Build 087</div>
 
 <!-- ONBOARDING -->
 <div id="onboardOverlay">
@@ -1019,7 +1019,7 @@ body.child-device .child-quick-done button.primary { background:var(--child-l); 
 
 <!-- APP -->
 <div id="appWrapper">
-  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 086</span></div>
+  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 087</span></div>
   <div class="app-header">
     <div class="header-top">
       <div class="app-logo">🏠 우리가족 플래너</div><button id="pc-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
@@ -1421,8 +1421,8 @@ body.child-device .child-quick-done button.primary { background:var(--child-l); 
 
 /* Month: keep the original 7-column calendar structure.
    Event text is clipped inside each cell instead of widening the calendar. */
-/* Build 086: 달력 전체(요일 줄+모든 주)는 그냥 스크롤되어 사라지고, 그 아래
-   "선택한 주 + 점 표시"만 담은 미니 달력이 화면 상단에 이어서 고정됩니다.
+/* Build 087: 달력 전체(요일 줄+모든 주)는 그냥 스크롤되어 사라지고, 그 아래
+   이번 달 전체를 압축한 작은 점 달력이 화면 상단에 이어서 고정됩니다.
    자바스크립트로 크기를 계산해 접었다 펴는 대신, 브라우저의 자연스러운
    sticky 스크롤 동작만 사용해서 흔들리거나 되돌아가는 문제가 없습니다. */
 .month-mini-sticky {
@@ -1430,21 +1430,23 @@ body.child-device .child-quick-done button.primary { background:var(--child-l); 
   padding:8px 0 10px; margin-bottom:10px;
   box-shadow:0 6px 12px -8px rgba(0,0,0,.18);
 }
-.month-mini-row { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px; }
+.month-mini-wd-row { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); margin-bottom:2px; }
+.month-mini-wd-row span { text-align:center; font-size:9px; color:var(--sub); font-weight:700; }
+.month-mini-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:1px; }
 .month-mini-cell {
   display:flex; flex-direction:column; align-items:center; justify-content:center;
-  gap:3px; height:46px; border-radius:12px; cursor:pointer; background:none; border:none;
+  gap:2px; height:25px; border-radius:8px; cursor:pointer; background:none; border:none;
   font-family:inherit; padding:0;
 }
-.month-mini-cell .mm-wd { font-size:9.5px; color:var(--sub); font-weight:700; }
-.month-mini-cell .mm-num { font-size:14px; font-weight:800; color:var(--text); }
+.month-mini-cell.other { opacity:.35; }
+.month-mini-cell .mm-num { font-size:10.5px; font-weight:700; color:var(--text); }
 .month-mini-cell.today { background:var(--child); }
-.month-mini-cell.today .mm-wd, .month-mini-cell.today .mm-num { color:#fff; }
+.month-mini-cell.today .mm-num { color:#fff; }
 .month-mini-cell.sel:not(.today) { background:var(--child-l); }
 .month-mini-cell.sel:not(.today) .mm-num { color:var(--child); }
-.month-mini-cell .mm-dot { width:4px; height:4px; border-radius:50%; background:var(--child); }
+.month-mini-cell .mm-dot { width:3px; height:3px; border-radius:50%; background:var(--child); }
 .month-mini-cell.today .mm-dot { background:#fff; }
-.month-mini-cell .mm-dot-empty { width:4px; height:4px; }
+.month-mini-cell .mm-dot-empty { width:3px; height:3px; }
 .month-header{
   display:grid!important;
   grid-template-columns:repeat(7,minmax(0,1fr))!important;
@@ -1892,9 +1894,9 @@ function setupFamilyListeners() {
     // PC 자녀 테스트 데이터는 Firebase가 아니라 localStorage에 있으므로
     // Firestore snapshot이 도착한 뒤에도 반드시 다시 합쳐준다.
     pcTestLoadTasks();
-    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 086</span>';
+    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 087</span>';
     render();
-  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 086</span>'; });
+  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 087</span>'; });
   db.collection('sharedEvents').onSnapshot(function(snap) {
     state.sharedEvents = snap.docs.map(function(d){ return d.data(); }); render();
   });
@@ -3635,31 +3637,32 @@ function anchorWeekInfo() {
   var anchorWeek = Math.floor((start+anchorDate-1)/7);
   return { start:start, anchorWeek:anchorWeek };
 }
-function anchorWeekDates() {
-  var ym=state.month, year=ym.getFullYear(), month=ym.getMonth();
-  var info=anchorWeekInfo();
-  var firstCellDate=new Date(year,month,1-info.start);
-  var dates=[];
-  for (var i=0;i<7;i++) { var d=new Date(firstCellDate); d.setDate(firstCellDate.getDate()+info.anchorWeek*7+i); dates.push(d); }
-  return dates;
-}
-// Build 086: 달력 전체는 그냥 스크롤되어 사라지고, 그 아래 "선택한 주 + 점 표시"만
-// 담은 미니 달력과 날짜 제목이 화면 상단에 이어서 고정됩니다. 자바스크립트로 크기를
-// 계산해 접었다 펴는 대신, 브라우저의 자연스러운 sticky 스크롤 동작만 써서
+// Build 087: 스크롤해서 붙었을 때, 한 주가 아니라 이번 달 전체를 작은 점 달력으로
+// 보여줍니다 (한 주만 보이면 굳이 점으로 압축할 이유가 없어서, 달 전체를 압축했습니다).
+// 선택한 날짜 제목도 이 미니 달력과 함께 화면 상단에 고정됩니다. 자바스크립트로
+// 크기를 계산해 접었다 펴는 대신, 브라우저의 자연스러운 sticky 스크롤 동작만 써서
 // 흔들리거나 되돌아가는 문제가 없습니다.
 function monthMiniStickyHtml() {
+  var ym=state.month, year=ym.getFullYear(), month=ym.getMonth();
+  var first=new Date(year,month,1), last=new Date(year,month+1,0);
+  var start=first.getDay();
   var wdn=['일','월','화','수','목','금','토'];
-  var dates=anchorWeekDates();
-  var html='<div class="month-mini-sticky"><div class="month-mini-row">';
-  dates.forEach(function(d){
+  var html='<div class="month-mini-sticky">';
+  html+='<div class="month-mini-wd-row">'+wdn.map(function(n){return '<span>'+n+'</span>';}).join('')+'</div>';
+  html+='<div class="month-mini-grid">';
+  function miniCell(d,other){
     var ds=fmt(d), isTod=isToday(d), isSel=ds===fmt(state.selectedDate);
     var holiday=getHoliday(ds), events=monthSharedEventsForDate(ds);
     var hasVisible=!!holiday||events.length>0;
-    html+='<button type="button" class="month-mini-cell'+(isTod?' today':'')+(isSel&&!isTod?' sel':'')+'" onclick="selectMonthDate(\''+ds+'\')">'
-      +'<span class="mm-wd">'+wdn[d.getDay()]+'</span><span class="mm-num">'+d.getDate()+'</span>'
+    return '<button type="button" class="month-mini-cell'+(other?' other':'')+(isTod?' today':'')+(isSel&&!isTod?' sel':'')+'" onclick="selectMonthDate(\''+ds+'\')">'
+      +'<span class="mm-num">'+d.getDate()+'</span>'
       +(hasVisible?'<span class="mm-dot"></span>':'<span class="mm-dot-empty"></span>')
       +'</button>';
-  });
+  }
+  for (var i=0;i<start;i++) html+=miniCell(new Date(year,month,1-start+i),true);
+  for (var d2=1;d2<=last.getDate();d2++) html+=miniCell(new Date(year,month,d2),false);
+  var rem=(7-(start+last.getDate())%7)%7;
+  for (var j=1;j<=rem;j++) html+=miniCell(new Date(year,month+1,j),true);
   html+='</div>';
   var ds2=fmt(state.selectedDate);
   var holiday2=getHoliday(ds2);
@@ -5452,7 +5455,7 @@ firebase.auth().onAuthStateChanged(function(user){
 firebase.auth().signInAnonymously().catch(function(err){
   console.error('익명 로그인 실패:', err);
   var bar=document.getElementById('syncBar');
-  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 086</span>'; }
+  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 087</span>'; }
 });
 
 // 홈 화면에 추가했을 때 오프라인에서도 앱 화면이 뜨도록 서비스워커 등록
