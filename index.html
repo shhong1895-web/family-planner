@@ -14,8 +14,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20260909-Build 088 -->
-<title>Build 088 · 우리가족 플래너</title>
+<!-- v20260910-Build 089 -->
+<title>Build 089 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -963,7 +963,7 @@ body.child-device .child-quick-done button.primary { background:var(--child-l); 
 </style>
 </head>
 <body>
-<div id="buildBadge" style="display:none">Build 088</div>
+<div id="buildBadge" style="display:none">Build 089</div>
 
 <!-- ONBOARDING -->
 <div id="onboardOverlay">
@@ -1024,7 +1024,7 @@ body.child-device .child-quick-done button.primary { background:var(--child-l); 
 
 <!-- APP -->
 <div id="appWrapper">
-  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 088</span></div>
+  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 089</span></div>
   <div class="app-header">
     <div class="header-top">
       <div class="app-logo">🏠 우리가족 플래너</div><button id="pc-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
@@ -1440,7 +1440,7 @@ body.child-device .child-quick-done button.primary { background:var(--child-l); 
 .month-grid{
   display:grid!important;
   grid-template-columns:repeat(7,minmax(0,1fr))!important;
-  grid-auto-rows:minmax(64px,auto)!important;
+  grid-auto-rows:minmax(var(--mm-row-h,64px),auto)!important;
   gap:2px!important;
   width:100%!important;
   box-sizing:border-box!important;
@@ -1451,8 +1451,8 @@ body.child-device .child-quick-done button.primary { background:var(--child-l); 
   position:relative!important;
   min-width:0!important;
   width:100%!important;
-  height:64px!important;
-  min-height:64px!important;
+  height:var(--mm-row-h,64px)!important;
+  min-height:var(--mm-row-h,64px)!important;
   aspect-ratio:auto!important;
   box-sizing:border-box!important;
   border-radius:8px!important;
@@ -1477,11 +1477,9 @@ body.child-device .child-quick-done button.primary { background:var(--child-l); 
   gap:1px!important;
   overflow:hidden!important;
 }
-/* Build 088: 스크롤해서 달력이 축소되면(.collapsed) 요일 숫자 크기는 그대로 두고,
-   주 사이 간격(행 높이)만 줄이고 일정은 점 하나로 표시합니다. */
-.month-grid, .month-day { transition: height .2s ease, grid-auto-rows .2s ease; }
-.month-cal-block.collapsed .month-grid { grid-auto-rows:minmax(28px,auto)!important; gap:1px!important; margin-bottom:8px!important; }
-.month-cal-block.collapsed .month-day { height:28px!important; min-height:28px!important; padding:3px 3px 2px!important; }
+/* Build 089: 상세 일정을 스크롤한 만큼(손가락을 뗀 정도에 비례해서) 달력 주 사이
+   간격이 그대로 따라 줄어듭니다 - 일정 threshold에서 갑자기 뚝 바뀌지 않아서
+   원하는 지점에서 멈추고 보기 편합니다. 요일 숫자 크기는 항상 그대로입니다. */
 .month-cal-block.collapsed .month-cell-events,
 .month-cal-block.collapsed .month-cell-more { display:none!important; }
 .month-cal-block.collapsed .month-day.has-events::after {
@@ -1526,8 +1524,8 @@ body.child-device .child-quick-done button.primary { background:var(--child-l); 
 
 /* Small screens: preserve seven equal columns and reduce cell height slightly. */
 @media (max-width:600px){
-  .month-grid{grid-auto-rows:64px!important;}
-  .month-day{height:64px!important;min-height:64px!important;}
+  .month-grid{grid-auto-rows:minmax(var(--mm-row-h,64px),auto)!important;}
+  .month-day{height:var(--mm-row-h,64px)!important;min-height:var(--mm-row-h,64px)!important;}
   .month-cell-event{font-size:8.5px!important;height:14px!important;line-height:12px!important;}
   .month-cell-more{font-size:8px!important;line-height:10px!important;height:10px!important;}
 }
@@ -1885,9 +1883,9 @@ function setupFamilyListeners() {
     // PC 자녀 테스트 데이터는 Firebase가 아니라 localStorage에 있으므로
     // Firestore snapshot이 도착한 뒤에도 반드시 다시 합쳐준다.
     pcTestLoadTasks();
-    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 088</span>';
+    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 089</span>';
     render();
-  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 088</span>'; });
+  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 089</span>'; });
   db.collection('sharedEvents').onSnapshot(function(snap) {
     state.sharedEvents = snap.docs.map(function(d){ return d.data(); }); render();
   });
@@ -3670,13 +3668,32 @@ function renderMonth() {
 // 주(週) 사이 간격만 줄입니다(글자 크기는 그대로). 두 블록이 서로 다른 스크롤
 // 컨테이너라 달력이 줄어들어도 상세 목록의 스크롤 위치를 건드리지 않아,
 // 이전처럼 되돌아가는 문제가 생기지 않습니다.
+// Build 089: 상세 목록을 스크롤한 만큼 달력 주 사이 간격이 그대로 따라 줄어듭니다
+// (일정 지점에서 갑자기 뚝 바뀌지 않음). 달력 위에서 손가락으로 밀어도 상세
+// 목록이 함께 스크롤되도록, 그 제스처를 상세 목록 스크롤로 그대로 전달합니다.
 function attachMonthScrollHandler() {
   var ds=document.getElementById('monthDetailScroll');
   var cal=document.getElementById('monthCalBlock');
   if (!ds || !cal) return;
-  ds.addEventListener('scroll', function(){
-    cal.classList.toggle('collapsed', ds.scrollTop>8);
+  var grid=cal.querySelector('.month-grid');
+  var FULL=64, MIN=28, RANGE=90;
+  function updateRowHeight() {
+    var t=Math.max(0, Math.min(1, ds.scrollTop/RANGE));
+    if (grid) grid.style.setProperty('--mm-row-h', (FULL-(FULL-MIN)*t).toFixed(1)+'px');
+    cal.classList.toggle('collapsed', ds.scrollTop>4);
+  }
+  ds.addEventListener('scroll', updateRowHeight, {passive:true});
+  updateRowHeight();
+
+  var lastY=null;
+  cal.addEventListener('touchstart', function(e){ lastY=e.touches[0].clientY; }, {passive:true});
+  cal.addEventListener('touchmove', function(e){
+    if (lastY===null) return;
+    var y=e.touches[0].clientY;
+    ds.scrollTop += (lastY-y);
+    lastY=y;
   }, {passive:true});
+  cal.addEventListener('touchend', function(){ lastY=null; });
 }
 
 function monthSharedEventsForDate(ds) {
@@ -5435,7 +5452,7 @@ firebase.auth().onAuthStateChanged(function(user){
 firebase.auth().signInAnonymously().catch(function(err){
   console.error('익명 로그인 실패:', err);
   var bar=document.getElementById('syncBar');
-  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 088</span>'; }
+  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 089</span>'; }
 });
 
 // 홈 화면에 추가했을 때 오프라인에서도 앱 화면이 뜨도록 서비스워커 등록
