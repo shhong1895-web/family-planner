@@ -14,8 +14,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20260908-Build 087 -->
-<title>Build 087 · 우리가족 플래너</title>
+<!-- v20260909-Build 088 -->
+<title>Build 088 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -155,6 +155,11 @@ body {
 
 /* SCROLL */
 .scroll-area { flex:1; overflow-y:auto; padding:10px 16px 100px; min-height:0; -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain; }
+/* Build 088: 월간 화면은 달력 블록(안 스크롤)과 상세 일정 블록(따로 스크롤)을
+   나눠서, 달력이 줄어들어도 상세 목록 스크롤 위치가 흔들리지 않게 합니다. */
+.scroll-area.month-mode { overflow-y:hidden; display:flex; flex-direction:column; padding-bottom:0; }
+.month-cal-block { flex-shrink:0; }
+.month-detail-scroll { flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; margin:0 -16px; padding:0 16px 100px; }
 
 /* CARDS */
 .date-nav {
@@ -958,7 +963,7 @@ body.child-device .child-quick-done button.primary { background:var(--child-l); 
 </style>
 </head>
 <body>
-<div id="buildBadge" style="display:none">Build 087</div>
+<div id="buildBadge" style="display:none">Build 088</div>
 
 <!-- ONBOARDING -->
 <div id="onboardOverlay">
@@ -1019,7 +1024,7 @@ body.child-device .child-quick-done button.primary { background:var(--child-l); 
 
 <!-- APP -->
 <div id="appWrapper">
-  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 087</span></div>
+  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 088</span></div>
   <div class="app-header">
     <div class="header-top">
       <div class="app-logo">🏠 우리가족 플래너</div><button id="pc-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
@@ -1421,32 +1426,6 @@ body.child-device .child-quick-done button.primary { background:var(--child-l); 
 
 /* Month: keep the original 7-column calendar structure.
    Event text is clipped inside each cell instead of widening the calendar. */
-/* Build 087: 달력 전체(요일 줄+모든 주)는 그냥 스크롤되어 사라지고, 그 아래
-   이번 달 전체를 압축한 작은 점 달력이 화면 상단에 이어서 고정됩니다.
-   자바스크립트로 크기를 계산해 접었다 펴는 대신, 브라우저의 자연스러운
-   sticky 스크롤 동작만 사용해서 흔들리거나 되돌아가는 문제가 없습니다. */
-.month-mini-sticky {
-  position:sticky; top:0; z-index:41; background:var(--bg);
-  padding:8px 0 10px; margin-bottom:10px;
-  box-shadow:0 6px 12px -8px rgba(0,0,0,.18);
-}
-.month-mini-wd-row { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); margin-bottom:2px; }
-.month-mini-wd-row span { text-align:center; font-size:9px; color:var(--sub); font-weight:700; }
-.month-mini-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:1px; }
-.month-mini-cell {
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  gap:2px; height:25px; border-radius:8px; cursor:pointer; background:none; border:none;
-  font-family:inherit; padding:0;
-}
-.month-mini-cell.other { opacity:.35; }
-.month-mini-cell .mm-num { font-size:10.5px; font-weight:700; color:var(--text); }
-.month-mini-cell.today { background:var(--child); }
-.month-mini-cell.today .mm-num { color:#fff; }
-.month-mini-cell.sel:not(.today) { background:var(--child-l); }
-.month-mini-cell.sel:not(.today) .mm-num { color:var(--child); }
-.month-mini-cell .mm-dot { width:3px; height:3px; border-radius:50%; background:var(--child); }
-.month-mini-cell.today .mm-dot { background:#fff; }
-.month-mini-cell .mm-dot-empty { width:3px; height:3px; }
 .month-header{
   display:grid!important;
   grid-template-columns:repeat(7,minmax(0,1fr))!important;
@@ -1498,6 +1477,18 @@ body.child-device .child-quick-done button.primary { background:var(--child-l); 
   gap:1px!important;
   overflow:hidden!important;
 }
+/* Build 088: 스크롤해서 달력이 축소되면(.collapsed) 요일 숫자 크기는 그대로 두고,
+   주 사이 간격(행 높이)만 줄이고 일정은 점 하나로 표시합니다. */
+.month-grid, .month-day { transition: height .2s ease, grid-auto-rows .2s ease; }
+.month-cal-block.collapsed .month-grid { grid-auto-rows:minmax(28px,auto)!important; gap:1px!important; margin-bottom:8px!important; }
+.month-cal-block.collapsed .month-day { height:28px!important; min-height:28px!important; padding:3px 3px 2px!important; }
+.month-cal-block.collapsed .month-cell-events,
+.month-cal-block.collapsed .month-cell-more { display:none!important; }
+.month-cal-block.collapsed .month-day.has-events::after {
+  content:''; position:absolute; bottom:3px; left:50%; transform:translateX(-50%);
+  width:4px; height:4px; border-radius:50%; background:var(--child);
+}
+.month-cal-block.collapsed .month-day.today.has-events::after { background:#fff; }
 .month-cell-event{
   display:block!important;
   width:100%!important;
@@ -1894,9 +1885,9 @@ function setupFamilyListeners() {
     // PC 자녀 테스트 데이터는 Firebase가 아니라 localStorage에 있으므로
     // Firestore snapshot이 도착한 뒤에도 반드시 다시 합쳐준다.
     pcTestLoadTasks();
-    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 087</span>';
+    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 088</span>';
     render();
-  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 087</span>'; });
+  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 088</span>'; });
   db.collection('sharedEvents').onSnapshot(function(snap) {
     state.sharedEvents = snap.docs.map(function(d){ return d.data(); }); render();
   });
@@ -2675,6 +2666,7 @@ function render() {
   _prevRenderedView=v; _prevRenderedMode=state.mode; _prevRenderedDate=ds;
 
   var headerNav=document.getElementById('headerDateNav');
+  sa.classList.toggle('month-mode', v==='month');
   if (v==='day') { headerNav.style.display='block'; headerNav.innerHTML=dayHeaderNavHtml(); }
   else if (v==='week') { headerNav.style.display='block'; headerNav.innerHTML=weekHeaderNavHtml(); }
   else if (v==='month') { headerNav.style.display='block'; headerNav.innerHTML=monthHeaderNavHtml(); }
@@ -2684,7 +2676,7 @@ function render() {
     sa.innerHTML=renderDay();
   }
   else if (v==='week') sa.innerHTML=renderWeek();
-  else if (v==='month') sa.innerHTML=renderMonth();
+  else if (v==='month') { sa.innerHTML=renderMonth(); attachMonthScrollHandler(); }
   else if (v==='shared') {
     sa.innerHTML=renderShared();
     if(state.mode==='parent' && isFreshView){
@@ -2709,7 +2701,11 @@ function render() {
   }
 
   if (snap) restoreStickyFields(snap);
-  if (isFreshView) sa.scrollTop=0; // 탭/날짜를 바꾸면 항상 맨 위에서부터 보이게
+  if (isFreshView) {
+    sa.scrollTop=0; // 탭/날짜를 바꾸면 항상 맨 위에서부터 보이게
+    var mds=document.getElementById('monthDetailScroll');
+    if (mds) mds.scrollTop=0;
+  }
 }
 
 function emptyBox(ico,h,p) {
@@ -3637,42 +3633,9 @@ function anchorWeekInfo() {
   var anchorWeek = Math.floor((start+anchorDate-1)/7);
   return { start:start, anchorWeek:anchorWeek };
 }
-// Build 087: 스크롤해서 붙었을 때, 한 주가 아니라 이번 달 전체를 작은 점 달력으로
-// 보여줍니다 (한 주만 보이면 굳이 점으로 압축할 이유가 없어서, 달 전체를 압축했습니다).
-// 선택한 날짜 제목도 이 미니 달력과 함께 화면 상단에 고정됩니다. 자바스크립트로
-// 크기를 계산해 접었다 펴는 대신, 브라우저의 자연스러운 sticky 스크롤 동작만 써서
-// 흔들리거나 되돌아가는 문제가 없습니다.
-function monthMiniStickyHtml() {
-  var ym=state.month, year=ym.getFullYear(), month=ym.getMonth();
-  var first=new Date(year,month,1), last=new Date(year,month+1,0);
-  var start=first.getDay();
-  var wdn=['일','월','화','수','목','금','토'];
-  var html='<div class="month-mini-sticky">';
-  html+='<div class="month-mini-wd-row">'+wdn.map(function(n){return '<span>'+n+'</span>';}).join('')+'</div>';
-  html+='<div class="month-mini-grid">';
-  function miniCell(d,other){
-    var ds=fmt(d), isTod=isToday(d), isSel=ds===fmt(state.selectedDate);
-    var holiday=getHoliday(ds), events=monthSharedEventsForDate(ds);
-    var hasVisible=!!holiday||events.length>0;
-    return '<button type="button" class="month-mini-cell'+(other?' other':'')+(isTod?' today':'')+(isSel&&!isTod?' sel':'')+'" onclick="selectMonthDate(\''+ds+'\')">'
-      +'<span class="mm-num">'+d.getDate()+'</span>'
-      +(hasVisible?'<span class="mm-dot"></span>':'<span class="mm-dot-empty"></span>')
-      +'</button>';
-  }
-  for (var i=0;i<start;i++) html+=miniCell(new Date(year,month,1-start+i),true);
-  for (var d2=1;d2<=last.getDate();d2++) html+=miniCell(new Date(year,month,d2),false);
-  var rem=(7-(start+last.getDate())%7)%7;
-  for (var j=1;j<=rem;j++) html+=miniCell(new Date(year,month+1,j),true);
-  html+='</div>';
-  var ds2=fmt(state.selectedDate);
-  var holiday2=getHoliday(ds2);
-  html+='<button type="button" class="sec-title sec-title-btn" style="margin-top:8px" onclick="selectDay(\''+ds2+'\')">'+koDate(state.selectedDate)+(holiday2?' <span style="color:#C0533F">· 🎉 '+esc(holiday2)+'</span>':'')+' <span class="sec-title-arrow">일정 보기 →</span></button>';
-  html+='</div>';
-  return html;
-}
 function renderMonth() {
   var ym=state.month, year=ym.getFullYear(), month=ym.getMonth();
-  var html='';
+  var html='<div class="month-cal-block" id="monthCalBlock">';
 
   var dnames=['일','월','화','수','목','금','토'];
   html+='<div class="month-header">';
@@ -3689,14 +3652,31 @@ function renderMonth() {
   for (var j=1;j<=rem;j++) { html+=mdCell(new Date(year,month+1,j),true,cellIdx,anchorWeek); cellIdx++; }
   html+='</div>';
 
-  html+=monthMiniStickyHtml();
-
   var ds=fmt(state.selectedDate);
+  var holiday2=getHoliday(ds);
+  html+='<button type="button" class="sec-title sec-title-btn" onclick="selectDay(\''+ds+'\')">'+koDate(state.selectedDate)+(holiday2?' <span style="color:#C0533F">· 🎉 '+esc(holiday2)+'</span>':'')+' <span class="sec-title-arrow">일정 보기 →</span></button>';
+  html+='</div>'; // .month-cal-block
+
+  html+='<div class="month-detail-scroll" id="monthDetailScroll">';
   var tasks=tasksForDate(ds), shared=sharedForDate(ds);
   if (!tasks.length&&!shared.length) html+=emptyBox('📅','이날 계획이 없어요','달력에서 날짜를 선택하세요');
   shared.forEach(function(e){ html+=sharedCard(e,false); });
   tasks.forEach(function(t){ html+=taskCard(t, ds); });
+  html+='</div>';
   return html;
+}
+// Build 088: 달력은 하나입니다 - 상세 일정 목록(.month-detail-scroll)을 스크롤하면,
+// 그 신호를 받아 위에 있는 달력 블록(.month-cal-block)에 .collapsed를 붙여
+// 주(週) 사이 간격만 줄입니다(글자 크기는 그대로). 두 블록이 서로 다른 스크롤
+// 컨테이너라 달력이 줄어들어도 상세 목록의 스크롤 위치를 건드리지 않아,
+// 이전처럼 되돌아가는 문제가 생기지 않습니다.
+function attachMonthScrollHandler() {
+  var ds=document.getElementById('monthDetailScroll');
+  var cal=document.getElementById('monthCalBlock');
+  if (!ds || !cal) return;
+  ds.addEventListener('scroll', function(){
+    cal.classList.toggle('collapsed', ds.scrollTop>8);
+  }, {passive:true});
 }
 
 function monthSharedEventsForDate(ds) {
@@ -5455,7 +5435,7 @@ firebase.auth().onAuthStateChanged(function(user){
 firebase.auth().signInAnonymously().catch(function(err){
   console.error('익명 로그인 실패:', err);
   var bar=document.getElementById('syncBar');
-  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 087</span>'; }
+  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 088</span>'; }
 });
 
 // 홈 화면에 추가했을 때 오프라인에서도 앱 화면이 뜨도록 서비스워커 등록
