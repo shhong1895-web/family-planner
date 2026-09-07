@@ -14,8 +14,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20260910-Build 089 -->
-<title>Build 089 · 우리가족 플래너</title>
+<!-- v20260911-Build 090 -->
+<title>Build 090 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -963,7 +963,7 @@ body.child-device .child-quick-done button.primary { background:var(--child-l); 
 </style>
 </head>
 <body>
-<div id="buildBadge" style="display:none">Build 089</div>
+<div id="buildBadge" style="display:none">Build 090</div>
 
 <!-- ONBOARDING -->
 <div id="onboardOverlay">
@@ -1024,7 +1024,7 @@ body.child-device .child-quick-done button.primary { background:var(--child-l); 
 
 <!-- APP -->
 <div id="appWrapper">
-  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 089</span></div>
+  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 090</span></div>
   <div class="app-header">
     <div class="header-top">
       <div class="app-logo">🏠 우리가족 플래너</div><button id="pc-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
@@ -1883,9 +1883,9 @@ function setupFamilyListeners() {
     // PC 자녀 테스트 데이터는 Firebase가 아니라 localStorage에 있으므로
     // Firestore snapshot이 도착한 뒤에도 반드시 다시 합쳐준다.
     pcTestLoadTasks();
-    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 089</span>';
+    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 090</span>';
     render();
-  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 089</span>'; });
+  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 090</span>'; });
   db.collection('sharedEvents').onSnapshot(function(snap) {
     state.sharedEvents = snap.docs.map(function(d){ return d.data(); }); render();
   });
@@ -3671,29 +3671,68 @@ function renderMonth() {
 // Build 089: 상세 목록을 스크롤한 만큼 달력 주 사이 간격이 그대로 따라 줄어듭니다
 // (일정 지점에서 갑자기 뚝 바뀌지 않음). 달력 위에서 손가락으로 밀어도 상세
 // 목록이 함께 스크롤되도록, 그 제스처를 상세 목록 스크롤로 그대로 전달합니다.
+// Build 090: 1단계(달력 축소)와 2단계(상세 목록 스크롤)를 완전히 분리합니다.
+// 손가락으로 미는 동안에는 먼저 달력 주 간격만 줄어들고, 상세 목록은 그 자리에
+// 그대로 있습니다. 달력이 다 줄어든 뒤에야 비로소 상세 목록이 스크롤됩니다.
+// 반대로 맨 위로 끝까지 스크롤하면 다시 달력 펼침 단계로 자연스럽게 돌아갑니다.
+// requestAnimationFrame으로 한 프레임에 한 번만 반영해서 떨리는 현상도 줄였습니다.
 function attachMonthScrollHandler() {
   var ds=document.getElementById('monthDetailScroll');
   var cal=document.getElementById('monthCalBlock');
   if (!ds || !cal) return;
   var grid=cal.querySelector('.month-grid');
-  var FULL=64, MIN=28, RANGE=90;
-  function updateRowHeight() {
-    var t=Math.max(0, Math.min(1, ds.scrollTop/RANGE));
+  var FULL=64, MIN=28, RANGE=110;
+  var progress=0;        // 0~RANGE: 달력 축소 진행량 (실제 스크롤과 분리된 값)
+  var phase='collapsing'; // 'collapsing' 동안은 상세 목록이 움직이지 않습니다.
+  var pendingFrame=false;
+
+  function paint() {
+    pendingFrame=false;
+    var t=progress/RANGE;
     if (grid) grid.style.setProperty('--mm-row-h', (FULL-(FULL-MIN)*t).toFixed(1)+'px');
-    cal.classList.toggle('collapsed', ds.scrollTop>4);
+    cal.classList.toggle('collapsed', progress>=RANGE-1);
   }
-  ds.addEventListener('scroll', updateRowHeight, {passive:true});
-  updateRowHeight();
+  function schedulePaint() {
+    if (pendingFrame) return;
+    pendingFrame=true;
+    requestAnimationFrame(paint);
+  }
+
+  ds.style.overflowY='hidden'; // 1단계: 달력이 다 줄어들기 전에는 목록 자체 스크롤을 막아둡니다.
 
   var lastY=null;
-  cal.addEventListener('touchstart', function(e){ lastY=e.touches[0].clientY; }, {passive:true});
-  cal.addEventListener('touchmove', function(e){
+  function onStart(e){ lastY=(e.touches?e.touches[0].clientY:e.clientY); }
+  function onMove(e){
     if (lastY===null) return;
-    var y=e.touches[0].clientY;
-    ds.scrollTop += (lastY-y);
+    var y=(e.touches?e.touches[0].clientY:e.clientY);
+    var dy=lastY-y; // 손가락이 위로 이동하면 양수 (아래 내용을 보려는 방향)
     lastY=y;
-  }, {passive:true});
-  cal.addEventListener('touchend', function(){ lastY=null; });
+
+    if (phase==='collapsing') {
+      progress=Math.max(0, Math.min(RANGE, progress+dy));
+      schedulePaint();
+      if (progress>=RANGE) { phase='scrolling'; ds.style.overflowY='auto'; }
+      if (e.cancelable) e.preventDefault(); // 1단계 동안은 실제 스크롤이 함께 일어나지 않게 막습니다.
+    } else if (ds.scrollTop<=0 && dy<0) {
+      // 2단계에서 맨 위까지 올라온 뒤 계속 아래로 밀면(=위 내용을 더 보려는 동작) 다시 축소 단계로.
+      phase='collapsing';
+      ds.style.overflowY='hidden';
+      progress=Math.max(0, progress+dy);
+      schedulePaint();
+      if (e.cancelable) e.preventDefault();
+    }
+    // else: 2단계 - 네이티브 스크롤이 자연스럽게 처리하도록 둡니다.
+  }
+  function onEnd(){ lastY=null; }
+
+  [cal, ds].forEach(function(el){
+    el.addEventListener('touchstart', onStart, {passive:true});
+    el.addEventListener('touchmove', onMove, {passive:false});
+    el.addEventListener('touchend', onEnd, {passive:true});
+    el.addEventListener('touchcancel', onEnd, {passive:true});
+  });
+
+  paint();
 }
 
 function monthSharedEventsForDate(ds) {
@@ -5452,7 +5491,7 @@ firebase.auth().onAuthStateChanged(function(user){
 firebase.auth().signInAnonymously().catch(function(err){
   console.error('익명 로그인 실패:', err);
   var bar=document.getElementById('syncBar');
-  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 089</span>'; }
+  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 090</span>'; }
 });
 
 // 홈 화면에 추가했을 때 오프라인에서도 앱 화면이 뜨도록 서비스워커 등록
