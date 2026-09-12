@@ -1,5 +1,6 @@
 {
   "id": "./",
+  "x-build-version": "105",
   "name": "우리가족 플래너",
   "short_name": "우리가족 플래너",
   "description": "가족과 아이의 자기주도 학습을 돕는 가족 플래너",
