@@ -1,13 +1,26 @@
 {
+  "id": "./",
   "name": "우리가족 플래너",
   "short_name": "우리가족 플래너",
-  "start_url": "./",
+  "description": "가족과 아이의 자기주도 학습을 돕는 가족 플래너",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#F5F5F7",
-  "theme_color": "#4F6F5F",
+  "theme_color": "#3F6D57",
   "lang": "ko",
   "icons": [
-    {"src":"./icon-192.png","sizes":"192x192","type":"image/png"},
-    {"src":"./icon-512.png","sizes":"512x512","type":"image/png"}
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
   ]
 }
