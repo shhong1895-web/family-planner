@@ -1,4 +1,4 @@
-const CACHE = 'family-planner-build092-v1';
+const CACHE = 'family-planner-build102-v1';
 const APP_SHELL = './index.html';
 
 self.addEventListener('install', event => {
@@ -10,22 +10,32 @@ self.addEventListener('install', event => {
 
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
-      .then(() => self.clients.claim())
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+    ).then(() => self.clients.claim())
   );
 });
 
 self.addEventListener('fetch', event => {
   const req = event.request;
   if (req.method !== 'GET') return;
+
+  if (req.mode === 'navigate' ||
+      new URL(req.url).pathname.endsWith('/index.html') ||
+      new URL(req.url).pathname.endsWith('/family-planner/')) {
+    event.respondWith(
+      fetch(req, {cache: 'no-store'})
+        .then(res => {
+          const copy = res.clone();
+          caches.open(CACHE).then(c => c.put(APP_SHELL, copy));
+          return res;
+        })
+        .catch(() => caches.match(APP_SHELL))
+    );
+    return;
+  }
+
   event.respondWith(
-    fetch(req).then(response => {
-      if (response && response.ok && new URL(req.url).origin === self.location.origin) {
-        const copy = response.clone();
-        caches.open(CACHE).then(cache => cache.put(req, copy)).catch(() => {});
-      }
-      return response;
-    }).catch(() => caches.match(req).then(cached => cached || caches.match(APP_SHELL)))
+    fetch(req).catch(() => caches.match(req))
   );
 });
