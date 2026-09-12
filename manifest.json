@@ -2,7 +2,7 @@
   "id": "./",
   "name": "우리가족 플래너",
   "short_name": "우리가족 플래너",
-  "description": "가족과 아이의 자기주도 학습을 돕는 가족 플래너 · Build 110",
+  "description": "가족과 아이의 자기주도 학습을 돕는 가족 플래너",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
