@@ -14,8 +14,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20260913-Build 100 -->
-<title>Build 100 · 우리가족 플래너</title>
+<!-- v20260913-Build 101 -->
+<title>Build 101 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -140,7 +140,7 @@ body {
   100% { opacity:1; transform:translateY(0); }
 }
 .welcome-hint { margin-top:26px; font-size:12px; color:rgba(30,41,59,.6); }
-/* Build 100: 가족 사진이 배경일 때는 글자 뒤에 반투명 유리 느낌 카드를 둬서,
+/* Build 101: 가족 사진이 배경일 때는 글자 뒤에 반투명 유리 느낌 카드를 둬서,
    사진이 무엇이든 문구가 또렷하게 보이게 합니다. */
 .welcome-textcard { position:relative; z-index:1; }
 .welcome-overlay.has-photo { background-size:cover; background-position:center; }
@@ -622,7 +622,7 @@ body.child-device .goal-week-activity { border-radius:16px; box-shadow:none; }
 .dev-approve { flex:1; padding:8px; border-radius:10px; border:none; background:var(--success); color:#fff; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; }
 .dev-reject { padding:8px 12px; border-radius:10px; border:1.5px solid var(--border); background:transparent; font-family:inherit; font-size:13px; cursor:pointer; }
 .dev-revoke { padding:8px 12px; border-radius:10px; border:none; background:#FBEEEA; color:var(--danger); font-family:inherit; font-size:13px; font-weight:600; cursor:pointer; }
-/* Build 100: 가족 사진 관리 (환영 화면용) */
+/* Build 101: 가족 사진 관리 (환영 화면용) */
 .family-photo-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
 .family-photo-thumb { position:relative; aspect-ratio:1; border-radius:12px; overflow:hidden; background:var(--bg); }
 .family-photo-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
@@ -995,7 +995,7 @@ body.child-device .child-quick-done button.primary { background:var(--child-l); 
 </style>
 
 <style id="build100-ios-design">
-/* Build 100 — iOS-inspired visual system. Existing DOM/IDs are intentionally preserved. */
+/* Build 101 — iOS-inspired visual system. Existing DOM/IDs are intentionally preserved. */
 :root{
   --bg:#F5F5F7;
   --card:#FFFFFF;
@@ -1033,6 +1033,9 @@ button{min-height:44px}
 .scroll-area::-webkit-scrollbar{display:none}
 .sec-title{font-size:13px;font-weight:750;color:var(--sub);letter-spacing:-.01em;margin:22px 2px 8px}
 .form-box,.progress-card,.today-summary-card,.semester-summary-card,.mission-card,.tree-teaser-card,.device-card,.school-card,.goal-card,.workbook-card{box-shadow:none!important;border:1px solid rgba(60,60,67,.12)!important;border-radius:14px!important;background:var(--card)!important}
+/* Build 101: p-mode는 흰 배경에 흰 글자가 되지 않도록 원래 강조 카드 스타일을 유지합니다. */
+.progress-card.p-mode{background:var(--parent)!important;color:#fff!important;border:0!important;box-shadow:none!important}
+.progress-card.p-mode .pc-label,.progress-card.p-mode .pc-date,.progress-card.p-mode .pc-big,.progress-card.p-mode .pc-unit{color:#fff!important}
 .form-box{padding:14px}
 .f-btn,.m-save,.m-cancel{min-height:44px;border-radius:12px!important;box-shadow:none!important}
 .m-field,.f-field,.m-select,.m-textarea{min-height:44px;border:1px solid rgba(60,60,67,.18)!important;border-radius:11px!important;background:#fff!important;color:var(--text)!important}
@@ -1090,7 +1093,7 @@ body.child-device .mission-card{background:#FFFDF7!important}
 
 </head>
 <body>
-<div id="buildBadge" style="display:none">Build 100</div>
+<div id="buildBadge" style="display:none">Build 101</div>
 
 <!-- ONBOARDING -->
 <div id="bootLoading">
@@ -1158,7 +1161,7 @@ body.child-device .mission-card{background:#FFFDF7!important}
 
 <!-- APP -->
 <div id="appWrapper">
-  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 100</span></div>
+  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 101</span></div>
   <div class="app-header">
     <div class="header-top">
       <div class="app-logo">🏠 우리가족 플래너</div><button id="pc-test-preview" type="button" aria-label="노트북에서 자녀 화면 미리보기">👦 자녀 화면 미리보기</button><button id="pc-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
@@ -1722,7 +1725,7 @@ function weekRangeLabel(ws) {
   return (s.getMonth()+1)+'/'+s.getDate()+'('+wd[s.getDay()]+')~'+(e.getMonth()+1)+'/'+e.getDate()+'('+wd[e.getDay()]+')';
 }
 function isToday(d) { return fmt(d)===fmt(TODAY); }
-// Build 100: 앱을 밤새 켜 둔 경우에도 자정에 TODAY를 갱신합니다.
+// Build 101: 앱을 밤새 켜 둔 경우에도 자정에 TODAY를 갱신합니다.
 function refreshTodayBasis(){
   var now=new Date(); now.setHours(0,0,0,0);
   if (fmt(now)!==fmt(TODAY)) {
@@ -2031,9 +2034,9 @@ function setupFamilyListeners() {
     // PC 자녀 테스트 데이터는 Firebase가 아니라 localStorage에 있으므로
     // Firestore snapshot이 도착한 뒤에도 반드시 다시 합쳐준다.
     pcTestLoadTasks();
-    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 100</span>';
+    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 101</span>';
     render();
-  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 100</span>'; });
+  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 101</span>'; });
   db.collection('sharedEvents').onSnapshot(function(snap) {
     state.sharedEvents = snap.docs.map(function(d){ return d.data(); }); render();
   });
@@ -2064,7 +2067,7 @@ function setupFamilyListeners() {
     var panel = document.getElementById('wbManagePanel');
     if (panel && panel.style.display !== 'none') renderWorkbookChips();
   });
-  // Build 100: 환영 화면에 쓸 가족 사진 목록
+  // Build 101: 환영 화면에 쓸 가족 사진 목록
   db.collection('meta').doc('familyPhotos').onSnapshot(function(snap) {
     state.familyPhotos = (snap.exists && snap.data().list) || [];
     var panel = document.getElementById('familyPhotosPanel');
@@ -2611,7 +2614,7 @@ function renderWelcomeOverlay() {
   }
   document.getElementById('welcomeEmoji').textContent=emoji;
   document.getElementById('welcomeGreeting').textContent=(name?name+', ':'')+line;
-  // Build 100: 등록된 가족 사진이 있으면 무작위로 하나 골라 배경으로 씁니다.
+  // Build 101: 등록된 가족 사진이 있으면 무작위로 하나 골라 배경으로 씁니다.
   var photos=state.familyPhotos||[];
   if (photos.length) {
     var pick=photos[Math.floor(Math.random()*photos.length)];
@@ -2854,7 +2857,7 @@ function render() {
       var deEl=document.getElementById('se-dateEnd'); if(deEl) deEl.value=todayStr;
     }
   }
-  else if (v==='devices') sa.innerHTML=renderDevices();
+  else if (v==='devices') { sa.innerHTML=renderDevices(); renderFamilyPhotosPanel(); }
   else if (v==='school') {
     sa.innerHTML=renderSchool();
     if(state.mode==='parent' && isFreshView){
@@ -4163,45 +4166,66 @@ function renderFamilyPhotosPanel() {
   var photos=state.familyPhotos||[];
   if (!photos.length) { panel.innerHTML='<div style="font-size:12px;color:var(--sub)">아직 등록된 사진이 없어요</div>'; return; }
   panel.innerHTML='<div class="family-photo-grid">'+photos.map(function(p){
-    return '<div class="family-photo-thumb"><img src="'+p.dataUrl+'"><button type="button" onclick="deleteFamilyPhoto(\''+p.id+'\')">✕</button></div>';
+    return '<div class="family-photo-thumb"><img src="'+esc(p.dataUrl)+'" alt="가족 사진"><button type="button" onclick="deleteFamilyPhoto(\''+p.id+'\')">✕</button></div>';
   }).join('')+'</div>';
 }
-// Build 100: 사진을 그대로 저장하면 문서 용량 제한(1MB)을 바로 넘기 때문에,
+// Build 101: 사진을 그대로 저장하면 문서 용량 제한(1MB)을 바로 넘기 때문에,
 // 캔버스로 줄이고 압축한 뒤에만 저장합니다.
 function handleFamilyPhotoSelect(files) {
   if (!files || !files.length) return;
+  var input=document.getElementById('familyPhotoInput');
   var current=(state.familyPhotos||[]).slice();
-  if (current.length>=4) { showToast('⚠️ 사진은 최대 4장까지 등록할 수 있어요'); return; }
+  if (current.length>=4) { showToast('⚠️ 사진은 최대 4장까지 등록할 수 있어요'); if(input) input.value=''; return; }
   var remain=4-current.length;
   var list=Array.prototype.slice.call(files).slice(0,remain);
-  var jobs=list.map(compressPhotoFile);
-  Promise.all(jobs).then(function(dataUrls){
+  showToast('📷 사진을 준비하고 있어요…');
+  Promise.all(list.map(compressPhotoFile)).then(function(dataUrls){
     var now=Date.now();
-    dataUrls.forEach(function(du,i){ current.push({id:'ph_'+now+'_'+i, dataUrl:du, addedAt:now}); });
-    return fsSet('meta','familyPhotos',{list:current});
-  }).then(function(){
+    var next=current.slice();
+    dataUrls.forEach(function(du,i){ next.push({id:'ph_'+now+'_'+i, dataUrl:du, addedAt:now}); });
+    // Firestore 문서 1MiB 제한을 피하기 위해 여유를 둔 상한을 둡니다.
+    var bytes=0;
+    try { bytes=new Blob([JSON.stringify({list:next})]).size; } catch(e) { bytes=JSON.stringify({list:next}).length*2; }
+    if (bytes>780000) {
+      throw new Error('PHOTO_DOC_TOO_LARGE');
+    }
+    return fsSet('meta','familyPhotos',{list:next}).then(function(){ return next; });
+  }).then(function(next){
+    state.familyPhotos=next;
+    renderFamilyPhotosPanel();
+    if (input) input.value='';
     showToast('📷 사진을 추가했어요');
-    document.getElementById('familyPhotoInput').value='';
-  }).catch(function(){ showToast('⚠️ 사진 저장에 실패했어요 (용량이 너무 클 수 있어요)'); });
+  }).catch(function(err){
+    if (input) input.value='';
+    if (err && err.message==='PHOTO_DOC_TOO_LARGE') {
+      showToast('⚠️ 사진 용량이 커서 추가할 수 없어요. 사진을 조금 줄여서 다시 시도해주세요');
+    } else {
+      showToast('⚠️ 사진 저장에 실패했어요. 잠시 후 다시 시도해주세요');
+    }
+  });
 }
 function compressPhotoFile(file) {
   return new Promise(function(resolve,reject){
+    if (!file || !/^image\//i.test(file.type||'')) { reject(new Error('NOT_IMAGE')); return; }
     var reader=new FileReader();
     reader.onload=function(){
       var img=new Image();
       img.onload=function(){
-        var maxDim=640;
+        // 모바일 사진도 충분히 선명하게 보이면서 Firestore 문서가 커지지 않도록 압축합니다.
+        var maxDim=480;
         var scale=Math.min(1, maxDim/Math.max(img.width,img.height));
-        var w=Math.round(img.width*scale), h=Math.round(img.height*scale);
+        var w=Math.max(1,Math.round(img.width*scale)), h=Math.max(1,Math.round(img.height*scale));
         var canvas=document.createElement('canvas');
         canvas.width=w; canvas.height=h;
-        canvas.getContext('2d').drawImage(img,0,0,w,h);
-        resolve(canvas.toDataURL('image/jpeg',0.55));
+        var ctx=canvas.getContext('2d');
+        if (!ctx) { reject(new Error('CANVAS')); return; }
+        ctx.drawImage(img,0,0,w,h);
+        resolve(canvas.toDataURL('image/jpeg',0.42));
       };
-      img.onerror=reject;
+      img.onerror=function(){ reject(new Error('IMAGE_DECODE')); };
       img.src=reader.result;
     };
-    reader.onerror=reject;
+    reader.onerror=function(){ reject(new Error('FILE_READ')); };
     reader.readAsDataURL(file);
   });
 }
@@ -5730,7 +5754,7 @@ firebase.auth().onAuthStateChanged(function(user){
 firebase.auth().signInAnonymously().catch(function(err){
   console.error('익명 로그인 실패:', err);
   var bar=document.getElementById('syncBar');
-  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 100</span>'; }
+  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 101</span>'; }
 });
 // Build 091: 로딩이 너무 오래 걸리면(네트워크 문제 등) 무한정 빈 화면으로 갇히지 않도록,
 // 일정 시간 뒤에도 판단이 안 끝났으면 온보딩 화면으로라도 넘어가게 합니다.
