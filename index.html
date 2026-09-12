@@ -898,7 +898,7 @@ body.child-device .goal-week-activity { border-radius:16px; box-shadow:none; }
   .month-detail-scroll{padding-bottom:100px;}
 }
 
-/* Build 115: 자녀 주간/월간 자기주도 계획 UX 정리 */
+/* Build 116: 자녀 주간/월간 자기주도 계획 UX 정리 */
 body.child-device .week-plan{
   border-radius:18px!important;
   border:1px solid var(--border)!important;
@@ -1305,7 +1305,7 @@ body.child-device .week-plan-day.today{background:#FBF3E9;}
 
 <!-- APP -->
 <div id="appWrapper">
-  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 115</span></div>
+  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 116</span></div>
   <div class="app-header">
     <div class="header-top">
       <div class="app-logo">🏠 우리가족 플래너</div><button id="pc-test-preview" type="button" aria-label="노트북에서 자녀 화면 미리보기">👦 자녀 화면 미리보기</button><button id="pc-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
@@ -1887,6 +1887,23 @@ body.child-device .shared-card, body.child-device .school-card{
   box-shadow:none!important;
   margin-bottom:8px!important;
 }
+
+/* Build 116: 주간/월간/오늘의 Task card는 부모·자녀 모두 동일한 둥근 카드 스타일을 사용합니다. */
+.task-card{
+  box-sizing:border-box!important;
+  width:100%!important;
+  margin:0 0 8px!important;
+  padding:12px 10px!important;
+  border:1px solid var(--border)!important;
+  border-left:3px solid transparent!important;
+  border-radius:14px!important;
+  background:#fff!important;
+  box-shadow:none!important;
+}
+.task-card.done{border-left-color:var(--success)!important;background:#FFFEFB!important;}
+.task-card.from-parent{border-left-color:var(--parent)!important;}
+body.child-device .task-card{border-left-color:var(--border)!important;}
+body.child-device .task-card.done{border-left-color:var(--child)!important;}
 </style>
 
 <script>
@@ -1915,7 +1932,7 @@ var state = {
   selectedDate: new Date(TODAY),
   weekStart: getWeekStart(TODAY),
   month: new Date(TODAY.getFullYear(), TODAY.getMonth(), 1),
-  tasks: [], sharedEvents: [], messages: [], schoolSchedule: [], goals: [], workbooks: [], children: [], familyPhotos: []
+  tasks: [], sharedEvents: [], messages: [], schoolSchedule: [], goals: [], workbooks: [], children: [], familyPhotos: (function(){ try { return JSON.parse(localStorage.getItem('fp_family_photos_cache')||'[]'); } catch(e){ return []; } })()
 };
 var devicesState = [];
 
@@ -2254,9 +2271,9 @@ function setupFamilyListeners() {
     // PC 자녀 테스트 데이터는 Firebase가 아니라 localStorage에 있으므로
     // Firestore snapshot이 도착한 뒤에도 반드시 다시 합쳐준다.
     pcTestLoadTasks();
-    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 115</span>';
+    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 116</span>';
     render();
-  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 115</span>'; });
+  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 116</span>'; });
   db.collection('sharedEvents').onSnapshot(function(snap) {
     state.sharedEvents = snap.docs.map(function(d){ return d.data(); }); render();
   });
@@ -2805,29 +2822,56 @@ var CHILD_WELCOME_LINES=[
 ];
 var _welcomeDone=false;
 function maybeShowWelcome(onDone) {
-  renderWelcomeOverlay();
-  var overlay=document.getElementById('welcomeOverlay');
-  var boot=document.getElementById('bootLoading');
-  overlay.style.display='flex';
-  overlay.style.opacity='0';
-  // 로딩 화면을 먼저 즉시 끄지 않고, 환영 화면이 겹쳐 들어오도록 해 전환이 자연스럽게 보이게 합니다.
-  requestAnimationFrame(function(){
-    if (boot) boot.style.opacity='0';
-    overlay.style.opacity='1';
-  });
-  _welcomeDone=false;
-  window._finishWelcomeCb=function(){
-    if (_welcomeDone) return;
-    _welcomeDone=true;
-    overlay.style.opacity='0';
-    if (boot) boot.style.opacity='0';
+  // 가족 사진은 Firestore에서 비동기로 도착할 수 있으므로, 캐시가 없을 때만
+  // 잠시 기다렸다가 환영 문구와 사진이 같은 순간에 나타나도록 합니다.
+  var started=Date.now();
+  function openWelcome(){
+    renderWelcomeOverlay();
+    var overlay=document.getElementById('welcomeOverlay');
+    var boot=document.getElementById('bootLoading');
+    var img=document.getElementById('welcomePhoto');
+    var photos=state.familyPhotos||[];
+    var show=function(){
+      overlay.style.display='flex';
+      overlay.style.opacity='0';
+      requestAnimationFrame(function(){
+        if (boot) boot.style.opacity='0';
+        overlay.style.opacity='1';
+      });
+      _welcomeDone=false;
+      window._finishWelcomeCb=function(){
+        if (_welcomeDone) return;
+        _welcomeDone=true;
+        overlay.style.opacity='0';
+        if (boot) boot.style.opacity='0';
+        setTimeout(function(){
+          overlay.style.display='none';
+          if (boot) boot.style.display='none';
+        }, 340);
+        onDone();
+      };
+      setTimeout(function(){ window._finishWelcomeCb && window._finishWelcomeCb(); }, 2400);
+    };
+    if (photos.length && img && img.complete) {
+      show();
+    } else if (photos.length && img) {
+      var opened=false;
+      var openOnce=function(){ if(opened) return; opened=true; show(); };
+      img.addEventListener('load',openOnce,{once:true});
+      img.addEventListener('error',openOnce,{once:true});
+      setTimeout(openOnce,700);
+    } else {
+      show();
+    }
+  }
+  if ((state.familyPhotos||[]).length || Date.now()-started>=900) {
+    openWelcome();
+  } else {
     setTimeout(function(){
-      overlay.style.display='none';
-      if (boot) boot.style.display='none';
-    }, 340);
-    onDone();
-  };
-  setTimeout(function(){ window._finishWelcomeCb && window._finishWelcomeCb(); }, 2400);
+      if ((state.familyPhotos||[]).length || Date.now()-started>=900) openWelcome();
+      else setTimeout(function(){ openWelcome(); },250);
+    },250);
+  }
 }
 function finishWelcome() { window._finishWelcomeCb && window._finishWelcomeCb(); }
 function renderWelcomeOverlay() {
@@ -6030,7 +6074,7 @@ firebase.auth().onAuthStateChanged(function(user){
 firebase.auth().signInAnonymously().catch(function(err){
   console.error('익명 로그인 실패:', err);
   var bar=document.getElementById('syncBar');
-  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 115</span>'; }
+  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 116</span>'; }
 });
 // Build 091: 로딩이 너무 오래 걸리면(네트워크 문제 등) 무한정 빈 화면으로 갇히지 않도록,
 // 일정 시간 뒤에도 판단이 안 끝났으면 온보딩 화면으로라도 넘어가게 합니다.
