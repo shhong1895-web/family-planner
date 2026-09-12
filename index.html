@@ -14,8 +14,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20260913-Build 092 -->
-<title>Build 092 · 우리가족 플래너</title>
+<!-- v20260913-Build 100 -->
+<title>Build 100 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -140,7 +140,7 @@ body {
   100% { opacity:1; transform:translateY(0); }
 }
 .welcome-hint { margin-top:26px; font-size:12px; color:rgba(30,41,59,.6); }
-/* Build 092: 가족 사진이 배경일 때는 글자 뒤에 반투명 유리 느낌 카드를 둬서,
+/* Build 100: 가족 사진이 배경일 때는 글자 뒤에 반투명 유리 느낌 카드를 둬서,
    사진이 무엇이든 문구가 또렷하게 보이게 합니다. */
 .welcome-textcard { position:relative; z-index:1; }
 .welcome-overlay.has-photo { background-size:cover; background-position:center; }
@@ -622,7 +622,7 @@ body.child-device .goal-week-activity { border-radius:16px; box-shadow:none; }
 .dev-approve { flex:1; padding:8px; border-radius:10px; border:none; background:var(--success); color:#fff; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; }
 .dev-reject { padding:8px 12px; border-radius:10px; border:1.5px solid var(--border); background:transparent; font-family:inherit; font-size:13px; cursor:pointer; }
 .dev-revoke { padding:8px 12px; border-radius:10px; border:none; background:#FBEEEA; color:var(--danger); font-family:inherit; font-size:13px; font-weight:600; cursor:pointer; }
-/* Build 092: 가족 사진 관리 (환영 화면용) */
+/* Build 100: 가족 사진 관리 (환영 화면용) */
 .family-photo-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
 .family-photo-thumb { position:relative; aspect-ratio:1; border-radius:12px; overflow:hidden; background:var(--bg); }
 .family-photo-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
@@ -993,9 +993,104 @@ body.child-device .child-quick-done { display:flex; gap:8px; margin-top:10px; }
 body.child-device .child-quick-done button { flex:1; border:1px solid var(--border); background:#fff; color:var(--sub); border-radius:13px; padding:11px 7px; font:800 12px/1.25 inherit; }
 body.child-device .child-quick-done button.primary { background:var(--child-l); border-color:var(--child); color:var(--child); }
 </style>
+
+<style id="build100-ios-design">
+/* Build 100 — iOS-inspired visual system. Existing DOM/IDs are intentionally preserved. */
+:root{
+  --bg:#F5F5F7;
+  --card:#FFFFFF;
+  --text:#1D1D1F;
+  --sub:#86868B;
+  --border:#D2D2D7;
+  --child:#3F6D57;
+  --child-l:#E7EFE9;
+  --parent:#3F6D57;
+  --parent-l:#E7EFE9;
+  --shared:#6E63A6;
+  --shared-l:#F1EFF8;
+  --success:#3F6D57;
+  --success-l:#E7EFE9;
+  --warn:#A96E12;
+  --danger:#C53D32;
+  --r:14px;
+  --sh:none;
+}
+html,body{background:var(--bg);color:var(--text)}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Noto Sans KR",sans-serif;letter-spacing:-.01em}
+button,input,textarea,select{font-family:inherit}
+button{min-height:44px}
+.app-header{background:rgba(245,245,247,.94);backdrop-filter:saturate(180%) blur(18px);-webkit-backdrop-filter:saturate(180%) blur(18px);border-bottom:1px solid rgba(60,60,67,.16);padding:10px 16px 8px;z-index:20}
+.header-top{gap:8px;min-height:38px}
+.app-logo{font-size:17px;font-weight:750;letter-spacing:-.025em;white-space:nowrap}
+.child-switch-bar{gap:6px}
+.child-switch-btn{min-height:32px;padding:4px 10px;border:0;border-radius:999px;background:#E5E5EA;font-size:12px;font-weight:700}
+.child-switch-btn.active{background:var(--child);border-color:var(--child)}
+#pc-test-preview,#pc-test-return{min-height:32px;padding:5px 9px;border:1px solid rgba(60,60,67,.16);border-radius:999px;background:rgba(255,255,255,.78);color:var(--text);font-size:11px;font-weight:750;white-space:nowrap;cursor:pointer}
+#pc-test-preview{display:none;margin-left:auto}
+@media(min-width:768px){#pc-test-preview.show{display:inline-flex;align-items:center;justify-content:center}}
+.sync-bar{height:24px;padding:3px 10px;font-size:10px;background:#E8F1EB;color:var(--child);border-bottom:1px solid rgba(60,60,67,.06)}
+.scroll-area{padding:12px 16px calc(104px + env(safe-area-inset-bottom));scrollbar-width:none}
+.scroll-area::-webkit-scrollbar{display:none}
+.sec-title{font-size:13px;font-weight:750;color:var(--sub);letter-spacing:-.01em;margin:22px 2px 8px}
+.form-box,.progress-card,.today-summary-card,.semester-summary-card,.mission-card,.tree-teaser-card,.device-card,.school-card,.goal-card,.workbook-card{box-shadow:none!important;border:1px solid rgba(60,60,67,.12)!important;border-radius:14px!important;background:var(--card)!important}
+.form-box{padding:14px}
+.f-btn,.m-save,.m-cancel{min-height:44px;border-radius:12px!important;box-shadow:none!important}
+.m-field,.f-field,.m-select,.m-textarea{min-height:44px;border:1px solid rgba(60,60,67,.18)!important;border-radius:11px!important;background:#fff!important;color:var(--text)!important}
+.f-btn{font-weight:700}
+.bottom-nav{height:72px;padding:7px 6px calc(7px + env(safe-area-inset-bottom));background:rgba(249,249,249,.94);backdrop-filter:saturate(180%) blur(18px);-webkit-backdrop-filter:saturate(180%) blur(18px);border-top:1px solid rgba(60,60,67,.16);gap:2px;overflow-x:auto;scrollbar-width:none;z-index:30}
+.bottom-nav::-webkit-scrollbar{display:none}
+.nav-item{flex:1;min-width:58px;height:58px;min-height:58px;padding:4px 2px;border:0;background:transparent;color:#6E6E73;font-size:10px;font-weight:650;border-radius:12px}
+.nav-item.active,.nav-item.p-active{color:var(--child);background:rgba(63,109,87,.08)}
+.nav-icon{display:block;font-size:20px;line-height:23px;margin-bottom:2px;filter:saturate(.75)}
+.nav-item.active .nav-icon,.nav-item.p-active .nav-icon{filter:none}
+.fab{width:54px;height:54px;min-height:54px;right:18px;bottom:88px;border-radius:50%;border:0;background:var(--child);box-shadow:0 6px 18px rgba(0,0,0,.16);font-size:30px;font-weight:300;z-index:35}
+.child-hero{border:0!important;box-shadow:none!important;background:linear-gradient(135deg,#E8F1EB,#F7FAF8)!important;border-radius:16px!important;padding:18px!important;margin-bottom:12px!important}
+.child-hero-title{font-size:20px!important;font-weight:800!important;letter-spacing:-.04em}
+.child-hero-sub{font-size:13px!important;color:#5F6661!important;margin-top:5px}
+.today-tasks-block{margin-top:4px}
+.today-help-bottom{margin:12px 2px;color:var(--sub);font-size:12px;line-height:1.55}
+.progress-card{padding:16px!important}
+.compact-progress{background:#fff!important}
+.prog-bar{height:7px!important;border-radius:99px;background:#E5E5EA!important;overflow:hidden}
+.prog-fill{border-radius:99px;background:var(--child)!important}
+.streak-badge{display:inline-flex;align-items:center;margin-top:10px!important;padding:5px 9px;border-radius:999px;background:#F2F2F7!important;color:#5B5B60!important;font-size:11px!important;font-weight:700}
+.task-card,.b070-school-today,.b070-family-shared{border-bottom:1px solid rgba(60,60,67,.13)!important;background:transparent!important;box-shadow:none!important;border-radius:0!important}
+.task-card{padding:13px 2px!important}
+.task-card:last-child{border-bottom:0!important}
+.task-name{font-size:15px!important;font-weight:700!important}
+.task-meta{font-size:12px!important;color:var(--sub)!important}
+.chk{width:28px!important;height:28px!important;min-height:28px!important;border-radius:50%!important;border:1.5px solid #B8B8BD!important;background:#fff!important;color:#fff!important}
+.chk.checked{border-color:var(--child)!important;background:var(--child)!important}
+.modal-overlay,.drum-sheet-overlay{background:rgba(0,0,0,.32)!important;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.modal,.drum-sheet{border-radius:20px 20px 0 0!important;border:0!important;box-shadow:0 -8px 30px rgba(0,0,0,.16)!important}
+.modal{max-height:92dvh}
+.m-title{font-size:19px!important;font-weight:800!important}
+.date-nav{background:transparent!important;border:0!important;box-shadow:none!important;padding:4px 0 10px!important}
+.date-nav-main{font-size:16px!important;font-weight:800!important}
+.date-nav-btn{width:38px!important;height:38px!important;min-height:38px!important;border-radius:50%!important;border:0!important;background:#E5E5EA!important;color:#3A3A3C!important}
+.holiday-banner{border-radius:12px!important;border:1px solid rgba(197,61,50,.15)!important;background:#FFF3F2!important;color:#A83229!important}
+.empty-box{border:0!important;background:transparent!important;color:var(--sub)!important;padding:28px 12px!important}
+/* reduce visual noise from legacy shadows/borders */
+.device-card,.child-pick-card,.ob-card{box-shadow:none!important}
+.ob-card{border:1px solid rgba(60,60,67,.16)!important;border-radius:16px!important}
+.welcome-overlay{background:#F5F5F7!important}
+.welcome-overlay.parent{background:#E8F1EB!important}
+.welcome-emoji{font-size:64px;animation:none}
+.welcome-greeting{color:var(--text)!important;font-size:22px!important}
+.welcome-hint{color:var(--sub)!important}
+.welcome-particles{display:none}
+.welcome-overlay.has-photo::before{background:rgba(0,0,0,.22)}
+.welcome-overlay.has-photo .welcome-textcard{background:rgba(20,20,20,.28);border-radius:22px;padding:28px 24px}
+/* child mode should foreground autonomy rather than parental monitoring */
+body.child-device .progress-card.compact-progress .pc-label{font-size:12px}
+body.child-device .mission-card{background:#FFFDF7!important}
+@media(max-width:430px){.app-logo{font-size:16px}.scroll-area{padding-left:15px;padding-right:15px}.bottom-nav .nav-item{min-width:54px}.nav-icon{font-size:19px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition:none!important}}
+</style>
+
 </head>
 <body>
-<div id="buildBadge" style="display:none">Build 092</div>
+<div id="buildBadge" style="display:none">Build 100</div>
 
 <!-- ONBOARDING -->
 <div id="bootLoading">
@@ -1063,10 +1158,10 @@ body.child-device .child-quick-done button.primary { background:var(--child-l); 
 
 <!-- APP -->
 <div id="appWrapper">
-  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 092</span></div>
+  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 100</span></div>
   <div class="app-header">
     <div class="header-top">
-      <div class="app-logo">🏠 우리가족 플래너</div><button id="pc-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
+      <div class="app-logo">🏠 우리가족 플래너</div><button id="pc-test-preview" type="button" aria-label="노트북에서 자녀 화면 미리보기">👦 자녀 화면 미리보기</button><button id="pc-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
       <div class="child-switch-bar" id="childSwitchBar"></div>
       
     </div>
@@ -1627,6 +1722,19 @@ function weekRangeLabel(ws) {
   return (s.getMonth()+1)+'/'+s.getDate()+'('+wd[s.getDay()]+')~'+(e.getMonth()+1)+'/'+e.getDate()+'('+wd[e.getDay()]+')';
 }
 function isToday(d) { return fmt(d)===fmt(TODAY); }
+// Build 100: 앱을 밤새 켜 둔 경우에도 자정에 TODAY를 갱신합니다.
+function refreshTodayBasis(){
+  var now=new Date(); now.setHours(0,0,0,0);
+  if (fmt(now)!==fmt(TODAY)) {
+    TODAY=now;
+    state.selectedDate=new Date(TODAY);
+    state.weekStart=getWeekStart(TODAY);
+    state.month=new Date(TODAY.getFullYear(),TODAY.getMonth(),1);
+    render();
+  }
+}
+setInterval(refreshTodayBasis,60000);
+
 // ── 대한민국 공휴일 (음력 기반 명절 포함, 정부 발표 기준) ──
 // 설날/추석/부처님오신날처럼 음력 기준 명절은 매년 양력 날짜가 달라져서 수식으로 계산할 수 없어
 // 연도별로 직접 채워둔다. 여기 없는 연도는 자동으로 공휴일 표시가 생략된다.
@@ -1923,9 +2031,9 @@ function setupFamilyListeners() {
     // PC 자녀 테스트 데이터는 Firebase가 아니라 localStorage에 있으므로
     // Firestore snapshot이 도착한 뒤에도 반드시 다시 합쳐준다.
     pcTestLoadTasks();
-    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 092</span>';
+    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 100</span>';
     render();
-  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 092</span>'; });
+  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 100</span>'; });
   db.collection('sharedEvents').onSnapshot(function(snap) {
     state.sharedEvents = snap.docs.map(function(d){ return d.data(); }); render();
   });
@@ -1956,7 +2064,7 @@ function setupFamilyListeners() {
     var panel = document.getElementById('wbManagePanel');
     if (panel && panel.style.display !== 'none') renderWorkbookChips();
   });
-  // Build 092: 환영 화면에 쓸 가족 사진 목록
+  // Build 100: 환영 화면에 쓸 가족 사진 목록
   db.collection('meta').doc('familyPhotos').onSnapshot(function(snap) {
     state.familyPhotos = (snap.exists && snap.data().list) || [];
     var panel = document.getElementById('familyPhotosPanel');
@@ -2503,7 +2611,7 @@ function renderWelcomeOverlay() {
   }
   document.getElementById('welcomeEmoji').textContent=emoji;
   document.getElementById('welcomeGreeting').textContent=(name?name+', ':'')+line;
-  // Build 092: 등록된 가족 사진이 있으면 무작위로 하나 골라 배경으로 씁니다.
+  // Build 100: 등록된 가족 사진이 있으면 무작위로 하나 골라 배경으로 씁니다.
   var photos=state.familyPhotos||[];
   if (photos.length) {
     var pick=photos[Math.floor(Math.random()*photos.length)];
@@ -4058,7 +4166,7 @@ function renderFamilyPhotosPanel() {
     return '<div class="family-photo-thumb"><img src="'+p.dataUrl+'"><button type="button" onclick="deleteFamilyPhoto(\''+p.id+'\')">✕</button></div>';
   }).join('')+'</div>';
 }
-// Build 092: 사진을 그대로 저장하면 문서 용량 제한(1MB)을 바로 넘기 때문에,
+// Build 100: 사진을 그대로 저장하면 문서 용량 제한(1MB)을 바로 넘기 때문에,
 // 캔버스로 줄이고 압축한 뒤에만 저장합니다.
 function handleFamilyPhotoSelect(files) {
   if (!files || !files.length) return;
@@ -5622,7 +5730,7 @@ firebase.auth().onAuthStateChanged(function(user){
 firebase.auth().signInAnonymously().catch(function(err){
   console.error('익명 로그인 실패:', err);
   var bar=document.getElementById('syncBar');
-  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 092</span>'; }
+  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 100</span>'; }
 });
 // Build 091: 로딩이 너무 오래 걸리면(네트워크 문제 등) 무한정 빈 화면으로 갇히지 않도록,
 // 일정 시간 뒤에도 판단이 안 끝났으면 온보딩 화면으로라도 넘어가게 합니다.
@@ -5682,5 +5790,32 @@ if ('serviceWorker' in navigator) {
   window.build053UpdatePcTestReturn=updatePcTestReturn;
 })();
 </script>
+
+<script id="build100-pc-preview-script">
+(function(){
+  function isPc(){ return !/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent||''); }
+  function update(){
+    var b=document.getElementById('pc-test-preview');
+    if(!b) return;
+    var show=isPc() && !((sessionStorage.getItem('fp_pc_test_role')||'')==='child');
+    b.classList.toggle('show',show);
+  }
+  function bind(){
+    var b=document.getElementById('pc-test-preview');
+    if(b && !b.dataset.bound){
+      b.addEventListener('click',function(){
+        if(typeof window.enterPcTestRole==='function') window.enterPcTestRole('child');
+      });
+      b.dataset.bound='1';
+    }
+    update();
+  }
+  document.addEventListener('DOMContentLoaded',bind);
+  window.addEventListener('load',bind);
+  setTimeout(bind,500);
+  setInterval(update,500);
+})();
+</script>
+
 </body>
 </html>
