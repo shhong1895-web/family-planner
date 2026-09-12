@@ -14,8 +14,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20260912-Build 102 -->
-<title>Build 102 · 우리가족 플래너</title>
+<!-- v20260912-Build 103 -->
+<title>Build 103 · 우리가족 플래너</title>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -140,7 +140,7 @@ body {
   100% { opacity:1; transform:translateY(0); }
 }
 .welcome-hint { margin-top:26px; font-size:12px; color:rgba(30,41,59,.6); }
-/* Build 102: 가족 사진이 배경일 때는 글자 뒤에 반투명 유리 느낌 카드를 둬서,
+/* Build 103: 가족 사진이 배경일 때는 글자 뒤에 반투명 유리 느낌 카드를 둬서,
    사진이 무엇이든 문구가 또렷하게 보이게 합니다. */
 .welcome-textcard { position:relative; z-index:1; }
 .welcome-overlay.has-photo { background-size:cover; background-position:center; }
@@ -622,7 +622,7 @@ body.child-device .goal-week-activity { border-radius:16px; box-shadow:none; }
 .dev-approve { flex:1; padding:8px; border-radius:10px; border:none; background:var(--success); color:#fff; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; }
 .dev-reject { padding:8px 12px; border-radius:10px; border:1.5px solid var(--border); background:transparent; font-family:inherit; font-size:13px; cursor:pointer; }
 .dev-revoke { padding:8px 12px; border-radius:10px; border:none; background:#FBEEEA; color:var(--danger); font-family:inherit; font-size:13px; font-weight:600; cursor:pointer; }
-/* Build 102: 가족 사진 관리 (환영 화면용) */
+/* Build 103: 가족 사진 관리 (환영 화면용) */
 .family-photo-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
 .family-photo-thumb { position:relative; aspect-ratio:1; border-radius:12px; overflow:hidden; background:var(--bg); }
 .family-photo-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
@@ -940,7 +940,7 @@ body.child-device .task-card.done { border-left-color:var(--child); background:#
 body.child-device .task-name { font-size:15px; letter-spacing:-.2px; }
 body.child-device .chk { width:34px; height:34px; border-radius:12px; border-color:var(--border); background:#fff; }
 body.child-device .chk.checked { background:var(--child); border-color:var(--child); }
-body.child-device .progress-card { border-radius:18px; background:#fff; border:1px solid var(--border); box-shadow:none; }
+body.child-device .progress-card:not(.tinted) { border-radius:18px; background:#fff; border:1px solid var(--border); box-shadow:none; }
 body.child-device .prog-fill { background:var(--child); }
 body.child-device .goal-card { border-left:3px solid var(--child); border-radius:16px; box-shadow:none; }
 body.child-device .goal-check.checked { background:var(--child); border-color:var(--child); }
@@ -995,7 +995,7 @@ body.child-device .child-quick-done button.primary { background:var(--child-l); 
 </style>
 
 <style id="build100-ios-design">
-/* Build 102 — iOS-inspired visual system. Existing DOM/IDs are intentionally preserved. */
+/* Build 103 — iOS-inspired visual system. Existing DOM/IDs are intentionally preserved. */
 :root{
   --bg:#F5F5F7;
   --card:#FFFFFF;
@@ -1033,7 +1033,7 @@ button{min-height:44px}
 .scroll-area::-webkit-scrollbar{display:none}
 .sec-title{font-size:13px;font-weight:750;color:var(--sub);letter-spacing:-.01em;margin:22px 2px 8px}
 .form-box,.progress-card,.today-summary-card,.semester-summary-card,.mission-card,.tree-teaser-card,.device-card,.school-card,.goal-card,.workbook-card{box-shadow:none!important;border:1px solid rgba(60,60,67,.12)!important;border-radius:14px!important;background:var(--card)!important}
-/* Build 102: p-mode는 흰 배경에 흰 글자가 되지 않도록 원래 강조 카드 스타일을 유지합니다. */
+/* Build 103: p-mode는 흰 배경에 흰 글자가 되지 않도록 원래 강조 카드 스타일을 유지합니다. */
 .progress-card.p-mode{background:var(--parent)!important;color:#fff!important;border:0!important;box-shadow:none!important}
 .progress-card.p-mode .pc-label,.progress-card.p-mode .pc-date,.progress-card.p-mode .pc-big,.progress-card.p-mode .pc-unit{color:#fff!important}
 .form-box{padding:14px}
@@ -1076,14 +1076,17 @@ button{min-height:44px}
 /* reduce visual noise from legacy shadows/borders */
 .device-card,.child-pick-card,.ob-card{box-shadow:none!important}
 .ob-card{border:1px solid rgba(60,60,67,.16)!important;border-radius:16px!important}
-.welcome-overlay{background:#F5F5F7!important}
-.welcome-overlay.parent{background:#E8F1EB!important}
+.welcome-overlay{background-color:#F5F5F7!important}
+.welcome-overlay.parent{background-color:#E8F1EB!important}
 .welcome-emoji{font-size:64px;animation:none}
 .welcome-greeting{color:var(--text)!important;font-size:22px!important}
 .welcome-hint{color:var(--sub)!important}
 .welcome-particles{display:none}
 .welcome-overlay.has-photo::before{background:rgba(0,0,0,.22)}
 .welcome-overlay.has-photo .welcome-textcard{background:rgba(20,20,20,.28);border-radius:22px;padding:28px 24px}
+
+/* Build 103: shared/school top cards must remain visible in child mode too. */
+body.child-device .progress-card.tinted { color:#fff; border:0; }
 /* child mode should foreground autonomy rather than parental monitoring */
 body.child-device .progress-card.compact-progress .pc-label{font-size:12px}
 body.child-device .mission-card{background:#FFFDF7!important}
@@ -1093,7 +1096,7 @@ body.child-device .mission-card{background:#FFFDF7!important}
 
 </head>
 <body>
-<div id="buildBadge" style="display:none">Build 102</div>
+<div id="buildBadge" style="display:none">Build 103</div>
 
 <!-- ONBOARDING -->
 <div id="bootLoading">
@@ -1161,7 +1164,7 @@ body.child-device .mission-card{background:#FFFDF7!important}
 
 <!-- APP -->
 <div id="appWrapper">
-  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 102</span></div>
+  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 103</span></div>
   <div class="app-header">
     <div class="header-top">
       <div class="app-logo">🏠 우리가족 플래너</div><button id="pc-test-preview" type="button" aria-label="노트북에서 자녀 화면 미리보기">👦 자녀 화면 미리보기</button><button id="pc-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
@@ -1725,7 +1728,7 @@ function weekRangeLabel(ws) {
   return (s.getMonth()+1)+'/'+s.getDate()+'('+wd[s.getDay()]+')~'+(e.getMonth()+1)+'/'+e.getDate()+'('+wd[e.getDay()]+')';
 }
 function isToday(d) { return fmt(d)===fmt(TODAY); }
-// Build 102: 앱을 밤새 켜 둔 경우에도 자정에 TODAY를 갱신합니다.
+// Build 103: 앱을 밤새 켜 둔 경우에도 자정에 TODAY를 갱신합니다.
 function refreshTodayBasis(){
   var now=new Date(); now.setHours(0,0,0,0);
   if (fmt(now)!==fmt(TODAY)) {
@@ -2034,9 +2037,9 @@ function setupFamilyListeners() {
     // PC 자녀 테스트 데이터는 Firebase가 아니라 localStorage에 있으므로
     // Firestore snapshot이 도착한 뒤에도 반드시 다시 합쳐준다.
     pcTestLoadTasks();
-    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 102</span>';
+    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 103</span>';
     render();
-  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 102</span>'; });
+  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 103</span>'; });
   db.collection('sharedEvents').onSnapshot(function(snap) {
     state.sharedEvents = snap.docs.map(function(d){ return d.data(); }); render();
   });
@@ -2067,11 +2070,15 @@ function setupFamilyListeners() {
     var panel = document.getElementById('wbManagePanel');
     if (panel && panel.style.display !== 'none') renderWorkbookChips();
   });
-  // Build 102: 환영 화면에 쓸 가족 사진 목록
+  // Build 103: 환영 화면에 쓸 가족 사진 목록
   db.collection('meta').doc('familyPhotos').onSnapshot(function(snap) {
     state.familyPhotos = (snap.exists && snap.data().list) || [];
     var panel = document.getElementById('familyPhotosPanel');
     if (panel) renderFamilyPhotosPanel();
+    // Build 103: the welcome overlay can appear before the async photo snapshot arrives.
+    // Re-apply the photo as soon as the family photo data is loaded.
+    var welcome = document.getElementById('welcomeOverlay');
+    if (welcome && welcome.style.display !== 'none') renderWelcomeOverlay();
   });
   seedIfEmpty();
 }
@@ -2614,7 +2621,7 @@ function renderWelcomeOverlay() {
   }
   document.getElementById('welcomeEmoji').textContent=emoji;
   document.getElementById('welcomeGreeting').textContent=(name?name+', ':'')+line;
-  // Build 102: 등록된 가족 사진이 있으면 무작위로 하나 골라 배경으로 씁니다.
+  // Build 103: 등록된 가족 사진이 있으면 무작위로 하나 골라 배경으로 씁니다.
   var photos=state.familyPhotos||[];
   if (photos.length) {
     var pick=photos[Math.floor(Math.random()*photos.length)];
@@ -4169,7 +4176,7 @@ function renderFamilyPhotosPanel() {
     return '<div class="family-photo-thumb"><img src="'+esc(p.dataUrl)+'" alt="가족 사진"><button type="button" onclick="deleteFamilyPhoto(\''+p.id+'\')">✕</button></div>';
   }).join('')+'</div>';
 }
-// Build 102: 사진을 그대로 저장하면 문서 용량 제한(1MB)을 바로 넘기 때문에,
+// Build 103: 사진을 그대로 저장하면 문서 용량 제한(1MB)을 바로 넘기 때문에,
 // 캔버스로 줄이고 압축한 뒤에만 저장합니다.
 function handleFamilyPhotoSelect(files) {
   if (!files || !files.length) return;
@@ -5754,7 +5761,7 @@ firebase.auth().onAuthStateChanged(function(user){
 firebase.auth().signInAnonymously().catch(function(err){
   console.error('익명 로그인 실패:', err);
   var bar=document.getElementById('syncBar');
-  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 102</span>'; }
+  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 103</span>'; }
 });
 // Build 091: 로딩이 너무 오래 걸리면(네트워크 문제 등) 무한정 빈 화면으로 갇히지 않도록,
 // 일정 시간 뒤에도 판단이 안 끝났으면 온보딩 화면으로라도 넘어가게 합니다.
@@ -5766,7 +5773,7 @@ setTimeout(function(){
 // 홈 화면에 추가했을 때 오프라인에서도 앱 화면이 뜨도록 서비스워커 등록
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('./sw.js').catch(function () {});
+    navigator.serviceWorker.register('./sw.js?v=103').catch(function () {});
   });
 }
 </script>
