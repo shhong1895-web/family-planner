@@ -151,9 +151,11 @@ service cloud.firestore {
 
       // admin 정보는 승인된 사용자만 읽을 수 있습니다.
       // workbooks는 앱에서 사용하는 공용 설정이므로 승인된 사용자에게 읽기를 허용합니다.
+      // familyPhotos(환영 화면용 가족 사진)도 모든 승인된 기기가 볼 수 있어야 합니다.
       allow read: if
         (docId == 'admin' && isApproved())
-        || (docId == 'workbooks' && isApproved());
+        || (docId == 'workbooks' && isApproved())
+        || (docId == 'familyPhotos' && isApproved());
 
       // 최초 관리자 생성:
       // 현재 앱의 transaction에서 관리자 기기와 admin 문서를 함께 생성할 때만 허용합니다.
@@ -168,12 +170,16 @@ service cloud.firestore {
           && getAfter(/databases/$(database)/documents/devices/$(request.auth.uid)).data.isAdmin == true
         )
         ||
-        (docId == 'workbooks' && isAdmin());
+        (docId == 'workbooks' && isAdmin())
+        ||
+        (docId == 'familyPhotos' && isApproved() && isParent());
 
       // 관리자만 설정을 변경할 수 있습니다.
+      // familyPhotos는 부모라면(관리자가 아니어도) 추가/삭제할 수 있습니다.
       allow update, delete: if
         (docId == 'admin' && isAdmin())
-        || (docId == 'workbooks' && isAdmin());
+        || (docId == 'workbooks' && isAdmin())
+        || (docId == 'familyPhotos' && isApproved() && isParent());
     }
 
     // ==============================
@@ -267,10 +273,11 @@ service cloud.firestore {
     }
 
     // ==============================
-    // goals (Build 031)
-    // 자녀가 스스로 세우는 주간 목표입니다. 부모는 읽기만 가능합니다.
+    // goals (Build 031, Build 074: 학기 목표로 확장)
+    // 자녀가 스스로 세우는 학기 목표입니다. 생성은 자녀만 하고,
+    // 체크리스트 하위 항목 추가/완료 등 수정은 자녀와 부모 모두 할 수 있습니다.
     // 자녀 기기의 childId와 목표의 childId를 일치시켜 다른 자녀 목표의
-    // 생성/수정/삭제를 막습니다.
+    // 생성/삭제를 막습니다.
     // ==============================
     match /goals/{id} {
       allow read: if isApproved();
@@ -283,11 +290,18 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/children/$(request.resource.data.childId));
 
       allow update: if
-        isChild()
-        && resource.data.createdBy == request.auth.uid
-        && resource.data.childId == get(myDevice()).data.childId
-        && request.resource.data.createdBy == resource.data.createdBy
-        && request.resource.data.childId == resource.data.childId;
+        (
+          isChild()
+          && resource.data.createdBy == request.auth.uid
+          && resource.data.childId == get(myDevice()).data.childId
+          && request.resource.data.createdBy == resource.data.createdBy
+          && request.resource.data.childId == resource.data.childId
+        )
+        || (
+          isParent()
+          && request.resource.data.createdBy == resource.data.createdBy
+          && request.resource.data.childId == resource.data.childId
+        );
 
       allow delete: if
         isChild()
