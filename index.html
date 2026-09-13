@@ -129,21 +129,27 @@ body {
 @keyframes welcomeGreetingIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
 @keyframes welcomePhotoIn{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:translateY(0)}}
 @keyframes welcomeHintIn{from{opacity:0}to{opacity:1}}
-/* Build 114: monthly view — calendar first, then a compact self-review. */
+/* Build 120: 월간 실행현황과 리뷰를 하나의 박스로 통합합니다.
+   리뷰가 선택 날짜의 리뷰처럼 보이지 않도록 월간 전체 흐름을 먼저 보여주고,
+   선택한 날짜는 그 아래 별도 영역에서 확인합니다. */
 .month-self-review{
-  margin:0 0 12px; padding:14px; background:#fff;
-  border:1px solid rgba(60,60,67,.12); border-radius:18px;
+  margin:0 0 8px; padding:10px 12px; background:#fff;
+  border:1px solid rgba(60,60,67,.12); border-radius:16px;
   box-shadow:none;
 }
-.month-self-review-title{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:15px;font-weight:850;letter-spacing:-.2px;}
-.month-self-review-sub{font-size:11px;color:var(--sub);font-weight:650;white-space:nowrap;}
-.month-self-review-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px;}
-.month-self-review-item{background:#F7F8F6;border-radius:12px;padding:9px 8px;text-align:center;}
-.month-self-review-num{font-size:19px;font-weight:850;line-height:1.1;color:var(--child);}
-.month-self-review-label{margin-top:3px;font-size:10px;color:var(--sub);font-weight:700;}
+.month-self-review-title{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:14px;font-weight:850;letter-spacing:-.2px;}
+.month-self-review-sub{font-size:10px;color:var(--sub);font-weight:650;white-space:nowrap;}
+.month-self-review-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:7px;}
+.month-self-review-item{background:#F7F8F6;border-radius:10px;padding:7px 5px;text-align:center;}
+.month-self-review-num{font-size:17px;font-weight:850;line-height:1.1;color:var(--child);}
+.month-self-review-label{margin-top:2px;font-size:9px;color:var(--sub);font-weight:700;}
+.month-review-insight{margin:7px 0 0;padding:7px 8px;border-radius:10px;background:#F7F8F6;border:0;}
+.month-review-insight-main{font-size:11px;font-weight:800;color:var(--text);line-height:1.35;}
+.month-review-insight-sub{margin-top:2px;font-size:9px;color:var(--sub);font-weight:650;line-height:1.3;}
 body.child-device .month-self-review{background:#fff;}
 body.child-device .month-self-review-item{background:#FBF3E9;}
-@media(max-width:430px){.month-self-review-grid{gap:6px}.month-self-review-item{padding:8px 5px}}
+body.child-device .month-review-insight{background:#FBF3E9;}
+@media(max-width:430px){.month-self-review{padding:9px 10px}.month-self-review-grid{gap:5px}.month-self-review-item{padding:6px 4px}.month-review-insight{padding:6px 7px;}}
 
 @media(prefers-reduced-motion:reduce){.welcome-greeting,.welcome-photo-wrap,.welcome-hint{animation:none!important;transition:none!important}}
 
@@ -878,27 +884,18 @@ body.child-device .goal-week-activity { border-radius:16px; box-shadow:none; }
   padding-top:26px; flex-shrink:0; width:16px; text-align:center;
 }
 
-/* Build 114: monthly detail interaction and visual consistency. */
+/* Build 120: 선택한 날짜는 월간 리뷰와 분리해 아래에서 명확하게 보여줍니다. */
 .month-selected-date-btn{
   display:flex;align-items:center;justify-content:center;width:100%;box-sizing:border-box;
-  border:0;background:var(--card);color:var(--text);border-radius:16px;
-  padding:10px 14px;margin:0 0 10px;box-shadow:var(--sh);
-  font-size:14px;font-weight:800;cursor:pointer;
+  border:0;background:var(--card);color:var(--text);border-radius:13px;
+  padding:8px 12px;margin:0 0 7px;box-shadow:var(--sh);
+  font-size:13px;font-weight:800;cursor:pointer;
 }
 .month-selected-date-btn:active{transform:scale(.985);}
 .month-selected-holiday{color:#C0533F;font-weight:750;}
-.month-self-review{margin:0 0 8px;padding:11px 12px;border-radius:16px;}
-.month-self-review-title{font-size:14px;}
-.month-self-review-grid{margin-top:7px;gap:6px;}
-.month-self-review-item{padding:7px 6px;border-radius:11px;}
-.month-self-review-num{font-size:17px;}
-.month-self-review-label{font-size:9px;}
-@media(min-width:700px){
-  .month-self-review{margin-bottom:6px;}
-  .month-detail-scroll{padding-bottom:100px;}
-}
+@media(min-width:700px){.month-detail-scroll{padding-bottom:100px;}}
 
-/* Build 119: 자녀 주간/월간 자기주도 계획 UX 정리 */
+/* Build 120: 자녀 주간/월간 자기주도 계획 UX 정리 */
 body.child-device .week-plan{
   border-radius:18px!important;
   border:1px solid var(--border)!important;
@@ -1305,7 +1302,7 @@ body.child-device .week-plan-day.today{background:#FBF3E9;}
 
 <!-- APP -->
 <div id="appWrapper">
-  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 119</span></div>
+  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 120</span></div>
   <div class="app-header">
     <div class="header-top">
       <div class="app-logo">🏠 우리가족 플래너</div><button id="pc-test-preview" type="button" aria-label="노트북에서 자녀 화면 미리보기">👦 자녀 화면 미리보기</button><button id="pc-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
@@ -1888,7 +1885,7 @@ body.child-device .shared-card, body.child-device .school-card{
   margin-bottom:8px!important;
 }
 
-/* Build 119: 공유·학교 화면도 부모/자녀 공통 카드 디자인으로 통일 */
+/* Build 120: 공유·학교 화면도 부모/자녀 공통 카드 디자인으로 통일 */
 .shared-card, .school-card, .b070-school-today{
   box-sizing:border-box!important;
   border-radius:14px!important;
@@ -1902,19 +1899,15 @@ body.child-device .shared-card, body.child-device .school-card{
 .b070-family-shared .shared-card{margin-bottom:8px!important;}
 .shared-card.cancelled{background:#F7F7F5!important;}
 
-/* Build 119: 주간/월간/오늘의 Task card는 부모·자녀 모두 동일한 둥근 카드 스타일을 사용합니다. */
-/* Build 119: 주간 리뷰에서 "잘한 점 → 다음 한 걸음"을 바로 이해할 수 있게 합니다. */
+/* Build 120: 월간 화면의 정보 우선순위를 조정했습니다. */
+/* Build 120: 주간/월간/오늘의 Task card는 부모·자녀 모두 동일한 둥근 카드 스타일을 사용합니다. */
+/* Build 120: 주간 리뷰에서 "잘한 점 → 다음 한 걸음"을 바로 이해할 수 있게 합니다. */
 .weekly-review-insight{margin-top:10px;padding:10px 11px;border-radius:12px;background:#F7F8F6;border:1px solid rgba(60,60,67,.08);}
 .weekly-review-insight-main{font-size:12px;font-weight:800;color:var(--text);line-height:1.45;}
 .weekly-review-insight-sub{margin-top:3px;font-size:10px;color:var(--sub);font-weight:650;line-height:1.4;}
 body.child-device .weekly-review-insight{background:#FBF3E9;border-color:rgba(63,109,87,.10);}
 @media(max-width:430px){.weekly-review-insight{padding:9px 10px;margin-top:8px;}}
-/* Build 119: 월간 리뷰도 '발견 → 다음 한 걸음'으로 연결합니다. */
-.month-review-insight{margin:8px 0 10px;padding:10px 11px;border-radius:12px;background:#F7F8F6;border:1px solid rgba(60,60,67,.08);}
-.month-review-insight-main{font-size:12px;font-weight:800;color:var(--text);line-height:1.45;}
-.month-review-insight-sub{margin-top:3px;font-size:10px;color:var(--sub);font-weight:650;line-height:1.4;}
-body.child-device .month-review-insight{background:#FBF3E9;border-color:rgba(63,109,87,.10);}
-@media(max-width:430px){.month-review-insight{padding:9px 10px;margin:6px 0 8px;}}
+/* Build 120: 월간 리뷰의 세부 스타일은 상단 통합 박스 스타일을 사용합니다. */
 
 .task-card{
   box-sizing:border-box!important;
@@ -2298,9 +2291,9 @@ function setupFamilyListeners() {
     // PC 자녀 테스트 데이터는 Firebase가 아니라 localStorage에 있으므로
     // Firestore snapshot이 도착한 뒤에도 반드시 다시 합쳐준다.
     pcTestLoadTasks();
-    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 119</span>';
+    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 120</span>';
     render();
-  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 119</span>'; });
+  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 120</span>'; });
   db.collection('sharedEvents').onSnapshot(function(snap) {
     state.sharedEvents = snap.docs.map(function(d){ return d.data(); }); render();
   });
@@ -4152,7 +4145,6 @@ function renderMonth() {
 
   var ds=fmt(state.selectedDate);
   var holiday2=getHoliday(ds);
-  html+='<button type="button" class="month-selected-date-btn" onclick="selectDay(\''+ds+'\')">'+koDate(state.selectedDate)+(holiday2?' <span class="month-selected-holiday">· 🎉 '+esc(holiday2)+'</span>':'')+'</button>';
   html+='</div>'; // .month-cal-block
 
   var monthStart=new Date(year,month,1), monthEnd=new Date(year,month+1,0);
@@ -4194,14 +4186,16 @@ function renderMonth() {
   }
   var monthTitle=state.mode==='child'?'🌱 이번 달, 내가 해낸 것':'📊 이번 달 실행 현황';
   html+='<div class="month-self-review">'
-    +'<div class="month-self-review-title"><span>'+monthTitle+'</span><span class="month-self-review-sub">'+(month+1)+'월</span></div>'
+    +'<div class="month-self-review-title"><span>'+monthTitle+'</span><span class="month-self-review-sub">'+(month+1)+'월 전체</span></div>'
     +'<div class="month-self-review-grid">'
     +'<div class="month-self-review-item"><div class="month-self-review-num">'+monthPct+'%</div><div class="month-self-review-label">할 일 실행</div></div>'
     +'<div class="month-self-review-item"><div class="month-self-review-num">'+completionDays+'일</div><div class="month-self-review-label">계획을 다 해낸 날</div></div>'
     +'<div class="month-self-review-item"><div class="month-self-review-num">'+monthStudyPages+'p</div><div class="month-self-review-label">학습 실행</div></div>'
-    +'</div></div>';
-  html+='<div class="month-review-insight"><div class="month-review-insight-main">'+monthInsightMain+'</div><div class="month-review-insight-sub">'+monthInsightSub+'</div></div>';
+    +'</div>'
+    +'<div class="month-review-insight"><div class="month-review-insight-main">'+monthInsightMain+'</div><div class="month-review-insight-sub">'+monthInsightSub+'</div></div>'
+    +'</div>';
 
+  html+='<button type="button" class="month-selected-date-btn" onclick="selectDay(\''+ds+'\')">'+koDate(state.selectedDate)+(holiday2?' <span class="month-selected-holiday">· 🎉 '+esc(holiday2)+'</span>':'')+'</button>';
   html+='<div class="month-detail-scroll" id="monthDetailScroll">';
   var tasks=tasksForDate(ds), shared=sharedForDate(ds);
   if (!tasks.length&&!shared.length) html+=emptyBox('📅','이날 계획이 없어요','달력에서 날짜를 선택하세요');
@@ -6150,7 +6144,7 @@ firebase.auth().onAuthStateChanged(function(user){
 firebase.auth().signInAnonymously().catch(function(err){
   console.error('익명 로그인 실패:', err);
   var bar=document.getElementById('syncBar');
-  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 119</span>'; }
+  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 120</span>'; }
 });
 // Build 091: 로딩이 너무 오래 걸리면(네트워크 문제 등) 무한정 빈 화면으로 갇히지 않도록,
 // 일정 시간 뒤에도 판단이 안 끝났으면 온보딩 화면으로라도 넘어가게 합니다.
