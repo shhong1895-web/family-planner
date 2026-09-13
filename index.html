@@ -156,7 +156,7 @@ body.child-device .month-self-review-item{background:#FBF3E9;}
 body.child-device .month-review-insight{background:#FBF3E9;}
 @media(max-width:430px){.month-self-review{padding:9px 10px}.month-self-review-grid{gap:5px}.month-self-review-item{padding:6px 4px}.month-review-insight{padding:6px 7px;}}
 
-/* Build 127 — 월간 실행현황 가독성과 학기 목표 연결을 조금 강화합니다. */
+/* Build 128 — 월간 실행현황 가독성과 학기 목표 연결을 조금 강화합니다. */
 @media(max-width:430px){
   .month-self-review-title{font-size:14px!important;}
   .month-self-review-sub{font-size:10.5px!important;}
@@ -171,7 +171,7 @@ body.child-device .month-review-insight{background:#FBF3E9;}
 .month-goal-mini-track{display:inline-block;width:34px;height:4px;border-radius:999px;background:rgba(63,109,87,.12);overflow:hidden;vertical-align:middle;}
 .month-goal-mini-fill{display:block;height:100%;border-radius:999px;background:var(--child);}
 
-/* Build 127 — 월간 스크롤을 2단계로 분리합니다.
+/* Build 128 — 월간 스크롤을 2단계로 분리합니다.
    1단계: 달력만 천천히 미니 달력으로 축소하고 실행현황은 그대로 보여줍니다.
    2단계: 미니 달력이 된 뒤 실행현황을 달력 뒤로 자연스럽게 숨기고,
           선택 날짜를 미니 달력 바로 아래에 고정한 다음 상세 일정만 스크롤합니다. */
@@ -183,7 +183,7 @@ body.child-device .month-review-insight{background:#FBF3E9;}
   background:linear-gradient(to bottom,rgba(255,255,255,0),var(--bg));
 }
 body.child-device .month-self-review.month-review-hiding::after{background:linear-gradient(to bottom,rgba(255,255,255,0),var(--bg));}
-/* Build 127: 미니 달력의 일정 표시는 점이 아니라 날짜 아래의 짧은 스택형 바입니다. */
+/* Build 128: 미니 달력의 일정 표시는 점이 아니라 날짜 아래의 짧은 스택형 바입니다. */
 .month-collapsed-bars{display:none;position:absolute!important;left:50%!important;right:auto!important;top:auto!important;bottom:3px!important;transform:translateX(-50%)!important;width:22px!important;height:auto!important;gap:2px!important;flex-direction:column!important;align-items:center!important;justify-content:flex-end!important;pointer-events:none!important;z-index:5!important;}
 .month-collapsed-bar{display:block;width:20px;height:3px;border-radius:999px;opacity:.88;}
 .month-collapsed-bar.holiday{background:#C0533F;}
@@ -302,6 +302,17 @@ body.child-device .month-self-review.month-review-hiding::after{background:linea
 .goal-link-note { font-size:10px; color:var(--sub); margin-top:5px; line-height:1.45; }
 .goal-linked { font-size:10px; color:var(--child); font-weight:700; margin-top:4px; }
 /* WEEKLY REVIEW (Build 033) */
+/* Build 128 — 주간 실행현황과 학기 목표를 한 번 더 직접 연결합니다. */
+.week-goal-link{margin-top:8px;padding:7px 2px 0;border-top:1px solid rgba(60,60,67,.07);display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10px;color:var(--sub);font-weight:750;cursor:pointer;}
+.week-goal-link-main{display:flex;align-items:center;gap:6px;min-width:0;}
+.week-goal-link strong{color:var(--child);font-weight:850;}
+.week-goal-link-progress{display:inline-flex;align-items:center;gap:5px;flex:none;}
+.week-goal-mini-track{display:inline-block;width:34px;height:4px;border-radius:999px;background:rgba(63,109,87,.12);overflow:hidden;vertical-align:middle;}
+.week-goal-mini-fill{display:block;height:100%;border-radius:999px;background:var(--child);}
+.week-goal-link-arrow{font-size:13px;color:var(--child);flex:none;}
+body.child-device .week-goal-link{border-top-color:rgba(63,109,87,.09);}
+@media(max-width:430px){.week-goal-link{margin-top:7px;padding-top:6px;font-size:10px;}}
+
 .weekly-review {
   background:var(--card); border-radius:16px; padding:16px; margin:0 0 10px;
   box-shadow:var(--sh);
@@ -1376,7 +1387,7 @@ body.child-device .week-plan-day.today{background:#FBF3E9;}
 
 <!-- APP -->
 <div id="appWrapper">
-  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 127</span></div>
+  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 128</span></div>
   <div class="app-header">
     <div class="header-top">
       <div class="app-logo">🏠 우리가족 플래너</div><button id="pc-test-preview" type="button" aria-label="노트북에서 자녀 화면 미리보기">👦 자녀 화면 미리보기</button><button id="pc-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
@@ -2365,9 +2376,9 @@ function setupFamilyListeners() {
     // PC 자녀 테스트 데이터는 Firebase가 아니라 localStorage에 있으므로
     // Firestore snapshot이 도착한 뒤에도 반드시 다시 합쳐준다.
     pcTestLoadTasks();
-    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 127</span>';
+    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 128</span>';
     render();
-  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 127</span>'; });
+  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 128</span>'; });
   db.collection('sharedEvents').onSnapshot(function(snap) {
     state.sharedEvents = snap.docs.map(function(d){ return d.data(); }); render();
   });
@@ -3738,6 +3749,16 @@ function weekSemesterGoalsHtml(wsDate) {
   if (!lines.length) return '';
   return '<div class="sec-title">📚 이번 주 학기 목표 실천</div><div class="goal-week-activity">'+lines.map(function(l){return '<div class="goal-week-activity-item">'+l+'</div>';}).join('')+'</div>';
 }
+function weekGoalLinkHtml(linked, linkedDone) {
+  var goals=semesterGoalsForActiveChild();
+  if (!goals.length) return '';
+  var pct=linked?Math.round(linkedDone/linked*100):0;
+  var body=linked
+    ? '🎯 학기 목표 연결 · '+linked+'건 계획 · '+linkedDone+'건 실행'
+    : (state.mode==='child' ? '🎯 이번 주 목표와 연결된 계획이 없어요' : '🎯 이번 주 목표와 연결된 계획이 없습니다');
+  var hint=linked ? '<span class="week-goal-link-progress"><span class="week-goal-mini-track"><span class="week-goal-mini-fill" style="width:'+pct+'%"></span></span><strong>'+pct+'%</strong></span>' : '';
+  return '<div class="week-goal-link" onclick="openSemesterGoals()"><span class="week-goal-link-main"><span>'+body+'</span>'+hint+'</span><span class="week-goal-link-arrow">›</span></div>';
+}
 // 오늘 화면 상단 요약 카드
 function semesterGoalsSummaryHtml() {
   var isP=state.mode==='parent';
@@ -4110,6 +4131,7 @@ function weeklyReviewHtml(ws) {
     +'</div>'
     +'<div class="weekly-review-note">'+reviewNote+' 부분 실행도 학습 진도로 반영해요.</div>'
     +'<div class="weekly-review-insight"><div class="weekly-review-insight-main">'+insightMain+'</div><div class="weekly-review-insight-sub">'+insightSub+'</div></div>'
+    +weekGoalLinkHtml(linked,linkedDone)
     +'</div>'
     +weekSemesterGoalsHtml(parseDate(ws));
 }
@@ -4316,7 +4338,7 @@ function attachMonthScrollHandler() {
   if (!ds || !cal) return;
   var grid=cal.querySelector('.month-grid');
 
-  /* Build 127
+  /* Build 128
      2단계 스크롤 구조
      - 1단계: 5주/6주 달력의 실제 주 수에 맞춰 FULL → MIN으로 천천히 축소.
                이 동안 실행현황은 그대로 보이고, 달력이 줄어드는 만큼 위로 올라옵니다.
@@ -6334,7 +6356,7 @@ firebase.auth().onAuthStateChanged(function(user){
 firebase.auth().signInAnonymously().catch(function(err){
   console.error('익명 로그인 실패:', err);
   var bar=document.getElementById('syncBar');
-  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 127</span>'; }
+  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 128</span>'; }
 });
 // Build 091: 로딩이 너무 오래 걸리면(네트워크 문제 등) 무한정 빈 화면으로 갇히지 않도록,
 // 일정 시간 뒤에도 판단이 안 끝났으면 온보딩 화면으로라도 넘어가게 합니다.
