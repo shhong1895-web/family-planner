@@ -898,7 +898,7 @@ body.child-device .goal-week-activity { border-radius:16px; box-shadow:none; }
   .month-detail-scroll{padding-bottom:100px;}
 }
 
-/* Build 117: 자녀 주간/월간 자기주도 계획 UX 정리 */
+/* Build 118: 자녀 주간/월간 자기주도 계획 UX 정리 */
 body.child-device .week-plan{
   border-radius:18px!important;
   border:1px solid var(--border)!important;
@@ -1305,7 +1305,7 @@ body.child-device .week-plan-day.today{background:#FBF3E9;}
 
 <!-- APP -->
 <div id="appWrapper">
-  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 117</span></div>
+  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 118</span></div>
   <div class="app-header">
     <div class="header-top">
       <div class="app-logo">🏠 우리가족 플래너</div><button id="pc-test-preview" type="button" aria-label="노트북에서 자녀 화면 미리보기">👦 자녀 화면 미리보기</button><button id="pc-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
@@ -1888,7 +1888,7 @@ body.child-device .shared-card, body.child-device .school-card{
   margin-bottom:8px!important;
 }
 
-/* Build 117: 공유·학교 화면도 부모/자녀 공통 카드 디자인으로 통일 */
+/* Build 118: 공유·학교 화면도 부모/자녀 공통 카드 디자인으로 통일 */
 .shared-card, .school-card, .b070-school-today{
   box-sizing:border-box!important;
   border-radius:14px!important;
@@ -1902,7 +1902,14 @@ body.child-device .shared-card, body.child-device .school-card{
 .b070-family-shared .shared-card{margin-bottom:8px!important;}
 .shared-card.cancelled{background:#F7F7F5!important;}
 
-/* Build 117: 주간/월간/오늘의 Task card는 부모·자녀 모두 동일한 둥근 카드 스타일을 사용합니다. */
+/* Build 118: 주간/월간/오늘의 Task card는 부모·자녀 모두 동일한 둥근 카드 스타일을 사용합니다. */
+/* Build 118: 주간 리뷰에서 "잘한 점 → 다음 한 걸음"을 바로 이해할 수 있게 합니다. */
+.weekly-review-insight{margin-top:10px;padding:10px 11px;border-radius:12px;background:#F7F8F6;border:1px solid rgba(60,60,67,.08);}
+.weekly-review-insight-main{font-size:12px;font-weight:800;color:var(--text);line-height:1.45;}
+.weekly-review-insight-sub{margin-top:3px;font-size:10px;color:var(--sub);font-weight:650;line-height:1.4;}
+body.child-device .weekly-review-insight{background:#FBF3E9;border-color:rgba(63,109,87,.10);}
+@media(max-width:430px){.weekly-review-insight{padding:9px 10px;margin-top:8px;}}
+
 .task-card{
   box-sizing:border-box!important;
   width:100%!important;
@@ -2285,9 +2292,9 @@ function setupFamilyListeners() {
     // PC 자녀 테스트 데이터는 Firebase가 아니라 localStorage에 있으므로
     // Firestore snapshot이 도착한 뒤에도 반드시 다시 합쳐준다.
     pcTestLoadTasks();
-    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 117</span>';
+    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 118</span>';
     render();
-  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 117</span>'; });
+  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 118</span>'; });
   db.collection('sharedEvents').onSnapshot(function(snap) {
     state.sharedEvents = snap.docs.map(function(d){ return d.data(); }); render();
   });
@@ -3989,6 +3996,26 @@ function weeklyReviewHtml(ws) {
   var taskPct=weekTasks.length?Math.round(taskDone/weekTasks.length*100):0;
   var linkedPct=linked?Math.round(linkedDone/linked*100):0;
   var studyPct=planned?Math.min(100,Math.round(executed/planned*100)):0;
+  var bestDay=dayPct.filter(function(x){return x.has;}).sort(function(a,b){return b.pct-a.pct;})[0] || null;
+  var insightMain, insightSub;
+  if (state.mode==='child') {
+    if (!weekTasks.length) {
+      insightMain='이번 주 계획을 하나부터 만들어볼까요?';
+      insightSub='처음부터 많이 정하지 않아도 괜찮아요. 내가 꼭 하고 싶은 일 하나면 충분해요.';
+    } else if (taskPct>=80) {
+      insightMain='이번 주에는 계획을 잘 지켰어요 ✨';
+      insightSub=(bestDay?'특히 '+bestDay.day+'요일에 '+bestDay.pct+'%를 해냈어요. ':'')+'다음 주에도 지금처럼 가장 중요한 계획부터 시작해봐요.';
+    } else if (taskPct>=50) {
+      insightMain='절반 이상 해냈어요. 이것도 분명한 진전이에요 🌱';
+      insightSub=(bestDay?'가장 잘한 날은 '+bestDay.day+'요일이에요. ':'')+'다음 주에는 하루에 꼭 하고 싶은 일 하나를 먼저 정해봐요.';
+    } else {
+      insightMain='계획을 조금 가볍게 바꿔보는 것도 좋아요.';
+      insightSub=(bestDay?' '+bestDay.day+'요일처럼 잘된 날의 방법을 다시 써보세요. ':'')+'다음 주에는 꼭 필요한 일부터 하나씩 정해봐요.';
+    }
+  } else {
+    insightMain=weekTasks.length ? '이번 주 실행 흐름을 확인해보세요.' : '이번 주 등록된 계획이 없습니다.';
+    insightSub=bestDay ? bestDay.day+'요일 실행률이 '+bestDay.pct+'%로 가장 높았습니다.' : '자녀가 스스로 계획을 세우고 실행할 수 있도록 부담을 낮춰 시작해 주세요.';
+  }
   var chartHtml='<div class="chart-row">'+dayPct.map(function(x){
     return '<div class="chart-bar-wrap"><span class="chart-pct">'+(x.has?x.pct:'-')+'</span><div class="chart-bar" style="height:'+(x.has?Math.max(4,x.pct):2)+'%"></div><span class="chart-day">'+x.day+'</span></div>';
   }).join('')+'</div>';
@@ -4009,6 +4036,7 @@ function weeklyReviewHtml(ws) {
     +'<div class="weekly-review-bar"><div class="weekly-review-fill" style="width:'+studyPct+'%"></div></div></div>'
     +'</div>'
     +'<div class="weekly-review-note">'+reviewNote+' 부분 실행도 학습 진도로 반영해요.</div>'
+    +'<div class="weekly-review-insight"><div class="weekly-review-insight-main">'+insightMain+'</div><div class="weekly-review-insight-sub">'+insightSub+'</div></div>'
     +'</div>'
     +weekSemesterGoalsHtml(parseDate(ws));
 }
@@ -6088,7 +6116,7 @@ firebase.auth().onAuthStateChanged(function(user){
 firebase.auth().signInAnonymously().catch(function(err){
   console.error('익명 로그인 실패:', err);
   var bar=document.getElementById('syncBar');
-  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 117</span>'; }
+  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 118</span>'; }
 });
 // Build 091: 로딩이 너무 오래 걸리면(네트워크 문제 등) 무한정 빈 화면으로 갇히지 않도록,
 // 일정 시간 뒤에도 판단이 안 끝났으면 온보딩 화면으로라도 넘어가게 합니다.
