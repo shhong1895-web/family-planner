@@ -151,7 +151,7 @@ body.child-device .month-self-review-item{background:#FBF3E9;}
 body.child-device .month-review-insight{background:#FBF3E9;}
 @media(max-width:430px){.month-self-review{padding:9px 10px}.month-self-review-grid{gap:5px}.month-self-review-item{padding:6px 4px}.month-review-insight{padding:6px 7px;}}
 
-/* Build 124 — 월간 스크롤을 2단계로 분리합니다.
+/* Build 125 — 월간 스크롤을 2단계로 분리합니다.
    1단계: 달력만 천천히 미니 달력으로 축소하고 실행현황은 그대로 보여줍니다.
    2단계: 미니 달력이 된 뒤 실행현황을 달력 뒤로 자연스럽게 숨기고,
           선택 날짜를 미니 달력 바로 아래에 고정한 다음 상세 일정만 스크롤합니다. */
@@ -163,8 +163,8 @@ body.child-device .month-review-insight{background:#FBF3E9;}
   background:linear-gradient(to bottom,rgba(255,255,255,0),var(--bg));
 }
 body.child-device .month-self-review.month-review-hiding::after{background:linear-gradient(to bottom,rgba(255,255,255,0),var(--bg));}
-/* Build 124: 미니 달력의 일정 표시는 점이 아니라 날짜 아래의 짧은 스택형 바입니다. */
-.month-collapsed-bars{display:none;position:absolute;left:50%;bottom:4px;transform:translateX(-50%);width:24px;gap:2px;flex-direction:column;align-items:center;pointer-events:none;}
+/* Build 125: 미니 달력의 일정 표시는 점이 아니라 날짜 아래의 짧은 스택형 바입니다. */
+.month-collapsed-bars{display:none;position:absolute!important;left:50%!important;right:auto!important;top:auto!important;bottom:3px!important;transform:translateX(-50%)!important;width:22px!important;height:auto!important;gap:2px!important;flex-direction:column!important;align-items:center!important;justify-content:flex-end!important;pointer-events:none!important;z-index:5!important;}
 .month-collapsed-bar{display:block;width:20px;height:3px;border-radius:999px;opacity:.88;}
 .month-collapsed-bar.holiday{background:#C0533F;}
 .month-collapsed-bar.family{background:#8A7BB8;}
@@ -176,6 +176,18 @@ body.child-device .month-self-review.month-review-hiding::after{background:linea
   .month-cal-block.collapsed .month-day.has-events::after{display:none!important;}
 }
 .month-self-review,.month-selected-date-btn{flex-shrink:0!important;}
+.month-self-review.month-review-hiding{
+  border-color:rgba(60,60,67,var(--month-review-border-opacity,.12))!important;
+}
+.month-self-review.month-review-hiding::before{
+  content:'';position:absolute;left:-1px;right:-1px;top:-1px;height:28px;
+  pointer-events:none;z-index:4;border-radius:16px 16px 0 0;
+  background:linear-gradient(to bottom,var(--bg) 0%,rgba(245,245,247,.86) 42%,rgba(245,245,247,0) 100%);
+}
+.month-self-review.month-review-hiding::after{
+  height:34px!important;bottom:-1px;z-index:4;
+  background:linear-gradient(to top,var(--bg) 0%,rgba(245,245,247,.86) 45%,rgba(245,245,247,0) 100%)!important;
+}
 
 @media(prefers-reduced-motion:reduce){.welcome-greeting,.welcome-photo-wrap,.welcome-hint{animation:none!important;transition:none!important}}
 
@@ -1344,7 +1356,7 @@ body.child-device .week-plan-day.today{background:#FBF3E9;}
 
 <!-- APP -->
 <div id="appWrapper">
-  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 124</span></div>
+  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 125</span></div>
   <div class="app-header">
     <div class="header-top">
       <div class="app-logo">🏠 우리가족 플래너</div><button id="pc-test-preview" type="button" aria-label="노트북에서 자녀 화면 미리보기">👦 자녀 화면 미리보기</button><button id="pc-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
@@ -1802,6 +1814,8 @@ body.child-device .week-plan-day.today{background:#FBF3E9;}
    원하는 지점에서 멈추고 보기 편합니다. 요일 숫자 크기는 항상 그대로입니다. */
 .month-cal-block.collapsed .month-cell-events,
 .month-cal-block.collapsed .month-cell-more { display:none!important; }
+.month-cal-block.collapsed .month-day.has-events::after,
+.month-cal-block.collapsed .month-day.today.has-events::after { content:none!important;display:none!important; }
 .month-cal-block.collapsed .month-day.has-events::after,
 .month-cal-block.collapsed .month-day.today.has-events::after { display:none!important; }
 .month-cell-event{
@@ -2331,9 +2345,9 @@ function setupFamilyListeners() {
     // PC 자녀 테스트 데이터는 Firebase가 아니라 localStorage에 있으므로
     // Firestore snapshot이 도착한 뒤에도 반드시 다시 합쳐준다.
     pcTestLoadTasks();
-    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 124</span>';
+    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 125</span>';
     render();
-  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 124</span>'; });
+  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 125</span>'; });
   db.collection('sharedEvents').onSnapshot(function(snap) {
     state.sharedEvents = snap.docs.map(function(d){ return d.data(); }); render();
   });
@@ -4264,7 +4278,7 @@ function attachMonthScrollHandler() {
   if (!ds || !cal) return;
   var grid=cal.querySelector('.month-grid');
 
-  /* Build 124
+  /* Build 125
      2단계 스크롤 구조
      - 1단계: 5주/6주 달력의 실제 주 수에 맞춰 FULL → MIN으로 천천히 축소.
                이 동안 실행현황은 그대로 보이고, 달력이 줄어드는 만큼 위로 올라옵니다.
@@ -4310,6 +4324,7 @@ function attachMonthScrollHandler() {
         review.style.opacity='1';
         review.style.transform='translateY(0)';
         review.style.pointerEvents='auto';
+        review.style.setProperty('--month-review-border-opacity','0.12');
         review.classList.remove('month-review-hiding');
       }else{
         /* 2단계: 달력보다 조금 빠른 느낌으로 카드가 위로 밀리며 사라집니다. */
@@ -4318,7 +4333,9 @@ function attachMonthScrollHandler() {
         var remain=Math.max(0,reviewFullHeight*(1-eased));
         review.style.height=remain.toFixed(1)+'px';
         review.style.marginBottom=(8*(1-eased)).toFixed(1)+'px';
-        review.style.opacity=eased<0.72?(1-eased*0.28).toFixed(3):Math.max(0,1-(eased-0.72)/0.28).toFixed(3);
+        var contentOpacity=eased<0.72?(1-eased*0.28):Math.max(0,1-(eased-0.72)/0.28);
+        review.style.opacity=contentOpacity.toFixed(3);
+        review.style.setProperty('--month-review-border-opacity',Math.max(0,0.12*(1-eased)).toFixed(3));
         review.style.transform='translateY('+(-Math.min(24,24*eased)).toFixed(1)+'px)';
         review.style.pointerEvents=eased<0.8?'auto':'none';
         review.classList.add('month-review-hiding');
@@ -6279,7 +6296,7 @@ firebase.auth().onAuthStateChanged(function(user){
 firebase.auth().signInAnonymously().catch(function(err){
   console.error('익명 로그인 실패:', err);
   var bar=document.getElementById('syncBar');
-  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 124</span>'; }
+  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 125</span>'; }
 });
 // Build 091: 로딩이 너무 오래 걸리면(네트워크 문제 등) 무한정 빈 화면으로 갇히지 않도록,
 // 일정 시간 뒤에도 판단이 안 끝났으면 온보딩 화면으로라도 넘어가게 합니다.
