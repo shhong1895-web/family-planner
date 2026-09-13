@@ -898,7 +898,7 @@ body.child-device .goal-week-activity { border-radius:16px; box-shadow:none; }
   .month-detail-scroll{padding-bottom:100px;}
 }
 
-/* Build 116: 자녀 주간/월간 자기주도 계획 UX 정리 */
+/* Build 117: 자녀 주간/월간 자기주도 계획 UX 정리 */
 body.child-device .week-plan{
   border-radius:18px!important;
   border:1px solid var(--border)!important;
@@ -1305,7 +1305,7 @@ body.child-device .week-plan-day.today{background:#FBF3E9;}
 
 <!-- APP -->
 <div id="appWrapper">
-  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 116</span></div>
+  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 117</span></div>
   <div class="app-header">
     <div class="header-top">
       <div class="app-logo">🏠 우리가족 플래너</div><button id="pc-test-preview" type="button" aria-label="노트북에서 자녀 화면 미리보기">👦 자녀 화면 미리보기</button><button id="pc-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
@@ -1888,7 +1888,21 @@ body.child-device .shared-card, body.child-device .school-card{
   margin-bottom:8px!important;
 }
 
-/* Build 116: 주간/월간/오늘의 Task card는 부모·자녀 모두 동일한 둥근 카드 스타일을 사용합니다. */
+/* Build 117: 공유·학교 화면도 부모/자녀 공통 카드 디자인으로 통일 */
+.shared-card, .school-card, .b070-school-today{
+  box-sizing:border-box!important;
+  border-radius:14px!important;
+  border:1px solid var(--border)!important;
+  box-shadow:none!important;
+  background:#fff!important;
+}
+.shared-card{padding:12px 13px!important;margin-bottom:8px!important;}
+.b070-school-today{padding:9px 10px!important;margin-bottom:6px!important;}
+.b070-family-shared{margin-bottom:0!important;}
+.b070-family-shared .shared-card{margin-bottom:8px!important;}
+.shared-card.cancelled{background:#F7F7F5!important;}
+
+/* Build 117: 주간/월간/오늘의 Task card는 부모·자녀 모두 동일한 둥근 카드 스타일을 사용합니다. */
 .task-card{
   box-sizing:border-box!important;
   width:100%!important;
@@ -2271,9 +2285,9 @@ function setupFamilyListeners() {
     // PC 자녀 테스트 데이터는 Firebase가 아니라 localStorage에 있으므로
     // Firestore snapshot이 도착한 뒤에도 반드시 다시 합쳐준다.
     pcTestLoadTasks();
-    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 116</span>';
+    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 117</span>';
     render();
-  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 116</span>'; });
+  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 117</span>'; });
   db.collection('sharedEvents').onSnapshot(function(snap) {
     state.sharedEvents = snap.docs.map(function(d){ return d.data(); }); render();
   });
@@ -6074,7 +6088,7 @@ firebase.auth().onAuthStateChanged(function(user){
 firebase.auth().signInAnonymously().catch(function(err){
   console.error('익명 로그인 실패:', err);
   var bar=document.getElementById('syncBar');
-  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 116</span>'; }
+  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 117</span>'; }
 });
 // Build 091: 로딩이 너무 오래 걸리면(네트워크 문제 등) 무한정 빈 화면으로 갇히지 않도록,
 // 일정 시간 뒤에도 판단이 안 끝났으면 온보딩 화면으로라도 넘어가게 합니다.
