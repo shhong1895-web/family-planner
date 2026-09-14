@@ -408,6 +408,11 @@ body.child-device .week-goal-link{border-top-color:rgba(63,109,87,.09);}
 .semester-summary-val { color:var(--child); font-weight:800; }
 .semester-summary-more { font-size:11px; color:var(--sub); margin-top:2px; }
 .semester-goals-period { font-size:12px; font-weight:700; color:var(--sub); margin-bottom:10px; }
+/* Build 130 — 부모가 목표를 대신 관리하지 않고, 최근 실행 흐름만 간단히 확인합니다. */
+.parent-goal-support{margin-top:7px;padding:7px 9px;border-radius:10px;background:#F7F8F6;border:1px solid rgba(60,60,67,.08);font-size:10px;color:var(--sub);line-height:1.4;}
+.parent-goal-support-main{font-weight:750;color:var(--text);}
+.parent-goal-support-sub{margin-top:2px;font-size:9.5px;color:var(--sub);}
+.parent-goal-support-next{margin-top:4px;font-size:9.5px;color:var(--parent);font-weight:700;}
 .goal-card.semester-goal-card { display:block; border-left:3px solid var(--child); }
 .goal-card-top { display:flex; align-items:center; gap:6px; margin-bottom:8px; }
 .goal-card-icon { font-size:16px; }
@@ -3832,6 +3837,29 @@ function openGoalNextStep(gid) {
     if (name && !name.value) name.value=g.title+' - 오늘의 한 걸음';
   },80);
 }
+function parentGoalSupportHtml(g){
+  var activity=[];
+  if(g.type==='count'){
+    activity=(g.logs||[]).slice().sort(function(a,b){return String(b.date||'').localeCompare(String(a.date||''));}).slice(0,2).map(function(l){
+      return (l.date?l.date.slice(5).replace('-','/')+' ':'')+'+'+(l.amount||1)+(g.unit||'');
+    });
+  } else if(g.type==='checklist'){
+    activity=(g.items||[]).filter(function(i){return i.done;}).slice().sort(function(a,b){return (b.doneAt||'').localeCompare(a.doneAt||'');}).slice(0,2).map(function(i){return '✓ '+i.text;});
+  } else {
+    state.tasks.forEach(function(t){
+      if(t.goalId!==g.id) return;
+      if(t.repeat && t.repeat!=='none'){
+        (t.doneDates||[]).forEach(function(ds){if(ds>=g.semesterStart&&ds<=g.semesterEnd) activity.push(ds+'|'+t.name);});
+      } else if(t.done&&t.date>=g.semesterStart&&t.date<=g.semesterEnd){activity.push(t.date+'|'+t.name);}
+    });
+    activity.sort(function(a,b){return b.split('|')[0].localeCompare(a.split('|')[0]);});
+    activity=activity.slice(0,2).map(function(x){var a=x.split('|');return '✓ '+a[1];});
+  }
+  if(!activity.length){
+    return '<div class="parent-goal-support"><div class="parent-goal-support-main">아직 기록된 실행이 없어요.</div><div class="parent-goal-support-sub">아이의 계획과 실행을 지켜봐 주세요.</div></div>';
+  }
+  return '<div class="parent-goal-support"><div class="parent-goal-support-main">최근 실행</div><div class="parent-goal-support-sub">'+activity.map(esc).join(' · ')+'</div><div class="parent-goal-support-next">필요하면 다음 계획을 함께 이야기해 보세요.</div></div>';
+}
 function semesterGoalCardHtml(g) {
   var isP=state.mode==='parent';
   var p=goalProgress(g);
@@ -3861,6 +3889,7 @@ function semesterGoalCardHtml(g) {
         +'<span class="goal-next-step-arrow">›</span></div>';
     }
   }
+  if (isP) html+=parentGoalSupportHtml(g);
   html+='</div>';
   return html;
 }
