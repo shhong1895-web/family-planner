@@ -156,7 +156,7 @@ body.child-device .month-self-review-item{background:#FBF3E9;}
 body.child-device .month-review-insight{background:#FBF3E9;}
 @media(max-width:430px){.month-self-review{padding:9px 10px}.month-self-review-grid{gap:5px}.month-self-review-item{padding:6px 4px}.month-review-insight{padding:6px 7px;}}
 
-/* Build 130 — 월간 실행현황 가독성과 학기 목표 연결을 조금 강화합니다. */
+/* Build 131 — 목표별 최근 실행과 다음 한 걸음을 연결합니다. */
 @media(max-width:430px){
   .month-self-review-title{font-size:14px!important;}
   .month-self-review-sub{font-size:10.5px!important;}
@@ -308,7 +308,7 @@ body.child-device .goal-next-step{background:#FBF3E9;border-color:rgba(63,109,87
 
 .goal-linked { font-size:10px; color:var(--child); font-weight:700; margin-top:4px; }
 /* WEEKLY REVIEW (Build 033) */
-/* Build 130 — 주간 실행현황과 학기 목표를 한 번 더 직접 연결합니다. */
+/* Build 131 — 목표별 최근 실행과 다음 한 걸음을 연결합니다. */
 .week-goal-link{margin-top:8px;padding:7px 2px 0;border-top:1px solid rgba(60,60,67,.07);display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10px;color:var(--sub);font-weight:750;cursor:pointer;}
 .week-goal-link-main{display:flex;align-items:center;gap:6px;min-width:0;}
 .week-goal-link strong{color:var(--child);font-weight:850;}
@@ -408,6 +408,11 @@ body.child-device .week-goal-link{border-top-color:rgba(63,109,87,.09);}
 .semester-summary-val { color:var(--child); font-weight:800; }
 .semester-summary-more { font-size:11px; color:var(--sub); margin-top:2px; }
 .semester-goals-period { font-size:12px; font-weight:700; color:var(--sub); margin-bottom:10px; }
+/* Build 131 — 자녀도 목표별 최근 실행을 돌아보고 다음 한 걸음을 정할 수 있게 합니다. */
+.goal-child-reflection{margin-top:7px;padding:7px 9px;border-radius:10px;background:#FBF3E9;border:1px solid rgba(63,109,87,.10);font-size:10px;color:var(--sub);line-height:1.4;}
+.goal-child-reflection-main{font-weight:750;color:var(--text);}
+.goal-child-reflection-sub{margin-top:2px;font-size:9.5px;color:var(--sub);}
+.goal-child-reflection-next{margin-top:4px;font-size:9.5px;color:var(--child);font-weight:750;}
 /* Build 130 — 부모가 목표를 대신 관리하지 않고, 최근 실행 흐름만 간단히 확인합니다. */
 .parent-goal-support{margin-top:7px;padding:7px 9px;border-radius:10px;background:#F7F8F6;border:1px solid rgba(60,60,67,.08);font-size:10px;color:var(--sub);line-height:1.4;}
 .parent-goal-support-main{font-weight:750;color:var(--text);}
@@ -3837,6 +3842,32 @@ function openGoalNextStep(gid) {
     if (name && !name.value) name.value=g.title+' - 오늘의 한 걸음';
   },80);
 }
+function childGoalReflectionHtml(g){
+  var activity=[];
+  if(g.type==='count'){
+    activity=(g.logs||[]).slice().sort(function(a,b){return String(b.date||'').localeCompare(String(a.date||''));}).slice(0,2).map(function(l){
+      return (l.date?l.date.slice(5).replace('-','/')+' ':'')+'+'+(l.amount||1)+(g.unit||'');
+    });
+  } else if(g.type==='checklist'){
+    activity=(g.items||[]).filter(function(i){return i.done;}).slice().sort(function(a,b){return (b.doneAt||'').localeCompare(a.doneAt||'');}).slice(0,2).map(function(i){return '✓ '+i.text;});
+  } else {
+    state.tasks.forEach(function(t){
+      if(t.goalId!==g.id) return;
+      if(t.repeat && t.repeat!=='none'){
+        (t.doneDates||[]).forEach(function(ds){if(ds>=g.semesterStart&&ds<=g.semesterEnd) activity.push(ds+'|'+t.name);});
+      } else if(t.done&&t.date>=g.semesterStart&&t.date<=g.semesterEnd){activity.push(t.date+'|'+t.name);}
+    });
+    activity.sort(function(a,b){return b.split('|')[0].localeCompare(a.split('|')[0]);});
+    activity=activity.slice(0,2).map(function(x){var a=x.split('|');return '✓ '+a[1];});
+  }
+  var p=goalProgress(g), next='';
+  if(g.type==='count') next=p.pct>=100?'목표를 달성했어요. 다음 목표를 생각해봐요 ✨':'다음에 '+(g.unit||'1회')+'만 더 기록해볼까요?';
+  else if(g.type==='checklist') next=p.pct>=100?'모든 항목을 해냈어요. 다음 목표를 생각해봐요 ✨':'남은 항목 중 하나부터 해볼까요?';
+  else next=p.pct>=80?'지금 흐름을 이어가며 다음 한 걸음을 정해봐요 ✨':'오늘 할 일 하나를 정해서 목표와 연결해봐요.';
+  return '<div class="goal-child-reflection"><div class="goal-child-reflection-main">'+(activity.length?'최근 내가 한 것':'아직 기록된 실행이 없어요')+'</div>'
+    +(activity.length?'<div class="goal-child-reflection-sub">'+activity.map(esc).join(' · ')+'</div>':'<div class="goal-child-reflection-sub">작게 시작해도 괜찮아요.</div>')
+    +'<div class="goal-child-reflection-next">'+esc(next)+'</div></div>';
+}
 function parentGoalSupportHtml(g){
   var activity=[];
   if(g.type==='count'){
@@ -3890,6 +3921,7 @@ function semesterGoalCardHtml(g) {
     }
   }
   if (isP) html+=parentGoalSupportHtml(g);
+  else html+=childGoalReflectionHtml(g);
   html+='</div>';
   return html;
 }
