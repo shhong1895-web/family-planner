@@ -156,7 +156,7 @@ body.child-device .month-self-review-item{background:#FBF3E9;}
 body.child-device .month-review-insight{background:#FBF3E9;}
 @media(max-width:430px){.month-self-review{padding:9px 10px}.month-self-review-grid{gap:5px}.month-self-review-item{padding:6px 4px}.month-review-insight{padding:6px 7px;}}
 
-/* Build 134 — 목표별 최근 실행과 다음 한 걸음을 연결합니다. */
+/* Build 135 — 목표별 최근 실행과 다음 한 걸음을 연결합니다. */
 @media(max-width:430px){
   .month-self-review-title{font-size:14px!important;}
   .month-self-review-sub{font-size:10.5px!important;}
@@ -171,7 +171,7 @@ body.child-device .month-review-insight{background:#FBF3E9;}
 .month-goal-mini-track{display:inline-block;width:34px;height:4px;border-radius:999px;background:rgba(63,109,87,.12);overflow:hidden;vertical-align:middle;}
 .month-goal-mini-fill{display:block;height:100%;border-radius:999px;background:var(--child);}
 
-/* Build 134 — 월간 스크롤을 2단계로 분리합니다.
+/* Build 135 — 월간 스크롤을 2단계로 분리합니다.
    1단계: 달력만 천천히 미니 달력으로 축소하고 실행현황은 그대로 보여줍니다.
    2단계: 미니 달력이 된 뒤 실행현황을 달력 뒤로 자연스럽게 숨기고,
           선택 날짜를 미니 달력 바로 아래에 고정한 다음 상세 일정만 스크롤합니다. */
@@ -183,7 +183,7 @@ body.child-device .month-review-insight{background:#FBF3E9;}
   background:linear-gradient(to bottom,rgba(255,255,255,0),var(--bg));
 }
 body.child-device .month-self-review.month-review-hiding::after{background:linear-gradient(to bottom,rgba(255,255,255,0),var(--bg));}
-/* Build 134: 미니 달력의 일정 표시는 점이 아니라 날짜 아래의 짧은 스택형 바입니다. */
+/* Build 135: 미니 달력의 일정 표시는 점이 아니라 날짜 아래의 짧은 스택형 바입니다. */
 .month-collapsed-bars{display:none;position:absolute!important;left:50%!important;right:auto!important;top:auto!important;bottom:3px!important;transform:translateX(-50%)!important;width:22px!important;height:auto!important;gap:2px!important;flex-direction:column!important;align-items:center!important;justify-content:flex-end!important;pointer-events:none!important;z-index:5!important;}
 .month-collapsed-bar{display:block;width:20px;height:3px;border-radius:999px;opacity:.88;}
 .month-collapsed-bar.holiday{background:#C0533F;}
@@ -308,7 +308,7 @@ body.child-device .goal-next-step{background:#FBF3E9;border-color:rgba(63,109,87
 
 .goal-linked { font-size:10px; color:var(--child); font-weight:700; margin-top:4px; }
 /* WEEKLY REVIEW (Build 033) */
-/* Build 134 — 목표별 최근 실행과 다음 한 걸음을 연결합니다. */
+/* Build 135 — 목표별 최근 실행과 다음 한 걸음을 연결합니다. */
 .week-goal-link{margin-top:8px;padding:7px 2px 0;border-top:1px solid rgba(60,60,67,.07);display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10px;color:var(--sub);font-weight:750;cursor:pointer;}
 .week-goal-link-main{display:flex;align-items:center;gap:6px;min-width:0;}
 .week-goal-link strong{color:var(--child);font-weight:850;}
@@ -406,6 +406,12 @@ body.child-device .week-goal-link{border-top-color:rgba(63,109,87,.09);}
 .goal-edit-actions{display:flex;gap:7px;margin-top:10px;}
 .goal-edit-cancel{flex:1;border:1px solid var(--border);border-radius:10px;background:#fff;min-height:40px;font-weight:750;color:var(--sub);cursor:pointer;}
 .goal-edit-save{flex:1;border:0;border-radius:10px;background:var(--child);color:#fff;min-height:40px;font-weight:850;cursor:pointer;}
+.goal-edit-items{margin-top:8px;padding:8px 9px;border-radius:11px;background:#F7F8F6;border:1px solid rgba(60,60,67,.07);}
+.goal-edit-items-title{font-size:10px;font-weight:800;color:var(--text);margin-bottom:6px;}
+.goal-edit-item-row{display:flex;align-items:center;gap:5px;margin-top:5px;}
+.goal-edit-item-row input{flex:1;min-width:0;margin:0!important;padding:8px 9px!important;font-size:11px!important;}
+.goal-edit-item-del{border:0;background:transparent;color:#B9B6A9;font-size:13px;padding:5px;cursor:pointer;}
+.goal-edit-item-add{width:100%;margin-top:6px;border:1px dashed rgba(63,109,87,.25);border-radius:9px;background:#fff;color:var(--child);min-height:34px;font-size:10px;font-weight:800;cursor:pointer;}
 
 .goal-progress { background:#EFEDE5; height:7px; border-radius:99px; overflow:hidden; margin:8px 0 2px; }
 .goal-progress-fill { height:100%; background:var(--child); border-radius:99px; }
@@ -420,12 +426,12 @@ body.child-device .week-goal-link{border-top-color:rgba(63,109,87,.09);}
 .semester-summary-val { color:var(--child); font-weight:800; }
 .semester-summary-more { font-size:11px; color:var(--sub); margin-top:2px; }
 .semester-goals-period { font-size:12px; font-weight:700; color:var(--sub); margin-bottom:10px; }
-/* Build 134 — 자녀도 목표별 최근 실행을 돌아보고 다음 한 걸음을 정할 수 있게 합니다. */
+/* Build 135 — 자녀도 목표별 최근 실행을 돌아보고 다음 한 걸음을 정할 수 있게 합니다. */
 .goal-child-reflection{margin-top:7px;padding:7px 9px;border-radius:10px;background:#FBF3E9;border:1px solid rgba(63,109,87,.10);font-size:10px;color:var(--sub);line-height:1.4;}
 .goal-child-reflection-main{font-weight:750;color:var(--text);}
 .goal-child-reflection-sub{margin-top:2px;font-size:9.5px;color:var(--sub);}
 .goal-child-reflection-next{margin-top:4px;font-size:9.5px;color:var(--child);font-weight:750;}
-/* Build 134 — 부모가 목표를 대신 관리하지 않고, 최근 실행 흐름만 간단히 확인합니다. */
+/* Build 135 — 부모가 목표를 대신 관리하지 않고, 최근 실행 흐름만 간단히 확인합니다. */
 .parent-goal-support{margin-top:7px;padding:7px 9px;border-radius:10px;background:#F7F8F6;border:1px solid rgba(60,60,67,.08);font-size:10px;color:var(--sub);line-height:1.4;}
 .parent-goal-support-main{font-weight:750;color:var(--text);}
 .parent-goal-support-sub{margin-top:2px;font-size:9.5px;color:var(--sub);}
@@ -1415,7 +1421,7 @@ body.child-device .week-plan-day.today{background:#FBF3E9;}
 
 <!-- APP -->
 <div id="appWrapper">
-  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 134</span></div>
+  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 135</span></div>
   <div class="app-header">
     <div class="header-top">
       <div class="app-logo">🏠 우리가족 플래너</div><button id="pc-test-preview" type="button" aria-label="노트북에서 자녀 화면 미리보기">👦 자녀 화면 미리보기</button><button id="pc-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
@@ -2037,12 +2043,12 @@ body.child-device .weekly-review-insight{background:#FBF3E9;border-color:rgba(63
 body.child-device .task-card{border-left-color:var(--border)!important;}
 body.child-device .task-card.done{border-left-color:var(--child)!important;}
 
-/* Build 134: 주간 리뷰에서 다음 주 계획으로 자연스럽게 이어지는 가벼운 행동 버튼 */
+/* Build 135: 주간 리뷰에서 다음 주 계획으로 자연스럽게 이어지는 가벼운 행동 버튼 */
 .weekly-next-step{margin-top:7px;padding:7px 2px;display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid rgba(60,60,67,.07);font-size:10px;font-weight:800;color:var(--child);cursor:pointer;}
 .weekly-next-step span:last-child{font-size:14px;line-height:1;}
 body.child-device .weekly-next-step{border-top-color:rgba(63,109,87,.09);}
 
-/* Build 134: 월간 회고에서 다음 달의 첫 계획으로 이어지는 가벼운 행동 */
+/* Build 135: 월간 회고에서 다음 달의 첫 계획으로 이어지는 가벼운 행동 */
 .month-next-step{margin-top:7px;padding:7px 2px;display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid rgba(60,60,67,.07);font-size:10px;font-weight:800;color:var(--child);cursor:pointer;}
 .month-next-step-sub{display:block;margin-top:2px;font-size:9px;color:var(--sub);font-weight:600;}
 .month-next-step span:last-child{font-size:14px;line-height:1;flex:none;}
@@ -2415,9 +2421,9 @@ function setupFamilyListeners() {
     // PC 자녀 테스트 데이터는 Firebase가 아니라 localStorage에 있으므로
     // Firestore snapshot이 도착한 뒤에도 반드시 다시 합쳐준다.
     pcTestLoadTasks();
-    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 134</span>';
+    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 135</span>';
     render();
-  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 134</span>'; });
+  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 135</span>'; });
   db.collection('sharedEvents').onSnapshot(function(snap) {
     state.sharedEvents = snap.docs.map(function(d){ return d.data(); }); render();
   });
@@ -3573,7 +3579,7 @@ function taskCard(t, ds) {
   var studyPartial = t.taskType==='study' ? studyProgressForDate(t,ds) : null;
   var studyProgress = t.taskType==='study' ? studyProgressPercent(t,ds) : null;
   var studyNote = t.taskType==='study' ? studyProgressText(t,ds) : '';
-  // Build 134: 완료 상태는 속성(checked)이 아니라 class로도 명시해 오늘/월간/주간의 표시를 동일하게 합니다.
+  // Build 135: 완료 상태는 속성(checked)이 아니라 class로도 명시해 오늘/월간/주간의 표시를 동일하게 합니다.
   var chkCls = done ? 'chk checked' : 'chk';
   var chkHtml = canToggle
     ? (t.taskType==='study'
@@ -3873,11 +3879,32 @@ function selectEditGoalType(btn,type){
   var wrap=document.getElementById('egCountWrap');
   if (wrap) wrap.style.display=type==='count'?'':'none';
 }
+var _editChecklistItems=[];
+function addEditChecklistItem(){
+  _editChecklistItems.push({id:'it_'+Date.now()+'_'+Math.random().toString(36).slice(2,5),text:'',done:false,doneAt:null});
+  renderEditChecklistItems();
+}
+function removeEditChecklistItem(idx){
+  var it=_editChecklistItems[idx];
+  if (it && it.done){showToast('⚠️ 이미 완료한 항목은 삭제할 수 없어요');return;}
+  _editChecklistItems.splice(idx,1);
+  renderEditChecklistItems();
+}
+function renderEditChecklistItems(){
+  var wrap=document.getElementById('egItemsWrap');
+  if (!wrap) return;
+  var html='<div class="goal-edit-items-title">체크리스트 항목</div>'
+    +(_editChecklistItems.length?_editChecklistItems.map(function(it,i){return '<div class="goal-edit-item-row"><input class="m-field eg-item-input" data-idx="'+i+'" maxlength="40" value="'+esc(it.text||'')+'" placeholder="할 일을 입력하세요"><button type="button" class="goal-edit-item-del" onclick="removeEditChecklistItem('+i+')">✕</button></div>';}).join(''):'<div style="font-size:9.5px;color:var(--sub);line-height:1.4">아직 항목이 없어요. 아래에서 하나씩 추가해보세요.</div>')
+    +'<button type="button" class="goal-edit-item-add" onclick="addEditChecklistItem()">＋ 항목 추가</button>';
+  wrap.innerHTML=html;
+}
+
 function editSemesterGoal(id){
   if (state.mode!=='child'){showToast('🔒 자녀가 직접 관리해요');return;}
   var g=state.goals.find(function(x){return String(x.id)===String(id);});
   if (!g) return;
   _editingGoalId=g.id; _editGoalType=g.type;
+  _editChecklistItems=(g.items||[]).map(function(it){return Object.assign({},it);});
   var locked=goalHasExecution(g);
   var body=document.getElementById('semesterGoalsBody');
   if (!body) return;
@@ -3891,9 +3918,11 @@ function editSemesterGoal(id){
     +'<div class="m-label">목표 이름</div><input class="m-field" id="egTitle" maxlength="40" value="'+esc(g.title||'')+'">'
     +'<div class="m-label" style="margin-top:8px">목표 유형</div><div class="goal-edit-type-picker">'+typeBtns+'</div>'
     +'<div id="egCountWrap" style="display:'+(g.type==='count'?'':'none')+'"><div class="m-label">목표 수치 / 단위</div><div style="display:flex;gap:8px"><input class="m-field" id="egTarget" type="number" inputmode="numeric" min="1" value="'+(g.targetCount||1)+'" style="flex:2"><input class="m-field" id="egUnit" maxlength="10" value="'+esc(g.unit||'회')+'" style="flex:1"></div></div>'
+    +(g.type==='checklist'?'<div id="egItemsWrap" class="goal-edit-items"></div>':'')
     +(locked?'<div class="goal-edit-note">이미 실행 기록이 있는 목표라 목표 유형은 변경할 수 없어요. 목표 이름과 수치/단위는 수정할 수 있어요.</div>':'<div class="goal-edit-note">실행 기록이 없다면 목표 유형도 바꿀 수 있어요.</div>')
     +'<div class="goal-edit-actions"><button class="goal-edit-cancel" onclick="renderSemesterGoalsModalBody()">취소</button><button class="goal-edit-save" onclick="saveSemesterGoalEdit()">저장</button></div></div>';
   body.innerHTML=html;
+  if (g.type==='checklist') renderEditChecklistItems();
   var t=document.getElementById('egTitle'); if(t)t.focus();
 }
 function saveSemesterGoalEdit(){
@@ -3912,7 +3941,18 @@ function saveSemesterGoalEdit(){
     patch.unit=(document.getElementById('egUnit').value||'').trim()||'회';
     if (g.type!=='count'){patch.count=0;patch.logs=[];}
   } else if (newType==='checklist'){
-    if (g.type!=='checklist') patch.items=[];
+    if (g.type!=='checklist') { patch.items=[]; }
+    else {
+      var itemInputs=[].slice.call(document.querySelectorAll('.eg-item-input'));
+      var items=_editChecklistItems.map(function(it,i){
+        var el=itemInputs.find(function(x){return Number(x.dataset.idx)===i;});
+        var text=el?(el.value||'').trim():(it.text||'');
+        return Object.assign({},it,{text:text});
+      }).filter(function(it){return it.text;});
+      if (items.length>30){showToast('⚠️ 체크리스트는 30개까지 만들 수 있어요');return;}
+      if (items.some(function(it){return it.text.length>40;})){showToast('⚠️ 체크리스트 항목은 40자 이내로 입력해주세요');return;}
+      patch.items=items;
+    }
   } else if (g.type!=='linked'){
     // linked type stores execution in tasks, so no additional fields are required.
   }
@@ -4529,7 +4569,7 @@ function attachMonthScrollHandler() {
   if (!ds || !cal) return;
   var grid=cal.querySelector('.month-grid');
 
-  /* Build 134
+  /* Build 135
      2단계 스크롤 구조
      - 1단계: 5주/6주 달력의 실제 주 수에 맞춰 FULL → MIN으로 천천히 축소.
                이 동안 실행현황은 그대로 보이고, 달력이 줄어드는 만큼 위로 올라옵니다.
@@ -6547,7 +6587,7 @@ firebase.auth().onAuthStateChanged(function(user){
 firebase.auth().signInAnonymously().catch(function(err){
   console.error('익명 로그인 실패:', err);
   var bar=document.getElementById('syncBar');
-  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 134</span>'; }
+  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 135</span>'; }
 });
 // Build 091: 로딩이 너무 오래 걸리면(네트워크 문제 등) 무한정 빈 화면으로 갇히지 않도록,
 // 일정 시간 뒤에도 판단이 안 끝났으면 온보딩 화면으로라도 넘어가게 합니다.
@@ -6559,7 +6599,7 @@ setTimeout(function(){
 // 홈 화면에 추가했을 때 오프라인에서도 앱 화면이 뜨도록 서비스워커 등록
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('./sw.js?v=112').catch(function () {});
+    navigator.serviceWorker.register('./sw.js?v=135').catch(function () {});
   });
 }
 </script>
