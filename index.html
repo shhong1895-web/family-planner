@@ -1239,9 +1239,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
 button,input,textarea,select{font-family:inherit}
 button{min-height:44px}
 .app-header{background:rgba(245,245,247,.94);backdrop-filter:saturate(180%) blur(18px);-webkit-backdrop-filter:saturate(180%) blur(18px);border-bottom:1px solid rgba(60,60,67,.16);padding:10px 16px 8px;z-index:20}
-/* Build 156: prevent standalone/PWA compositing blur in the top header. */
-.app-header{background:#F5F5F7!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;opacity:1!important;filter:none!important;}
-.sync-bar{background:#E8F1EB!important;opacity:1!important;filter:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;}
 .header-top{gap:8px;min-height:38px}
 .app-logo{font-size:17px;font-weight:750;letter-spacing:-.025em;white-space:nowrap}
 .child-switch-bar{gap:6px}
@@ -1498,11 +1495,6 @@ body.child-device .week-plan-day.today{background:#FBF3E9;}
           <button type="button" class="child-plan-chip" onclick="setChildPlanSuggestion('한 문제 풀어보기')">한 문제 풀어보기</button>
           <button type="button" class="child-plan-chip" onclick="setChildPlanSuggestion('5분 정리하기')">5분 정리하기</button>
         </div>
-      </div>
-
-      <div class="parent-plan-helper" id="parentPlanHelper" style="display:none">
-        <div class="parent-plan-helper-main">👨‍👩‍👧 부모가 계획과 실적을 직접 기록할 수 있어요</div>
-        <div class="parent-plan-helper-sub">자녀가 실행한 내용을 대신 체크하거나, 계획을 수정해 주세요.</div>
       </div>
 
       <div id="mStudyWrap" style="display:none">
@@ -2125,12 +2117,6 @@ body.child-device .month-next-step{border-top-color:rgba(63,109,87,.09);}
 .task-reflection-action{display:inline-flex;align-items:center;gap:4px;margin-top:6px;padding:5px 9px;border:1px solid rgba(63,109,87,.22);border-radius:999px;background:#FBF3E9;color:var(--child);font-size:10px;font-weight:800;cursor:pointer;}
 .task-reflection-action:active{transform:scale(.98);}
 
-
-/* Build 156: 부모 직접 입력·실적 기록 UX */
-.parent-plan-helper{margin:10px 0;padding:10px 11px;border-radius:12px;background:#F1F5F0;border:1px solid rgba(63,109,87,.12);}
-.parent-plan-helper-main{font-size:12px;font-weight:800;color:var(--text);line-height:1.4;}
-.parent-plan-helper-sub{margin-top:3px;font-size:10px;color:var(--sub);line-height:1.4;}
-body.parent-device .task-card.done{background:#F1F7F0!important;border-left-color:var(--parent)!important;}
 </style>
 
 <script>
@@ -2725,45 +2711,11 @@ function applyPcTestRoleIfPresent() {
   if (r==='child' && cid) localStorage.setItem('fp_pc_test_child_id',cid);
   return true;
 }
-// Build 156: 부모가 실제 자녀 화면을 사용하되, 입력·실적은 Firebase에 저장하는 모드
-function isParentChildViewMode(){
-  try{return sessionStorage.getItem('fp_parent_child_mode')==='1';}catch(e){return false;}
-}
-function enterChildView(){
-  var realRole=localStorage.getItem('fp_pc_real_role') || (localStorage.getItem(ROLE_KEY)==='parent'?'parent':'child');
-  if(realRole!=='parent'){ showToast('⚠️ 부모 화면에서만 사용할 수 있어요'); return; }
-  var cid=state.viewChildId || firstChildId();
-  if(!cid){ showToast('⚠️ 먼저 자녀를 등록해주세요'); return; }
-  localStorage.setItem('fp_pc_real_role','parent');
-  sessionStorage.setItem('fp_parent_child_mode','1');
-  sessionStorage.setItem('fp_pc_test_child_id',String(cid));
-  sessionStorage.removeItem('fp_pc_test_role');
-  localStorage.setItem(ROLE_KEY,'child');
-  document.getElementById('onboardOverlay').style.display='none';
-  document.getElementById('approvalOverlay').style.display='none';
-  document.getElementById('childPickOverlay').style.display='none';
-  state.view='day';
-  applyMode('child');
-  renderWorkbookSelect();
-  render();
-  if(window.build053UpdatePcTestReturn){setTimeout(window.build053UpdatePcTestReturn,50);setTimeout(window.build053UpdatePcTestReturn,300);}
-  showToast('👦 자녀 화면으로 전환했어요');
-}
-function exitChildView(){
-  sessionStorage.removeItem('fp_parent_child_mode');
-  sessionStorage.removeItem('fp_pc_test_child_id');
-  sessionStorage.removeItem('fp_pc_test_role');
-  var real=localStorage.getItem('fp_pc_real_role')||'parent';
-  localStorage.removeItem('fp_pc_real_role');
-  localStorage.setItem(ROLE_KEY,real);
-  applyMode(real);
-  render();
-  showToast('✅ 부모 화면으로 돌아왔어요');
-}
-
 function enterPcTestRole(role, childId) {
   if (role!=='parent' && role!=='child') return;
   var realRole=localStorage.getItem('fp_pc_real_role') || (localStorage.getItem(ROLE_KEY)==='parent'?'parent':'child');
+  if (role==='child' && realRole==='parent') sessionStorage.setItem('fp_parent_child_view','1');
+  else if (role!=='child') sessionStorage.removeItem('fp_parent_child_view');
   if (!sessionStorage.getItem('fp_pc_test_role')) {
     localStorage.setItem('fp_pc_real_role',realRole);
   }
@@ -2792,6 +2744,7 @@ function exitPcTestRole() {
   var real=localStorage.getItem('fp_pc_real_role') || 'parent';
   sessionStorage.removeItem('fp_pc_test_role');
   sessionStorage.removeItem('fp_pc_test_child_id');
+  sessionStorage.removeItem('fp_parent_child_view');
   localStorage.removeItem('fp_pc_real_role');
   localStorage.setItem(ROLE_KEY,real);
   applyMode(real);
@@ -3201,9 +3154,6 @@ function assignChildToDevice(childId) {
 }
 function firstChildId() { return state.children.length ? state.children[0].id : null; }
 function myChildId() {
-  if (isParentChildViewMode()) {
-    return sessionStorage.getItem('fp_pc_test_child_id') || firstChildId();
-  }
   if (getPcTestRole()==='child') {
     var testCid=sessionStorage.getItem('fp_pc_test_child_id');
     return testCid || firstChildId();
@@ -3598,9 +3548,9 @@ function continueStudyNextDay(id, ds) {
 function openStudyProgressModal(id, ds) {
   var t=state.tasks.find(function(x){return String(x.id)===String(id);});
   if (!t) return;
-  if (state.mode==='parent') { /* 부모도 실적 입력 가능 */ }
+  if (state.mode==='parent') { showToast('⚠️ 완료 체크는 자녀가 직접 해요'); return; }
   _studyProgressTaskId=id; _studyProgressDate=ds;
-  document.getElementById('studyProgressTitle').textContent=state.mode==='parent'?'📖 자녀 학습 실적 입력':'📖 학습 실행 기록';
+  document.getElementById('studyProgressTitle').textContent='📖 학습 실행 기록';
   var planned=esc(t.pageStart||'')+(t.pageEnd?'~'+esc(t.pageEnd):'')+'p';
   var p=studyProgressForDate(t,ds);
   document.getElementById('studyProgressPlan').innerHTML='<div style="font-size:13px;color:var(--sub);margin-bottom:4px">'+esc(t.workbook||t.name)+'</div><div style="font-size:17px;font-weight:800"><strong>'+planned+'</strong> 계획</div>';
@@ -3731,8 +3681,8 @@ function reflectionActionHtml(t,ds,done){
 function taskCard(t, ds) {
   var done=taskDoneForDate(t, ds);
   var isP=state.mode==='parent';
-  var canEdit=isP || (!t.fromParent && !isP); // 부모는 자녀 계획도 보완·수정할 수 있음
-  var canToggle=true; // 부모도 자녀 대신 실적을 입력할 수 있음
+  var canEdit=(t.fromParent && isP)||(!t.fromParent && !isP); // 수정/삭제: 만든 사람만
+  var canToggle=!isP; // 완료 체크는 항상 자녀 몫 (부모가 등록한 할일이라도 체크는 자녀가 직접)
   var tags='';
   if (t.allday) tags+='<span class="tag allday">🌅 하루종일</span>';
   else if (t.time) tags+='<span class="tag time">🕐 '+prettyTime(t.time)+'</span>';
@@ -5630,7 +5580,7 @@ function toggleTask(id, ds) {
   var t=state.tasks.find(function(x){ return String(x.id)===String(id); });
   if (!t) return;
   var isP=state.mode==='parent';
-  // 부모도 계획을 대신 기록하고 실제 실행 여부를 입력할 수 있습니다.
+  if (isP && !isParentChildViewMode()) { showToast('⚠️ 완료 체크는 자녀가 직접 해요'); return; }
   var isRepeating = t.repeat && t.repeat!=='none';
   var nowDone;
   if (isRepeating) {
@@ -5669,9 +5619,9 @@ function deleteTask(id) {
   var t=state.tasks.find(function(x){ return String(x.id)===String(id); });
   if (!t) return;
   var isP=state.mode==='parent';
-  var canEdit=(t.fromParent && isP)||(!t.fromParent && !isP);
+  var canEdit=isParentChildViewMode() || (t.fromParent && isP)||(!t.fromParent && !isP);
   if (!canEdit) { showToast('⚠️ 본인이 등록한 일정만 삭제할 수 있어요'); return; }
-  if (isP) {
+  if (isP && !isParentChildViewMode()) {
     if (!confirm('이 할일을 삭제할까요?')) return;
     fsDel('tasks',t.id);
     showToast('🗑 삭제됐어요');
@@ -6377,13 +6327,11 @@ function renderGoalSelect(selectedId) {
 function openModal(taskId) {
   _editTaskId = taskId || null;
   var isP = state.mode === 'parent';
-  var parentHelper=document.getElementById('parentPlanHelper');
-  if(parentHelper) parentHelper.style.display=isP?'':'none';
   var isEdit = !!_editTaskId;
   var wbPanel = document.getElementById('wbManagePanel');
   if (wbPanel) wbPanel.style.display = 'none';
 
-  document.getElementById('modalH').textContent = isEdit ? (isP ? '계획 수정' : '내 계획 수정') : (isP ? '자녀 계획 입력' : '🌱 오늘 계획 세우기');
+  document.getElementById('modalH').textContent = isEdit ? '내 계획 수정' : (isP ? '할일 추가 (부모 등록)' : '🌱 오늘 계획 세우기');
   document.getElementById('mSave').textContent = isEdit ? '수정하기' : '추가하기';
   document.getElementById('mSave').className = 'm-save' + (isP ? ' p' : '');
   document.getElementById('mTimeError').style.display = 'none';
@@ -6511,11 +6459,16 @@ function toggleAlldayShared() {
 
 
 // ── child screen preview storage (Build 071) ──
+function isParentChildViewMode(){
+  // 부모가 자신의 기기에서 자녀 화면을 사용하는 모드입니다.
+  // 이 경우 자녀 화면 UI를 사용하지만 저장은 Firebase에 직접 반영합니다.
+  return sessionStorage.getItem('fp_parent_child_view')==='1'
+    && sessionStorage.getItem('fp_pc_test_role')==='child';
+}
 function isPcChildTestMode(){
-  if (isParentChildViewMode()) return false;
-  // Child screen preview mode: use sessionStorage directly as the source of truth.
-  // This avoids role state being overwritten by localStorage during testing.
-  return sessionStorage.getItem('fp_pc_test_role')==='child';
+  // 순수 테스트 모드에서만 로컬 테스트 데이터를 사용합니다.
+  // 부모가 자녀 화면으로 전환한 경우에는 실제 Firebase에 저장합니다.
+  return sessionStorage.getItem('fp_pc_test_role')==='child' && !isParentChildViewMode();
 }
 function pcTestSaveTask(task){
   try{
@@ -6621,7 +6574,7 @@ function saveTask() {
     desc: document.getElementById('mDesc').value,
     goalId: (document.getElementById('mGoalSelect') ? document.getElementById('mGoalSelect').value : (existing.goalId || '')),
     done: existing.done || false,
-    fromParent: isEdit ? existing.fromParent : (state.mode==='parent')
+    fromParent: isEdit ? existing.fromParent : (state.mode==='parent' || isParentChildViewMode())
   });
   var savePromise;
   if (isPcChildTestMode()) {
@@ -6878,9 +6831,7 @@ if ('serviceWorker' in navigator) {
     b.classList.toggle('show',show); b.style.setProperty('display',show?'inline-flex':'none','important');
   }
   function returnToParent(){
-    if(typeof window.exitChildView==='function' && sessionStorage.getItem('fp_parent_child_mode')==='1'){
-      window.exitChildView();
-    }else if(typeof window.enterPcTestRole==='function'){
+    if(typeof window.enterPcTestRole==='function'){
       window.enterPcTestRole('parent');
     }else{
       try{sessionStorage.setItem('fp_pc_test_role','parent');}catch(e){}
@@ -6911,14 +6862,14 @@ if ('serviceWorker' in navigator) {
   function update(){
     var b=document.getElementById('pc-test-preview');
     if(!b) return;
-    var show=isPc() && localStorage.getItem('fp_role')==='parent' && sessionStorage.getItem('fp_parent_child_mode')!=='1' && (getUiRole()==='parent');
+    var show=isPc() && localStorage.getItem('fp_role')==='parent' && !((sessionStorage.getItem('fp_pc_test_role')||'')==='child');
     b.classList.toggle('show',show);
   }
   function bind(){
     var b=document.getElementById('pc-test-preview');
     if(b && !b.dataset.bound){
       b.addEventListener('click',function(){
-        if(typeof window.enterChildView==='function') window.enterChildView();
+        if(typeof window.enterPcTestRole==='function') window.enterPcTestRole('child');
       });
       b.dataset.bound='1';
     }
