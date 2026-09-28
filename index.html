@@ -1444,7 +1444,7 @@ body.child-device .week-plan-day.today{background:#FBF3E9;}
 
 <!-- APP -->
 <div id="appWrapper">
-  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 159</span></div>
+  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 160</span></div>
   <div class="app-header">
     <div class="header-top">
       <div class="app-logo">🏠 우리가족 플래너</div><button id="pc-test-preview" type="button" aria-label="자녀 화면">👦 자녀 화면</button><button id="pc-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
@@ -3717,13 +3717,16 @@ function reflectionActionHtml(t,ds,done){
 function taskCard(t, ds) {
   var done=taskDoneForDate(t, ds);
   var isP=state.mode==='parent';
-  var canEdit=(t.fromParent && isP)||(!t.fromParent && !isP); // 수정/삭제: 만든 사람만
-  var canToggle=!isP; // 완료 체크는 항상 자녀 몫 (부모가 등록한 할일이라도 체크는 자녀가 직접)
+  // 자녀 화면은 부모가 들어온 경우에도 실제 자녀 화면과 같은 조작이 가능해야 합니다.
+  // 부모의 '자녀 화면'에서는 해당 자녀의 계획을 추가/수정/완료/삭제할 수 있습니다.
+  var parentChildView=isParentChildViewMode();
+  var canEdit=parentChildView || (t.fromParent && isP)||(!t.fromParent && !isP);
+  var canToggle=!isP;
   var tags='';
   if (t.allday) tags+='<span class="tag allday">🌅 하루종일</span>';
   else if (t.time) tags+='<span class="tag time">🕐 '+prettyTime(t.time)+'</span>';
   // Build 071: 자율학습/카테고리 태그는 생략합니다.
-  if (t.fromParent) tags+='<span class="tag pfrom">👨‍👩‍👧 부모등록</span>';
+  if (t.fromParent && !parentChildView) tags+='<span class="tag pfrom">👨‍👩‍👧 부모등록</span>';
   if (t.repeat&&t.repeat!=='none') tags+='<span class="tag rep">🔄 '+esc(repeatSummary(t))+'</span>';
   // Build 071: 완료 여부는 체크박스로 표현합니다.
   var studyPartial = t.taskType==='study' ? studyProgressForDate(t,ds) : null;
@@ -6373,7 +6376,7 @@ function openModal(taskId) {
   var wbPanel = document.getElementById('wbManagePanel');
   if (wbPanel) wbPanel.style.display = 'none';
 
-  document.getElementById('modalH').textContent = isEdit ? '내 계획 수정' : (isP ? '할일 추가 (부모 등록)' : '🌱 오늘 계획 세우기');
+  document.getElementById('modalH').textContent = isEdit ? '계획 수정' : (isP ? '할일 추가' : '🌱 오늘 계획 세우기');
   document.getElementById('mSave').textContent = isEdit ? '수정하기' : '추가하기';
   document.getElementById('mSave').className = 'm-save' + (isP ? ' p' : '');
   document.getElementById('mTimeError').style.display = 'none';
@@ -6619,6 +6622,7 @@ function saveTask() {
     desc: document.getElementById('mDesc').value,
     goalId: (document.getElementById('mGoalSelect') ? document.getElementById('mGoalSelect').value : (existing.goalId || '')),
     done: existing.done || false,
+    // 부모가 자녀 화면에서 입력한 계획도 해당 자녀의 동일한 데이터로 저장합니다.
     fromParent: isEdit ? existing.fromParent : (state.mode==='parent' || isParentChildViewMode())
   });
   var savePromise;
