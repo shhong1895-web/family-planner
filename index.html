@@ -14,14 +14,14 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20260912-Build 114 -->
-<title>Build 114 · 우리가족 플래너</title>
+<!-- Build 161 -->
+<title>Build 161 · 우리가족 플래너</title>
+<script>/* 빌드 번호는 여기 한 곳에서만 바꿉니다. sw.js의 CACHE 이름도 같은 번호로 함께 바꿔야 합니다. */var APP_BUILD='161';</script>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap');
@@ -1375,7 +1375,7 @@ body.child-device .week-plan-day.today{background:#FBF3E9;}
 
 </head>
 <body>
-<div id="buildBadge" style="display:none">Build 114</div>
+<div id="buildBadge" style="display:none"></div>
 
 <!-- ONBOARDING -->
 <div id="bootLoading">
@@ -1444,7 +1444,7 @@ body.child-device .week-plan-day.today{background:#FBF3E9;}
 
 <!-- APP -->
 <div id="appWrapper">
-  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build">Build 160</span></div>
+  <div class="sync-bar connecting" id="syncBar"><div class="sync-dot"></div> 연결 중... <span class="sync-build"></span></div>
   <div class="app-header">
     <div class="header-top">
       <div class="app-logo">🏠 우리가족 플래너</div><button id="pc-test-preview" type="button" aria-label="자녀 화면">👦 자녀 화면</button><button id="pc-test-return" type="button" aria-label="부모 화면으로 돌아가기">🧪 부모 화면으로 돌아가기</button>
@@ -2131,7 +2131,6 @@ var firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 var db = firebase.firestore();
-var storage = firebase.storage();
 
 function fsSet(col, id, data) { return db.collection(col).doc(String(id)).set(data); }
 function fsUpdate(col, id, data) { return db.collection(col).doc(String(id)).update(data); }
@@ -2188,6 +2187,8 @@ function refreshTodayBasis(){
   }
 }
 setInterval(refreshTodayBasis,60000);
+// 앱이 백그라운드에 있다가 돌아오면 타이머를 기다리지 않고 바로 날짜를 확인합니다.
+document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') refreshTodayBasis(); });
 
 // ── 대한민국 공휴일 (음력 기반 명절 포함, 정부 발표 기준) ──
 // 설날/추석/부처님오신날처럼 음력 기준 명절은 매년 양력 날짜가 달라져서 수식으로 계산할 수 없어
@@ -2485,9 +2486,9 @@ function setupFamilyListeners() {
     // PC 자녀 테스트 데이터는 Firebase가 아니라 localStorage에 있으므로
     // Firestore snapshot이 도착한 뒤에도 반드시 다시 합쳐준다.
     pcTestLoadTasks();
-    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build 159</span>';
+    bar.className='sync-bar'; bar.innerHTML='<div class="sync-dot"></div> 실시간 동기화 중 <span class="sync-build">Build '+APP_BUILD+'</span>';
     render();
-  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 159</span>'; });
+  }, function(){ bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build '+APP_BUILD+'</span>'; });
   db.collection('sharedEvents').onSnapshot(function(snap) {
     state.sharedEvents = snap.docs.map(function(d){ return d.data(); }); render();
   });
@@ -6835,7 +6836,7 @@ firebase.auth().onAuthStateChanged(function(user){
 firebase.auth().signInAnonymously().catch(function(err){
   console.error('익명 로그인 실패:', err);
   var bar=document.getElementById('syncBar');
-  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build 159</span>'; }
+  if (bar) { bar.className='sync-bar error'; bar.innerHTML='<div class="sync-dot"></div> 연결 실패 - 새로고침 해주세요 <span class="sync-build">Build '+APP_BUILD+'</span>'; }
 });
 // Build 091: 로딩이 너무 오래 걸리면(네트워크 문제 등) 무한정 빈 화면으로 갇히지 않도록,
 // 일정 시간 뒤에도 판단이 안 끝났으면 온보딩 화면으로라도 넘어가게 합니다.
@@ -6860,7 +6861,7 @@ if ('serviceWorker' in navigator) {
 
 <script id="build157-stability-script">
 (function(){
-  function setOffline(){var bar=document.getElementById('syncBar');if(bar){bar.className='sync-bar error';bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build 159</span>';}}
+  function setOffline(){var bar=document.getElementById('syncBar');if(bar){bar.className='sync-bar error';bar.innerHTML='<div class="sync-dot"></div> 오프라인 모드 <span class="sync-build">Build '+APP_BUILD+'</span>';}}
   window.addEventListener('offline',setOffline);
   window.addEventListener('online',function(){if(typeof showToast==='function')showToast('🌐 연결이 다시 복구되었어요');if(navigator.serviceWorker&&navigator.serviceWorker.ready)navigator.serviceWorker.ready.then(function(r){if(r.update)r.update();}).catch(function(){});});
   document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&navigator.serviceWorker&&navigator.serviceWorker.ready)navigator.serviceWorker.ready.then(function(r){if(r.update)r.update();}).catch(function(){});});
@@ -6933,20 +6934,15 @@ if ('serviceWorker' in navigator) {
 </script>
 
 
-<script id="build158-date-rollover">
+<script id="build-label-script">
 (function(){
-  var lastDay=new Date().toISOString().slice(0,10);
-  function checkDay(){
-    var now=new Date();
-    var day=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
-    if(day!==lastDay){
-      lastDay=day;
-      try{ if(typeof refreshTodayBasis==='function') refreshTodayBasis(); }catch(e){}
-      try{ if(typeof render==='function') render(); }catch(e){}
-    }
+  function fill(){
+    var els=document.querySelectorAll('.sync-build');
+    for(var i=0;i<els.length;i++){ if(!els[i].textContent) els[i].textContent='Build '+APP_BUILD; }
+    var b=document.getElementById('buildBadge'); if(b) b.textContent='Build '+APP_BUILD;
   }
-  setInterval(checkDay,30000);
-  document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')checkDay();});
+  document.addEventListener('DOMContentLoaded',fill);
+  window.addEventListener('load',fill);
 })();
 </script>
 </body>
