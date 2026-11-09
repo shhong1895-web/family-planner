@@ -14,9 +14,9 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- Build 165 -->
-<title>Build 165 · 우리가족 플래너</title>
-<script>/* 빌드 번호는 여기 한 곳에서만 바꿉니다. sw.js의 CACHE 이름도 같은 번호로 함께 바꿔야 합니다. */var APP_BUILD='165';</script>
+<!-- Build 166 -->
+<title>Build 166 · 우리가족 플래너</title>
+<script>/* 빌드 번호는 여기 한 곳에서만 바꿉니다. sw.js의 CACHE 이름도 같은 번호로 함께 바꿔야 합니다. */var APP_BUILD='166';</script>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -1470,8 +1470,8 @@ body.child-device .week-plan-day.today{background:#FBF3E9;}
 <div class="modal-overlay" id="addModal">
   <div class="modal">
     <div class="modal-handle"></div>
+    <div class="modal-h" id="modalH">할일 추가/편집</div>
     <div class="modal-body">
-      <div class="modal-h" id="modalH">할일 추가</div>
 
       <div class="m-label">할일 종류</div>
       <div class="task-type-picker">
@@ -1621,12 +1621,11 @@ body.child-device .week-plan-day.today{background:#FBF3E9;}
         <div class="m-label">메모</div>
         <textarea class="m-field" id="mDesc" placeholder="메모 (선택)" style="height:65px;resize:none"></textarea>
       </div>
-
-      <div class="m-btns">
-        <button class="m-del" id="mDelete" style="display:none" onclick="b165DeleteTask()">삭제</button>
-        <button class="m-cancel" onclick="closeModal()">취소</button>
-        <button class="m-save" id="mSave" onclick="saveTask()">저장</button>
-      </div>
+    </div>
+    <div class="m-btns">
+      <button class="m-del" id="mDelete" style="display:none" onclick="b165DeleteTask()">삭제</button>
+      <button class="m-cancel" onclick="closeModal()">취소</button>
+      <button class="m-save" id="mSave" onclick="saveTask()">저장</button>
     </div>
   </div>
 </div>
@@ -3735,7 +3734,7 @@ function taskCard(t, ds) {
   // 자녀 화면은 부모가 들어온 경우에도 실제 자녀 화면과 같은 조작이 가능해야 합니다.
   // 부모의 '자녀 화면'에서는 해당 자녀의 계획을 추가/수정/완료/삭제할 수 있습니다.
   var parentChildView=isParentChildViewMode();
-  var canEdit=parentChildView || (t.fromParent && isP)||(!t.fromParent && !isP);
+  var canEdit=true;
   var canToggle=!isP;
   var tags='';
   if (t.allday) tags+='<span class="tag allday">🌅 하루종일</span>';
@@ -5679,7 +5678,7 @@ function deleteTask(id) {
   var t=state.tasks.find(function(x){ return String(x.id)===String(id); });
   if (!t) return;
   var isP=state.mode==='parent';
-  var canEdit=isParentChildViewMode() || (t.fromParent && isP)||(!t.fromParent && !isP);
+  var canEdit=isParentChildViewMode() || isP || !t.fromParent;
   if (!canEdit) { showToast('⚠️ 본인이 등록한 일정만 삭제할 수 있어요'); return; }
   if (isP && !isParentChildViewMode()) {
     if (!confirm('이 할일을 삭제할까요?')) return;
@@ -7104,10 +7103,10 @@ function b162Row(t,ds,isP,canEdit){
     : (isP ? '<button class="b162-p wait b162-pb" onclick="b162CheckMany(\''+id+'\',\''+ds+'\');event.stopPropagation()">확인하기</button>' : '<span class="b162-p wait">확인 대기</span>');
   var sub=(t.time&&!t.allday)?'<small>'+esc(prettyTime(t.time))+'</small>':(t.allday?'<small>하루종일</small>':'');
   if (t.carriedTo&&t.carriedTo!==t.date) sub+='<small>'+koDateShort(t.date)+'에서 옮겨왔어요</small>';
-  return '<div class="b162-row'+(done?' done':'')+'"'+(canEdit?' data-dbtap="task:'+id+'"':'')+'>'+chk
+  return '<div class="b162-row'+(done?' done':'')+'"'+(canEdit?' onclick="b165Menu(\''+id+'\')"':'')+'>'+chk
     +'<div class="b162-nm"><span>'+esc(t.name)+'</span>'+sub+'</div>'+st
     +(t.minutes?'<span class="b162-p min">'+t.minutes+'분</span>':'')
-    +(canEdit?'<button class="b162-ib" aria-label="수정" onclick="openModal('+id+');event.stopPropagation()">✏️</button><button class="b162-ib" aria-label="삭제" onclick="deleteTask('+id+');event.stopPropagation()">🗑</button>':'')+'</div>';
+    +'</div>';
 }
 function b162TaskCard(list,ds,isP,canEditFn,label){
   var tm=0,dm=0,d=0,pend=[];
@@ -7126,7 +7125,7 @@ function b162TaskCard(list,ds,isP,canEditFn,label){
 function renderDay(){
   var ds=fmt(state.selectedDate), isP=state.mode==='parent', off=b162IsOff(ds);
   var tasks=tasksForDate(ds), done=tasks.filter(function(t){ return taskDoneForDate(t,ds); }).length;
-  var canEditFn=function(t){ return isParentChildViewMode()||(t.fromParent&&isP)||(!t.fromParent&&!isP); };
+  var canEditFn=function(t){ return true; };
   var html='';
   if (isP && state.children.length>1) html+='<div class="b162-who">'+esc(childLabel(activeChildId()))+'의 하루</div>';
   var chips=[], timed=[], hol=getHoliday(ds);
@@ -7203,13 +7202,21 @@ openModal=function(id){
   var mh=document.getElementById('modalH'); if (mh) mh.textContent='할일 추가/편집';
   var ms=document.getElementById('mSave'); if (ms) ms.textContent='저장';
   var md=document.getElementById('mDelete'); if (md) md.style.display=t?'':'none';
-  var mm=document.querySelector('#addModal .modal'); if (mm) mm.scrollTop=0;
+  var mm=document.querySelector('#addModal .modal-body'); if (mm) mm.scrollTop=0;
 };
-function b165DeleteTask(){
-  var id=_editTaskId, t=id?state.tasks.find(function(x){ return String(x.id)===String(id); }):null;
+function b165CloseMenu(){ var o=document.getElementById('b165Menu'); if (o) o.parentNode.removeChild(o); }
+function b165Menu(id){
+  var t=state.tasks.find(function(x){ return String(x.id)===String(id); }); if (!t) return;
+  var ov=document.createElement('div'); ov.id='b165Menu'; ov.className='b162-pop b165-menu';
+  ov.onclick=function(e){ if (e.target===ov) b165CloseMenu(); };
+  ov.innerHTML='<div class="b165-sheet"><div class="b165-st">'+esc(t.name)+'</div><button onclick="b165CloseMenu();openModal(\''+id+'\')">수정</button>'+((state.mode==='parent'||isParentChildViewMode()||!t.fromParent)?'<button class="del" onclick="b165CloseMenu();b165DeleteTask(\''+id+'\')">삭제</button>':'')+'<button onclick="b165CloseMenu()">닫기</button></div>';
+  document.body.appendChild(ov);
+}
+function b165DeleteTask(idArg){
+  var id=idArg||_editTaskId, t=id?state.tasks.find(function(x){ return String(x.id)===String(id); }):null;
   if (!t) return;
   var isP=state.mode==='parent';
-  if (!(isParentChildViewMode()||(t.fromParent&&isP)||(!t.fromParent&&!isP))) { showToast('⚠️ 본인이 등록한 일정만 삭제할 수 있어요'); return; }
+  if (!(isP||isParentChildViewMode()||!t.fromParent)) { showToast('⚠️ 부모님이 만든 계획은 삭제할 수 없어요'); return; }
   var go=function(){ fsDel('tasks',t.id); closeModal(); showToast('🗑 삭제됐어요'); };
   if (isP&&!isParentChildViewMode()) { if (confirm('이 할일을 삭제할까요?')) go(); }
   else openConfirmSheet('이 계획을 삭제할까요?','🗑️','삭제할게요','아니요',function(ok){ if (ok) go(); });
@@ -7330,7 +7337,6 @@ function renderWeek(){
     +'<div class="b162-wg"><div class="b162-wax">'+axis+'</div>'+cols+'</div>'
     +'<div class="b162-leg"><span>'+b162Ico('school',12)+' 학교수업</span><span>'+b162Ico('after',12)+' 방과후수업</span><span>'+b162Ico('academy',12)+' 학원수업</span><span>'+b162Ico('study',12)+' 자율학습(초록 점선 = 대략의 시간)</span><span>빈칸 = 여유 시간</span></div>'
     +'<div class="b162-leg">박스를 누르면 상세, 빈칸을 누르면 할 일 추가, 날짜를 누르면 그날 화면으로 가요.</div>';
-  if (isP) html+=weeklyReviewHtml(fmt(ws));
   return html;
 }
 function b162ColTap(e,ds){
@@ -7367,10 +7373,17 @@ setTimeout(function(){ try { render(); } catch(e) {} },0);
 .b162-bx{flex-direction:column;gap:1px}
 .b162-ico{flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px}
 .b162-tx{font-size:9.5px;line-height:1.1;font-weight:700}
-#addModal .modal{max-height:92vh;max-height:92dvh}
-#addModal .modal-body{padding-bottom:0}
-#addModal .modal-h{position:sticky;top:0;z-index:3;background:var(--card);margin:0 -20px;padding:10px 20px 12px;border-bottom:1px solid var(--border)}
-#addModal .m-btns{position:sticky;bottom:0;z-index:3;background:var(--card);margin:12px -20px 0;padding:12px 20px calc(14px + env(safe-area-inset-bottom));border-top:1px solid var(--border)}
+#addModal .modal{display:flex;flex-direction:column;overflow:hidden;max-height:92vh;max-height:92dvh;padding-top:8px}
+#addModal .modal-handle{flex:none;margin-bottom:6px}
+#addModal .modal-h{flex:none;margin:0;padding:6px 20px 12px;border-bottom:1px solid var(--border);background:var(--card)}
+#addModal .modal-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:14px 20px 8px}
+#addModal .m-btns{flex:none;margin:0;padding:12px 20px calc(14px + env(safe-area-inset-bottom));border-top:1px solid var(--border);background:var(--card)}
+.b162-row[onclick]{cursor:pointer}
+.b165-menu{align-items:flex-end;padding:0}
+.b165-sheet{background:#fff;border-radius:18px 18px 0 0;width:100%;max-width:430px;padding:12px 16px calc(16px + env(safe-area-inset-bottom))}
+.b165-st{font-size:15px;font-weight:700;padding:6px 4px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.b165-sheet button{display:block;width:100%;min-height:52px;margin-top:8px;border-radius:12px;border:1.5px solid var(--border);background:#fff;font:inherit;font-size:16px;font-weight:600;color:var(--text)}
+.b165-sheet button.del{color:#B3261E;border-color:#E4B4AA}
 .m-del{flex:none;min-width:72px;padding:14px;border-radius:12px;border:1.5px solid #E4B4AA;background:#fff;color:#B3261E;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer}
 </style>
 </body>
