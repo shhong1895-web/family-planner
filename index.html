@@ -14,9 +14,9 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- Build 163 -->
-<title>Build 163 · 우리가족 플래너</title>
-<script>/* 빌드 번호는 여기 한 곳에서만 바꿉니다. sw.js의 CACHE 이름도 같은 번호로 함께 바꿔야 합니다. */var APP_BUILD='163';</script>
+<!-- Build 164 -->
+<title>Build 164 · 우리가족 플래너</title>
+<script>/* 빌드 번호는 여기 한 곳에서만 바꿉니다. sw.js의 CACHE 이름도 같은 번호로 함께 바꿔야 합니다. */var APP_BUILD='164';</script>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -7069,7 +7069,7 @@ function b162Overdue(){
   var td=fmt(TODAY), lim=new Date(TODAY); lim.setDate(lim.getDate()-14); var ls=fmt(lim);
   return state.tasks.filter(function(t){
     if (!isForActiveChild(t) || (t.repeat&&t.repeat!=='none')) return false;
-    var d=t.carriedTo||t.date; return d<td && d>=ls && !t.done;
+    var d=t.carriedTo||t.date; return d<td && d>=ls && !t.done && !t.overdueSkip;
   });
 }
 function b162Carry(){
@@ -7078,7 +7078,12 @@ function b162Carry(){
     .then(function(){ render(); showToast('📌 오늘로 옮겼어요'); })
     .catch(function(){ showToast('⚠️ 옮기기에 실패했어요. 네트워크를 확인해주세요'); });
 }
-function b162Skip(){ _b162Hide=fmt(TODAY); render(); }
+function b162Skip(){
+  var od=b162Overdue();
+  Promise.all(od.map(function(t){ return fsUpdate('tasks',t.id,{overdueSkip:true}).then(function(){ t.overdueSkip=true; }); }))
+    .then(function(){ render(); })
+    .catch(function(){ _b162Hide=fmt(TODAY); render(); showToast('⚠️ 저장에 실패해서 오늘만 숨겼어요'); });
+}
 function b162CheckMany(ids,ds){
   if (state.mode!=='parent') return;
   var jobs=String(ids).split(',').map(function(id){
@@ -7105,6 +7110,7 @@ function b162Row(t,ds,isP,canEdit){
   if (done) st = pc ? '<span class="b162-p ok">★ 확인</span>'
     : (isP ? '<button class="b162-p wait b162-pb" onclick="b162CheckMany(\''+id+'\',\''+ds+'\');event.stopPropagation()">확인하기</button>' : '<span class="b162-p wait">확인 대기</span>');
   var sub=(t.time&&!t.allday)?'<small>'+esc(prettyTime(t.time))+'</small>':(t.allday?'<small>하루종일</small>':'');
+  if (t.carriedTo&&t.carriedTo!==t.date) sub+='<small>'+koDateShort(t.date)+'에서 옮겨왔어요</small>';
   return '<div class="b162-row'+(done?' done':'')+'"'+(canEdit?' data-dbtap="task:'+id+'"':'')+'>'+chk
     +'<div class="b162-nm"><span>'+esc(t.name)+'</span>'+sub+'</div>'+st
     +(t.minutes?'<span class="b162-p min">'+t.minutes+'분</span>':'')
@@ -7202,11 +7208,133 @@ openModal=function(id){
   _minutes=m; _minCustom=m>0&&[10,20,30].indexOf(m)<0;
   var c=document.getElementById('b162MinCustom'); if (c) { c.style.display=_minCustom?'':'none'; c.value=_minCustom?m:''; }
   b162PaintMins(); b162SetSlot(s);
+  if (t&&t.carriedTo) { document.getElementById('mDate').value=t.carriedTo; updateDateBtns(t.carriedTo); }
 };
 var _b162UDB=updateDateBtns;
 updateDateBtns=function(d){ _b162UDB(d); var b=document.getElementById('b162DateBtn'); if (b) b.textContent='📅 '+koDateShort(d); };
 // 단순화: 완료 직후 뜨던 '돌아보기' 창은 더 이상 띄우지 않습니다(기존 기록은 그대로 보존됩니다).
 openReflectionModal=function(){};
+setTimeout(function(){ try { render(); } catch(e) {} },0);
+</script>
+<style id="b164-style">
+.b162-wg{display:grid;grid-template-columns:22px repeat(7,1fr);gap:2px;margin-bottom:2px}
+.b162-wh{min-height:48px;border-radius:10px;border:1px solid var(--border);background:#fff;font:inherit;font-size:14px;font-weight:700;color:var(--text);line-height:1.25;padding:0}
+.b162-wh small{display:block;font-size:10px;font-weight:500;color:var(--sub)}
+.b162-wh.today{background:var(--child);border-color:var(--child);color:#fff}.b162-wh.today small{color:#fff}.b162-wh.off{color:#8A3B1F}.b162-wh.today.off{color:#fff}
+.b162-wgad{margin:4px 0 6px;min-height:20px}.b162-wl{font-size:9px;color:var(--sub);align-self:center}
+.b162-wad{display:block;font-size:9px;font-weight:700;border-radius:99px;padding:3px 2px;text-align:center;overflow:hidden;white-space:nowrap}
+.b162-wax{position:relative;height:600px}.b162-wax span{position:absolute;right:3px;font-size:10px;line-height:14px;color:var(--sub)}
+.b162-wc{position:relative;height:600px;background:repeating-linear-gradient(#DDD6C4 0 1px,transparent 1px 40px),repeating-linear-gradient(transparent 0 20px,#EFE9DA 20px 21px,transparent 21px 40px)}
+.b162-bx{position:absolute;left:1px;right:1px;min-height:0;min-width:0;padding:0;border:0;border-radius:6px;font:inherit;font-size:10px;font-weight:700;line-height:1.2;overflow:hidden;display:flex;align-items:center;justify-content:center;text-align:center}
+.b162-bx.b{background:#E4EAF3;color:#2A3F66}.b162-bx.c{background:#F6E9C9;color:#5C4210}.b162-bx.p{background:#EBDDEB;color:#4F2A55}.b162-bx.k{background:#D8EEF0;color:#17525A}
+.b162-bx.g{background:#FFE3A8;color:#4A3300;border:1px solid #C99A2B}.b162-bx.lr{background:#DDEBE3;color:#1F5239;border:1.5px dashed #2F6B4F}
+.b162-leg{display:flex;flex-wrap:wrap;gap:6px 12px;margin:10px 2px;font-size:12px;color:var(--sub);line-height:1.5}
+.b162-pop{position:fixed;inset:0;background:rgba(38,37,34,.45);z-index:10000;display:flex;align-items:center;justify-content:center;padding:18px}
+.b162-pc{background:#fff;border-radius:18px;padding:8px 16px 14px;width:100%;max-width:380px;max-height:80vh;overflow:auto;box-shadow:0 8px 28px rgba(0,0,0,.25)}
+.b162-pch{display:flex;align-items:center;justify-content:space-between;min-height:52px}.b162-pch b{font-size:17px}.b162-ps{font-size:12px;color:var(--sub)}
+.b162-pch button{width:44px;height:44px;border:0;background:none;font-size:20px}.b162-pd{font-size:14px;line-height:1.6;padding:6px 0}
+</style>
+<script id="build164-week">
+/* Build 164: 주간 시간표(30분 격자) + 상세 팝업 */
+var _b162Blocks=[];
+var B162_LS={before:450,am:600,school:600,after:960,pm:840,ev:1200,night:1290}; // 학습 박스의 기본 시작 시각(07:30, 16:00, 20:00 …)
+var B162_LB={before:'등교 전',school:'학교',after:'방과 후',ev:'저녁',night:'밤',am:'오전',pm:'오후'};
+function b162Short(s,n){ s=String(s||''); return s.length>n?s.slice(0,n):s; }
+var B162_MIN={before:420,am:540,school:540,after:870,pm:720,ev:1080,night:1200};
+function b162Place(fixed,start,len,min){
+  var fits=function(s){ return !fixed.some(function(b){ return s<b.e&&s+len>b.s; }); };
+  if (fits(start)) return start;
+  for (var s=start-10; s>=(min||start); s-=10) if (fits(s)) return s; // 앞쪽 빈 시간에 들어가면 거기에 둡니다
+  for (var i=0;i<30;i++){ var c=fixed.filter(function(b){ return start<b.e&&start+len>b.s; })[0]; if(!c) break; start=c.e; }
+  return start;
+}
+function b162Day(ds,off){
+  var chips=[], blocks=[], hol=getHoliday(ds);
+  if (hol) chips.push(['off',hol]);
+  function add(s,e,cls,label,d){ blocks.push({s:s,e:e,cls:cls,label:label,d:d}); }
+  if (!off) add(540,B162_T.schoolEnd,'b','학교',{title:'학교',sub:'09:00 ~ 14:30'});
+  schoolForDate(ds).forEach(function(s){
+    if (s._movedAway||s._cancelled) return;
+    var a=b162Min(s.startTime), b=b162Min(s.endTime); if (a===null||b===null||b<=a) return;
+    var ac=s.cat==='학원';
+    add(a,b,ac?'c':'b',ac?'학원<br>'+esc(b162Short(s.name,3)):esc(b162Short(s.name,3)),{title:s.name,sub:prettyTime(s.startTime+'~'+s.endTime),tag:ac?'학원':'학교'});
+  });
+  state.sharedEvents.forEach(function(e){
+    if (!isSharedForActiveChild(e)||ds<e.date||ds>(e.dateEnd||e.date)) return;
+    var a=b162Min(e.time); if (a===null) { chips.push([b162Kind(e),e.name]); return; }
+    var p=String(e.time).split('~'), b=p[1]?b162Min(p[1]):a+60; if (b===null||b<=a) b=a+60;
+    var kd=b162Kind(e), cls=/방과후/.test(e.name||'')?'k':(/평가|시험/.test(e.name||'')?'g':(kd==='fam'?'p':'b'));
+    add(a,b,cls,esc(b162Short(e.name,3)),{title:e.name,sub:prettyTime(e.time),desc:e.desc||'',tag:kd==='acad'?'학사':(kd==='me'?'개인':'가족')});
+  });
+  var groups={};
+  tasksForDate(ds).forEach(function(t){
+    var a=b162Min(t.time);
+    if (a!==null&&!t.allday) {
+      var p=String(t.time).split('~'), b=p[1]?b162Min(p[1]):a+(t.minutes||20); if (b===null||b<=a) b=a+(t.minutes||20);
+      add(a,b,'lr',esc(b162Short(t.name,3)),{learn:true,ds:ds,key:'time',list:[t],title:t.name});
+    } else { var k=b162TaskSec(t,off); (groups[k]=groups[k]||[]).push(t); }
+  });
+  ['before','am','school','after','pm','ev','night'].forEach(function(k){
+    var list=groups[k]; if (!list) return;
+    var mins=0; list.forEach(function(t){ mins+=t.minutes||0; });
+    var len=mins||20*list.length, st=b162Place(blocks,B162_LS[k]||960,len,B162_MIN[k]);
+    add(st,st+len,'lr',len<30?len+'분':'학습<br>'+len+'분',{learn:true,ds:ds,key:k,list:list,mins:mins});
+  });
+  return {chips:chips,blocks:blocks};
+}
+function renderWeek(){
+  var ws=state.weekStart, isP=state.mode==='parent', T0=420, PX=2/3;
+  var nm=['월','화','수','목','금','토','일'], hdr='', ad='', cols='', axis='', html='';
+  _b162Blocks=[];
+  for (var i=0;i<7;i++){
+    var d=new Date(ws); d.setDate(ws.getDate()+i); var ds=fmt(d), off=b162IsOff(ds), D=b162Day(ds,off);
+    hdr+='<button class="b162-wh'+(ds===fmt(TODAY)?' today':'')+(off?' off':'')+'" onclick="selectDay(\''+ds+'\')"><small>'+nm[i]+'</small>'+d.getDate()+'</button>';
+    ad+='<div>'+(D.chips.length?'<span class="b162-wad b162-c-'+D.chips[0][0]+'">'+esc(b162Short(D.chips[0][1],4))+(D.chips.length>1?' +'+(D.chips.length-1):'')+'</span>':'')+'</div>';
+    var bx='';
+    D.blocks.forEach(function(b){
+      var s=Math.max(b.s,420), e=Math.min(b.e,1320); if (e<=s) return;
+      var idx=_b162Blocks.push(b)-1;
+      bx+='<button class="b162-bx '+b.cls+'" style="top:'+((s-T0)*PX+1)+'px;height:'+Math.max((e-s)*PX-1,14)+'px" onclick="b162Open('+idx+');event.stopPropagation()">'+b.label+'</button>';
+    });
+    cols+='<div class="b162-wc" onclick="b162ColTap(event,\''+ds+'\')">'+bx+'</div>';
+  }
+  for (var h=7;h<=21;h++) axis+='<span style="top:'+((h*60-T0)*PX-7)+'px">'+h+'</span>';
+  if (isP&&state.children.length>1) html+='<div class="b162-who">'+esc(childLabel(activeChildId()))+'의 이번 주</div>';
+  html+='<div class="b162-wg"><div></div>'+hdr+'</div><div class="b162-wg b162-wgad"><div class="b162-wl">종일</div>'+ad+'</div>'
+    +'<div class="b162-wg"><div class="b162-wax">'+axis+'</div>'+cols+'</div>'
+    +'<div class="b162-leg"><span>파랑 학교·학사</span><span>청록 방과후</span><span>노랑 학원</span><span>초록 점선 학습(대략의 시간)</span><span>빈칸 여유 시간</span></div>'
+    +'<div class="b162-leg">박스를 누르면 상세, 빈칸을 누르면 할 일 추가, 날짜를 누르면 그날 화면으로 가요.</div>';
+  if (isP) html+=weeklyReviewHtml(fmt(ws));
+  return html;
+}
+function b162ColTap(e,ds){
+  var r=e.currentTarget.getBoundingClientRect(), m=420+(e.clientY-r.top)*1.5;
+  state.selectedDate=parseDate(ds); openModal();
+  var k=b162SecOf(m,b162IsOff(ds),false);
+  b162SetSlot((k==='before'||k==='am')?'before':((k==='ev'||k==='night')?'evening':'after'));
+}
+function b162Close(){ var o=document.getElementById('b162Pop'); if (o) o.parentNode.removeChild(o); }
+function b162GoDay(ds){ b162Close(); selectDay(ds); }
+function b162Open(i){
+  var b=_b162Blocks[i]; if (!b) return; var d=b.d, body='', title, sub, ds=d.ds||null;
+  if (d.learn) {
+    var dn=parseDate(d.ds), WD=['일','월','화','수','목','금','토'];
+    title=WD[dn.getDay()]+'요일 '+(d.key==='time'?esc(d.title):(B162_LB[d.key]||'')+' 학습');
+    sub=d.key==='time'?'':(d.mins?'총 '+d.mins+'분':'분량 미정');
+    [['school','학교 숙제'],['academy','학원 숙제'],['study','자율학습'],['etc','기타']].forEach(function(k){
+      var g=d.list.filter(function(t){ var tt=t.taskType||'etc'; return tt===k[0]||(k[0]==='etc'&&['school','academy','study'].indexOf(tt)<0); });
+      if (!g.length) return; body+='<div class="b162-kind">'+k[1]+'</div>';
+      g.forEach(function(t){ var dn2=taskDoneForDate(t,d.ds), pc=dn2&&b162Pc(t,d.ds);
+        body+='<div class="b162-row"><span class="b162-ck'+(dn2?' d':'')+'">'+(dn2?'✓':'')+'</span><div class="b162-nm"><span>'+esc(t.name)+'</span></div>'
+          +(pc?'<span class="b162-p ok">★ 확인</span>':(dn2?'<span class="b162-p wait">확인 대기</span>':''))+(t.minutes?'<span class="b162-p min">'+t.minutes+'분</span>':'')+'</div>'; });
+    });
+  } else { title=esc(d.title); sub=(d.tag?d.tag+' · ':'')+esc(d.sub||''); if (d.desc) body='<div class="b162-pd">'+esc(d.desc)+'</div>'; }
+  var ov=document.createElement('div'); ov.id='b162Pop'; ov.className='b162-pop';
+  ov.onclick=function(e){ if (e.target===ov) b162Close(); };
+  ov.innerHTML='<div class="b162-pc"><div class="b162-pch"><div><b>'+title+'</b><div class="b162-ps">'+sub+'</div></div><button aria-label="닫기" onclick="b162Close()">✕</button></div>'+body
+    +(ds?'<button class="b162-all" style="background:#fff;color:var(--text);border-color:var(--border)" onclick="b162GoDay(\''+ds+'\')">이 날 보기</button>':'')+'</div>';
+  document.body.appendChild(ov);
+}
 setTimeout(function(){ try { render(); } catch(e) {} },0);
 </script>
 </body>
