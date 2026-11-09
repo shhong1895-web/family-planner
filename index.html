@@ -14,9 +14,9 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- Build 164 -->
-<title>Build 164 · 우리가족 플래너</title>
-<script>/* 빌드 번호는 여기 한 곳에서만 바꿉니다. sw.js의 CACHE 이름도 같은 번호로 함께 바꿔야 합니다. */var APP_BUILD='164';</script>
+<!-- Build 165 -->
+<title>Build 165 · 우리가족 플래너</title>
+<script>/* 빌드 번호는 여기 한 곳에서만 바꿉니다. sw.js의 CACHE 이름도 같은 번호로 함께 바꿔야 합니다. */var APP_BUILD='165';</script>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -1583,14 +1583,6 @@ body.child-device .week-plan-day.today{background:#FBF3E9;}
             <option value="기타">⭐ 기타</option>
           </select>
         </div>
-        <div id="mGoalWrap" class="goal-link-wrap" style="display:none">
-          <div class="m-label">🎯 연결할 학기 목표 <span style="font-size:10px;color:var(--sub);font-weight:500">(선택)</span></div>
-          <select class="m-field" id="mGoalSelect">
-            <option value="">연결하지 않음</option>
-          </select>
-          <div class="goal-link-note">이 할 일을 완료하면 연결된 목표의 실행 내역에 반영됩니다.</div>
-          <div id="goalPlanContext" class="goal-plan-context"></div>
-        </div>
 
         <div class="m-label mRepeatLabel">반복</div>
         <select class="m-field" id="mRepeat" onchange="onRepeatTypeChange()">
@@ -1631,8 +1623,9 @@ body.child-device .week-plan-day.today{background:#FBF3E9;}
       </div>
 
       <div class="m-btns">
+        <button class="m-del" id="mDelete" style="display:none" onclick="b165DeleteTask()">삭제</button>
         <button class="m-cancel" onclick="closeModal()">취소</button>
-        <button class="m-save" id="mSave" onclick="saveTask()">추가하기</button>
+        <button class="m-save" id="mSave" onclick="saveTask()">저장</button>
       </div>
     </div>
   </div>
@@ -4772,7 +4765,7 @@ function renderMonth() {
     +'</div>'
     +'<div class="month-review-insight"><div class="month-review-insight-main">'+monthInsightMain+'</div><div class="month-review-insight-sub">'+monthInsightSub+'</div></div>'
     +(state.mode==='child'?reflectionSummaryHtml(fmt(new Date(year,month,1)),fmt(new Date(year,month+1,0))):parentReflectionSummaryHtml(fmt(new Date(year,month,1)),fmt(new Date(year,month+1,0))))
-    +monthGoalLinkHtml
+    +''
     +(state.mode==='child'?'<div class="month-next-step" onclick="selectNextMonthAndAdd()"><span>✍️ 다음 달 한 걸음 정하기<span class="month-next-step-sub">이번 달 돌아본 뒤, 다음 달에 가장 먼저 할 일 하나를 정해봐요</span></span><span>›</span></div>':'')
     +'</div>';
 
@@ -6643,7 +6636,7 @@ function saveTask() {
     repeat: repeat, repeatDays: repeatDays, repeatEnd: repeatEnd,
     desc: document.getElementById('mDesc').value,
     slot: (_slot==='before'||_slot==='after'||_slot==='evening') ? _slot : '', minutes: _minutes||0, carriedTo: '',
-    goalId: (document.getElementById('mGoalSelect') ? document.getElementById('mGoalSelect').value : (existing.goalId || '')),
+    goalId: '',
     done: existing.done || false,
     // 부모가 자녀 화면에서 입력한 계획도 해당 자녀의 동일한 데이터로 저장합니다.
     fromParent: isEdit ? existing.fromParent : (state.mode==='parent' || isParentChildViewMode())
@@ -7136,7 +7129,6 @@ function renderDay(){
   var canEditFn=function(t){ return isParentChildViewMode()||(t.fromParent&&isP)||(!t.fromParent&&!isP); };
   var html='';
   if (isP && state.children.length>1) html+='<div class="b162-who">'+esc(childLabel(activeChildId()))+'의 하루</div>';
-  html+=b162Strip(ds);
   var chips=[], timed=[], hol=getHoliday(ds);
   if (hol) chips.push(['off',hol]);
   state.sharedEvents.forEach(function(e){
@@ -7178,7 +7170,6 @@ function renderDay(){
     if (sec.tk.length) html+=b162TaskCard(sec.tk,ds,isP,canEditFn,LB[k]);
   });
   if (!any) html+=emptyBox('🌿','오늘은 비어 있어요','+ 버튼을 눌러 할 일을 추가해 보세요');
-  if (isP) html+='<button class="b162-link" onclick="openSemesterGoals()">🎯 학기 목표 보기</button>';
   html+=renderMessages(ds,isP);
   return html;
 }
@@ -7209,7 +7200,20 @@ openModal=function(id){
   var c=document.getElementById('b162MinCustom'); if (c) { c.style.display=_minCustom?'':'none'; c.value=_minCustom?m:''; }
   b162PaintMins(); b162SetSlot(s);
   if (t&&t.carriedTo) { document.getElementById('mDate').value=t.carriedTo; updateDateBtns(t.carriedTo); }
+  var mh=document.getElementById('modalH'); if (mh) mh.textContent='할일 추가/편집';
+  var ms=document.getElementById('mSave'); if (ms) ms.textContent='저장';
+  var md=document.getElementById('mDelete'); if (md) md.style.display=t?'':'none';
+  var mm=document.querySelector('#addModal .modal'); if (mm) mm.scrollTop=0;
 };
+function b165DeleteTask(){
+  var id=_editTaskId, t=id?state.tasks.find(function(x){ return String(x.id)===String(id); }):null;
+  if (!t) return;
+  var isP=state.mode==='parent';
+  if (!(isParentChildViewMode()||(t.fromParent&&isP)||(!t.fromParent&&!isP))) { showToast('⚠️ 본인이 등록한 일정만 삭제할 수 있어요'); return; }
+  var go=function(){ fsDel('tasks',t.id); closeModal(); showToast('🗑 삭제됐어요'); };
+  if (isP&&!isParentChildViewMode()) { if (confirm('이 할일을 삭제할까요?')) go(); }
+  else openConfirmSheet('이 계획을 삭제할까요?','🗑️','삭제할게요','아니요',function(ok){ if (ok) go(); });
+}
 var _b162UDB=updateDateBtns;
 updateDateBtns=function(d){ _b162UDB(d); var b=document.getElementById('b162DateBtn'); if (b) b.textContent='📅 '+koDateShort(d); };
 // 단순화: 완료 직후 뜨던 '돌아보기' 창은 더 이상 띄우지 않습니다(기존 기록은 그대로 보존됩니다).
@@ -7248,37 +7252,59 @@ function b162Place(fixed,start,len,min){
   for (var i=0;i<30;i++){ var c=fixed.filter(function(b){ return start<b.e&&start+len>b.s; })[0]; if(!c) break; start=c.e; }
   return start;
 }
+var B162_IC={school:'<path d="M3 9l9-5 9 5-9 5z"/><path d="M7 12v4c0 1.6 10 1.6 10 0v-4"/>',after:'<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',academy:'<path d="M3 5h7a2 2 0 012 2v12a2 2 0 00-2-2H3zM21 5h-7a2 2 0 00-2 2v12a2 2 0 012-2h7z"/>',study:'<path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/>',check:'<path d="M5 12l5 5 9-10"/>',home:'<path d="M4 11l8-7 8 7v9H4z"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>'};
+function b162Ico(k,sz){ sz=sz||13; return '<svg class="b162-ico" width="'+sz+'" height="'+sz+'" viewBox="0 0 24 24" aria-hidden="true">'+(B162_IC[k]||B162_IC.study)+'</svg>'; }
+// 한 줄에 4글자까지, 넘치면 다음 줄로 나눕니다.
+function b162Wrap(s){
+  var out=[], cur='';
+  String(s||'').split(/\s+/).filter(Boolean).forEach(function(w){
+    while (w.length>4){ if (cur){ out.push(cur); cur=''; } out.push(w.slice(0,4)); w=w.slice(4); }
+    if (!w) return;
+    if (cur && (cur+' '+w).length<=4) cur+=' '+w; else { if (cur) out.push(cur); cur=w; }
+  });
+  if (cur) out.push(cur); return out;
+}
+// 박스 높이에 맞춰 보여 줄 줄 수를 정합니다: 아주 낮으면 아이콘만, 높을수록 2줄, 3줄까지.
+function b162BoxHtml(b,h){
+  var room=Math.floor((h-14)/10.5), ic=b162Ico(b.ic);
+  if (h<24||room<1||!b.lines.length) return ic;
+  var n=Math.min(b.lines.length,room,3), ls=b.lines.slice(0,n);
+  if (b.lines.length>n) { var l=ls[n-1]; ls[n-1]=(l.length>=4?l.slice(0,3):l)+'…'; }
+  return ic+'<span class="b162-tx">'+ls.map(esc).join('<br>')+'</span>';
+}
 function b162Day(ds,off){
   var chips=[], blocks=[], hol=getHoliday(ds);
   if (hol) chips.push(['off',hol]);
-  function add(s,e,cls,label,d){ blocks.push({s:s,e:e,cls:cls,label:label,d:d}); }
-  if (!off) add(540,B162_T.schoolEnd,'b','학교',{title:'학교',sub:'09:00 ~ 14:30'});
+  function add(s,e,cls,ic,lines,d){ blocks.push({s:s,e:e,cls:cls,ic:ic,lines:lines,d:d}); }
+  if (!off) add(540,B162_T.schoolEnd,'b','school',['학교수업'],{title:'학교 수업',sub:'09:00 ~ 14:30'});
   schoolForDate(ds).forEach(function(s){
     if (s._movedAway||s._cancelled) return;
     var a=b162Min(s.startTime), b=b162Min(s.endTime); if (a===null||b===null||b<=a) return;
     var ac=s.cat==='학원';
-    add(a,b,ac?'c':'b',ac?'학원<br>'+esc(b162Short(s.name,3)):esc(b162Short(s.name,3)),{title:s.name,sub:prettyTime(s.startTime+'~'+s.endTime),tag:ac?'학원':'학교'});
+    add(a,b,ac?'c':'b',ac?'academy':'school',b162Wrap(s.name),{title:s.name,sub:prettyTime(s.startTime+'~'+s.endTime),tag:ac?'학원':'학교'});
   });
   state.sharedEvents.forEach(function(e){
     if (!isSharedForActiveChild(e)||ds<e.date||ds>(e.dateEnd||e.date)) return;
     var a=b162Min(e.time); if (a===null) { chips.push([b162Kind(e),e.name]); return; }
     var p=String(e.time).split('~'), b=p[1]?b162Min(p[1]):a+60; if (b===null||b<=a) b=a+60;
-    var kd=b162Kind(e), cls=/방과후/.test(e.name||'')?'k':(/평가|시험/.test(e.name||'')?'g':(kd==='fam'?'p':'b'));
-    add(a,b,cls,esc(b162Short(e.name,3)),{title:e.name,sub:prettyTime(e.time),desc:e.desc||'',tag:kd==='acad'?'학사':(kd==='me'?'개인':'가족')});
+    var kd=b162Kind(e), nm=e.name||'';
+    var cls=/방과후/.test(nm)?'k':(/평가|시험/.test(nm)?'g':(kd==='fam'?'p':'b'));
+    var ic=/방과후/.test(nm)?'after':(/평가|시험/.test(nm)?'check':(kd==='fam'?'home':(kd==='me'?'user':'school')));
+    add(a,b,cls,ic,b162Wrap(nm),{title:nm,sub:prettyTime(e.time),desc:e.desc||'',tag:kd==='acad'?'학사':(kd==='me'?'개인':'가족')});
   });
   var groups={};
   tasksForDate(ds).forEach(function(t){
     var a=b162Min(t.time);
     if (a!==null&&!t.allday) {
       var p=String(t.time).split('~'), b=p[1]?b162Min(p[1]):a+(t.minutes||20); if (b===null||b<=a) b=a+(t.minutes||20);
-      add(a,b,'lr',esc(b162Short(t.name,3)),{learn:true,ds:ds,key:'time',list:[t],title:t.name});
+      add(a,b,'lr','study',b162Wrap(t.name),{learn:true,ds:ds,key:'time',list:[t],title:t.name});
     } else { var k=b162TaskSec(t,off); (groups[k]=groups[k]||[]).push(t); }
   });
   ['before','am','school','after','pm','ev','night'].forEach(function(k){
     var list=groups[k]; if (!list) return;
     var mins=0; list.forEach(function(t){ mins+=t.minutes||0; });
     var len=mins||20*list.length, st=b162Place(blocks,B162_LS[k]||960,len,B162_MIN[k]);
-    add(st,st+len,'lr',len<30?len+'분':'학습<br>'+len+'분',{learn:true,ds:ds,key:k,list:list,mins:mins});
+    add(st,st+len,'lr','study',mins?['학습',mins+'분']:['학습'],{learn:true,ds:ds,key:k,list:list,mins:mins});
   });
   return {chips:chips,blocks:blocks};
 }
@@ -7293,8 +7319,8 @@ function renderWeek(){
     var bx='';
     D.blocks.forEach(function(b){
       var s=Math.max(b.s,420), e=Math.min(b.e,1320); if (e<=s) return;
-      var idx=_b162Blocks.push(b)-1;
-      bx+='<button class="b162-bx '+b.cls+'" style="top:'+((s-T0)*PX+1)+'px;height:'+Math.max((e-s)*PX-1,14)+'px" onclick="b162Open('+idx+');event.stopPropagation()">'+b.label+'</button>';
+      var idx=_b162Blocks.push(b)-1, hpx=Math.max((e-s)*PX-1,14);
+      bx+='<button class="b162-bx '+b.cls+'" style="top:'+((s-T0)*PX+1)+'px;height:'+hpx+'px" onclick="b162Open('+idx+');event.stopPropagation()">'+b162BoxHtml(b,hpx)+'</button>';
     });
     cols+='<div class="b162-wc" onclick="b162ColTap(event,\''+ds+'\')">'+bx+'</div>';
   }
@@ -7302,7 +7328,7 @@ function renderWeek(){
   if (isP&&state.children.length>1) html+='<div class="b162-who">'+esc(childLabel(activeChildId()))+'의 이번 주</div>';
   html+='<div class="b162-wg"><div></div>'+hdr+'</div><div class="b162-wg b162-wgad"><div class="b162-wl">종일</div>'+ad+'</div>'
     +'<div class="b162-wg"><div class="b162-wax">'+axis+'</div>'+cols+'</div>'
-    +'<div class="b162-leg"><span>파랑 학교·학사</span><span>청록 방과후</span><span>노랑 학원</span><span>초록 점선 학습(대략의 시간)</span><span>빈칸 여유 시간</span></div>'
+    +'<div class="b162-leg"><span>'+b162Ico('school',12)+' 학교수업</span><span>'+b162Ico('after',12)+' 방과후수업</span><span>'+b162Ico('academy',12)+' 학원수업</span><span>'+b162Ico('study',12)+' 자율학습(초록 점선 = 대략의 시간)</span><span>빈칸 = 여유 시간</span></div>'
     +'<div class="b162-leg">박스를 누르면 상세, 빈칸을 누르면 할 일 추가, 날짜를 누르면 그날 화면으로 가요.</div>';
   if (isP) html+=weeklyReviewHtml(fmt(ws));
   return html;
@@ -7337,5 +7363,15 @@ function b162Open(i){
 }
 setTimeout(function(){ try { render(); } catch(e) {} },0);
 </script>
+<style id="b165-style">
+.b162-bx{flex-direction:column;gap:1px}
+.b162-ico{flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px}
+.b162-tx{font-size:9.5px;line-height:1.1;font-weight:700}
+#addModal .modal{max-height:92vh;max-height:92dvh}
+#addModal .modal-body{padding-bottom:0}
+#addModal .modal-h{position:sticky;top:0;z-index:3;background:var(--card);margin:0 -20px;padding:10px 20px 12px;border-bottom:1px solid var(--border)}
+#addModal .m-btns{position:sticky;bottom:0;z-index:3;background:var(--card);margin:12px -20px 0;padding:12px 20px calc(14px + env(safe-area-inset-bottom));border-top:1px solid var(--border)}
+.m-del{flex:none;min-width:72px;padding:14px;border-radius:12px;border:1.5px solid #E4B4AA;background:#fff;color:#B3261E;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer}
+</style>
 </body>
 </html>
