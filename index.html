@@ -14,9 +14,9 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- Build 166 -->
-<title>Build 166 · 우리가족 플래너</title>
-<script>/* 빌드 번호는 여기 한 곳에서만 바꿉니다. sw.js의 CACHE 이름도 같은 번호로 함께 바꿔야 합니다. */var APP_BUILD='166';</script>
+<!-- Build 167 -->
+<title>Build 167 · 우리가족 플래너</title>
+<script>/* 빌드 번호는 여기 한 곳에서만 바꿉니다. sw.js의 CACHE 이름도 같은 번호로 함께 바꿔야 합니다. */var APP_BUILD='167';</script>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -1398,7 +1398,7 @@ body.child-device .week-plan-day.today{background:#FBF3E9;}
     <div class="ob-card" onclick="chooseRole('child')">
       <span style="font-size:48px;line-height:1">👦</span>
       <span style="font-size:17px;font-weight:800;color:#2B2A26">자녀예요</span>
-      <span style="font-size:12px;color:#8A8578;line-height:1.5">할일 확인하고<br>체크해요</span>
+      <span style="font-size:12px;color:#8A8578;line-height:1.5">할 일 확인하고<br>체크해요</span>
     </div>
     <div class="ob-card" onclick="chooseRole('parent')">
       <span style="font-size:48px;line-height:1">👨‍👩‍👧</span>
@@ -1470,10 +1470,13 @@ body.child-device .week-plan-day.today{background:#FBF3E9;}
 <div class="modal-overlay" id="addModal">
   <div class="modal">
     <div class="modal-handle"></div>
-    <div class="modal-h" id="modalH">할일 추가/편집</div>
+    <div class="modal-h" id="modalH">할 일 추가/수정</div>
     <div class="modal-body">
 
-      <div class="m-label">할일 종류</div>
+      <div class="m-label">날짜</div>
+      <button type="button" class="b162-datebtn" id="b162DateBtn" onclick="focusModalDate()"></button>
+
+      <div class="m-label">할 일 종류</div>
       <div class="task-type-picker">
         <button type="button" class="tt-btn" data-type="school" onclick="selectTaskType('school')">🏫 학교숙제</button>
         <button type="button" class="tt-btn" data-type="academy" onclick="selectTaskType('academy')">🎒 학원숙제</button>
@@ -1481,30 +1484,21 @@ body.child-device .week-plan-day.today{background:#FBF3E9;}
         <button type="button" class="tt-btn active" data-type="etc" onclick="selectTaskType('etc')">✏️ 기타</button>
       </div>
 
-      <div id="b162SlotWrap">
-        <div class="m-label">언제 할까요?</div>
-        <div class="b162-slotrow" id="b162Slots">
-          <button type="button" data-v="before" onclick="b162SetSlot('before')">등교 전</button>
-          <button type="button" data-v="after" onclick="b162SetSlot('after')">방과 후</button>
-          <button type="button" data-v="evening" onclick="b162SetSlot('evening')">저녁</button>
-          <button type="button" data-v="time" onclick="b162SetSlot('time')">시각 지정</button>
-          <button type="button" data-v="allday" onclick="b162SetSlot('allday')">하루종일</button>
+      <div id="mCatWrap">
+        <div class="m-label">카테고리</div>
+        <div class="b162-slotrow" id="b165Cats">
+          <button type="button" data-v="학습" onclick="b165SetCat('학습')">📚 학습</button>
+          <button type="button" data-v="운동" onclick="b165SetCat('운동')">🏃 운동</button>
+          <button type="button" data-v="가사" onclick="b165SetCat('가사')">🏠 가사</button>
+          <button type="button" data-v="취미" onclick="b165SetCat('취미')">🎨 취미</button>
+          <button type="button" data-v="기타" onclick="b165SetCat('기타')">⭐ 기타</button>
         </div>
-        <div class="m-label">날짜</div>
-        <button type="button" class="b162-datebtn" id="b162DateBtn" onclick="focusModalDate()"></button>
-        <div class="m-label">몇 분 정도 할까요?</div>
-        <div class="b162-slotrow" id="b162Mins">
-          <button type="button" data-v="10" onclick="b162SetMins(10)">10분</button>
-          <button type="button" data-v="20" onclick="b162SetMins(20)">20분</button>
-          <button type="button" data-v="30" onclick="b162SetMins(30)">30분</button>
-          <button type="button" data-v="-1" onclick="b162SetMins(-1)">직접</button>
-        </div>
-        <input class="m-field" id="b162MinCustom" type="number" inputmode="numeric" placeholder="분 (예: 25)" style="display:none" oninput="b162CustomMin(this)">
+        <select id="mCat" style="display:none"><option value="학습">학습</option><option value="운동">운동</option><option value="가사">가사</option><option value="취미">취미</option><option value="기타">기타</option></select>
       </div>
 
       <div id="mNameWrap">
         <div class="m-label">제목</div>
-        <input class="m-field" id="mName" placeholder="할일 제목">
+        <input class="m-field" id="mName" placeholder="할 일 제목">
       </div>
 
       <div class="child-plan-helper" id="childPlanHelper">
@@ -1544,6 +1538,15 @@ body.child-device .week-plan-day.today{background:#FBF3E9;}
         <div id="mStudyContinueHint" style="display:none;margin-top:8px;padding:10px 11px;border-radius:10px;background:#F5E9D3;color:#9C6B1F;font-size:12px;line-height:1.5"></div>
       </div>
 
+      <div class="m-label">언제 할까요?</div>
+      <div class="b162-slotrow" id="b162Slots">
+        <button type="button" data-v="before" onclick="b162SetSlot('before')">등교 전</button>
+        <button type="button" data-v="after" onclick="b162SetSlot('after')">방과 후</button>
+        <button type="button" data-v="evening" onclick="b162SetSlot('evening')">저녁</button>
+        <button type="button" data-v="time" onclick="b162SetSlot('time')">시각 지정</button>
+        <button type="button" data-v="allday" onclick="b162SetSlot('allday')">하루종일</button>
+      </div>
+
       <div class="m-allday-row">
         <input type="checkbox" id="mAllday" onchange="toggleAlldayModal()" style="width:18px;height:18px;cursor:pointer">
         <label for="mAllday">하루종일</label>
@@ -1567,23 +1570,21 @@ body.child-device .week-plan-day.today{background:#FBF3E9;}
       <!-- 숨겨진 날짜 input -->
       <input type="date" id="mDate" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" onchange="onModalDateChange()">
 
+      <div class="m-label">몇 분 정도 할까요?</div>
+      <div class="b162-slotrow" id="b162Mins">
+        <button type="button" data-v="10" onclick="b162SetMins(10)">10분</button>
+        <button type="button" data-v="20" onclick="b162SetMins(20)">20분</button>
+        <button type="button" data-v="30" onclick="b162SetMins(30)">30분</button>
+        <button type="button" data-v="-1" onclick="b162SetMins(-1)">직접</button>
+      </div>
+      <input class="m-field" id="b162MinCustom" type="number" inputmode="numeric" placeholder="분 (예: 25)" style="display:none" oninput="b162CustomMin(this)">
+
       <!-- Build 072: 자녀 화면에서는 자세히 설정하기 전까지 아래 고급 항목을 접어둡니다 -->
       <button type="button" class="m-advanced-toggle" id="mAdvancedToggleBtn" onclick="toggleAdvancedFields()">
         <span id="mAdvancedToggleIcon">🔧</span> <span id="mAdvancedToggleLabel">자세히 설정하기</span>
       </button>
 
       <div id="mAdvancedWrap" style="display:none">
-        <div id="mCatWrap">
-          <div class="m-label">카테고리</div>
-          <select class="m-field" id="mCat">
-            <option value="학습">📚 학습</option>
-            <option value="운동">🏃 운동</option>
-            <option value="가사">🏠 가사</option>
-            <option value="취미">🎨 취미</option>
-            <option value="기타">⭐ 기타</option>
-          </select>
-        </div>
-
         <div class="m-label mRepeatLabel">반복</div>
         <select class="m-field" id="mRepeat" onchange="onRepeatTypeChange()">
           <option value="none">반복 없음</option>
@@ -1624,8 +1625,8 @@ body.child-device .week-plan-day.today{background:#FBF3E9;}
     </div>
     <div class="m-btns">
       <button class="m-del" id="mDelete" style="display:none" onclick="b165DeleteTask()">삭제</button>
-      <button class="m-cancel" onclick="closeModal()">취소</button>
       <button class="m-save" id="mSave" onclick="saveTask()">저장</button>
+      <button class="m-cancel" onclick="closeModal()">닫기</button>
     </div>
   </div>
 </div>
@@ -1649,7 +1650,7 @@ body.child-device .week-plan-day.today{background:#FBF3E9;}
       </div>
       <div class="study-progress-result" id="studyProgressResult"></div>
       <div class="m-btns" style="margin-top:16px">
-        <button class="m-cancel" onclick="closeStudyProgressModal()">취소</button>
+        <button class="m-cancel" onclick="closeStudyProgressModal()">닫기</button>
         <button class="m-save" id="studyProgressSave" onclick="saveStudyProgress(false)">기록 저장</button>
       </div>
       <button class="f-btn" style="width:100%;margin-top:8px;background:#F7F6F2;color:#8A8578" onclick="saveStudyProgress(false)">페이지 기록 없이 닫기</button>
@@ -1759,8 +1760,8 @@ body.child-device .week-plan-day.today{background:#FBF3E9;}
       <div id="tpDesc" style="font-size:12px;color:var(--sub);margin:-8px 0 12px;line-height:1.55;white-space:pre-line"></div>
       <textarea class="m-field" id="tpInput" style="height:60px;resize:none" maxlength="60"></textarea>
       <div class="m-btns">
-        <button class="m-cancel" onclick="closeTextPrompt()">취소</button>
-        <button class="m-save" id="tpSaveBtn" onclick="confirmTextPrompt()">확인</button>
+        <button class="m-cancel" onclick="closeTextPrompt()">닫기</button>
+        <button class="m-save" id="tpSaveBtn" onclick="confirmTextPrompt()">저장</button>
       </div>
     </div>
   </div>
@@ -2266,19 +2267,19 @@ function repeatSummary(t) {
   if (t.repeatEnd) base += ' ('+koDateShort(t.repeatEnd)+'까지)';
   return base;
 }
-// 반복 할일은 문서 하나를 여러 날짜에서 공유하므로, 완료 여부는 날짜별로 따로 기록한다
+// 반복 할 일은 문서 하나를 여러 날짜에서 공유하므로, 완료 여부는 날짜별로 따로 기록한다
 function taskDoneForDate(t, ds) {
   if (t.repeat && t.repeat!=='none') return (t.doneDates||[]).indexOf(ds)>=0;
   return !!t.done;
 }
-// 특정 날짜의 할일 중 몇 %를 완료했는지 (할일이 없으면 null)
+// 특정 날짜의 할 일 중 몇 %를 완료했는지 (할 일이 없으면 null)
 function pctForDate(ds) {
   var list=tasksForDate(ds);
   if (!list.length) return null;
   var done=list.filter(function(t){ return taskDoneForDate(t,ds); }).length;
   return Math.round(done/list.length*100);
 }
-// 오늘부터 거슬러 올라가며 "그날 할일을 모두 완료"한 연속일수 계산 (최대 60일)
+// 오늘부터 거슬러 올라가며 "그날 할 일을 모두 완료"한 연속일수 계산 (최대 60일)
 function computeStreak() {
   var streak=0, d=new Date(TODAY);
   for (var i=0;i<60;i++) {
@@ -2486,7 +2487,7 @@ function setupListeners() {
   });
 }
 
-// 가족 데이터(할일/일정/메시지 등)는 보안 규칙상 "승인된 기기"만 읽을 수 있으므로,
+// 가족 데이터(할 일/일정/메시지 등)는 보안 규칙상 "승인된 기기"만 읽을 수 있으므로,
 // 승인이 확인된 뒤에야 리스너를 켠다 (승인 전에 켜면 permission-denied로 리스너가 죽어서
 // 나중에 승인돼도 새로고침 전까지 데이터가 안 보이는 문제가 생긴다)
 var _familyListenersStarted=false;
@@ -4406,11 +4407,11 @@ function renderDay() {
     html+='<div class="progress-card p-mode ring-card"><div class="ring-row">'+progressRingSvg(pct,56,7,'#fff','rgba(255,255,255,.28)')+'<div class="ring-label"><div class="t1" style="color:#fff">'+(state.children.length>1?childLabel(activeChildId())+' 현황':'자녀 현황')+'</div><div class="t2" style="color:rgba(255,255,255,.85)">오늘 계획 '+done+'/'+tasks.length+' 완료</div></div></div>'+(streak>0?'<div class="streak-badge" style="margin-top:10px">🔥 '+streak+'일 연속 완료 중!</div>':'')+insightListHtml(true)+'</div>';
     html+=semesterGoalsSummaryHtml();
     if(shared.length){html+='<div class="sec-title">공유 일정</div>';shared.forEach(function(e){html+=sharedCard(e,false);});}
-    html+='<div class="sec-title">할일 현황</div>';
-    if(!tasks.length) html+=emptyBox('📋','등록된 할일이 없어요','아래에서 할일을 추가해보세요');
+    html+='<div class="sec-title">할 일 현황</div>';
+    if(!tasks.length) html+=emptyBox('📋','등록된 할 일이 없어요','아래에서 할 일을 추가해보세요');
     tasks.forEach(function(t){html+=taskCard(t,ds);});
     html+=renderMessages(ds,true);
-    html+='<div class="sec-title">할일 추가</div><div class="form-box" style="text-align:center"><div style="font-size:13px;color:var(--sub);margin-bottom:10px;line-height:1.5">자녀 할일 등록 화면과 똑같은 방식으로<br>날짜·시간·반복까지 한 번에 설정할 수 있어요</div><button class="f-btn p" onclick="openModal()">+ 할일 추가</button></div>';
+    html+='<div class="sec-title">할 일 추가</div><div class="form-box" style="text-align:center"><div style="font-size:13px;color:var(--sub);margin-bottom:10px;line-height:1.5">자녀 할 일 등록 화면과 똑같은 방식으로<br>날짜·시간·반복까지 한 번에 설정할 수 있어요</div><button class="f-btn p" onclick="openModal()">+ 할 일 추가</button></div>';
     return html;
   }
 
@@ -4755,25 +4756,12 @@ function renderMonth() {
     monthInsightSub=monthBestDay?'가장 높은 실행률은 '+monthBestDay.day+'일의 '+monthBestDay.pct+'%였습니다.':'자녀가 스스로 다음 계획을 정할 수 있도록 한 가지부터 시작해 주세요.';
   }
   var monthTitle=state.mode==='child'?'🌱 이번 달, 내가 해낸 것':'📊 이번 달 실행 현황';
-  html+='<div class="month-self-review">'
-    +'<div class="month-self-review-title"><span>'+monthTitle+'</span><span class="month-self-review-sub">'+(month+1)+'월 전체</span></div>'
-    +'<div class="month-self-review-grid">'
-    +'<div class="month-self-review-item"><div class="month-self-review-num">'+monthPct+'%</div><div class="month-self-review-label">할 일 실행</div></div>'
-    +'<div class="month-self-review-item"><div class="month-self-review-num">'+completionDays+'일</div><div class="month-self-review-label">계획을 다 해낸 날</div></div>'
-    +'<div class="month-self-review-item"><div class="month-self-review-num">'+monthStudyPages+'p</div><div class="month-self-review-label">학습 실행</div></div>'
-    +'</div>'
-    +'<div class="month-review-insight"><div class="month-review-insight-main">'+monthInsightMain+'</div><div class="month-review-insight-sub">'+monthInsightSub+'</div></div>'
-    +(state.mode==='child'?reflectionSummaryHtml(fmt(new Date(year,month,1)),fmt(new Date(year,month+1,0))):parentReflectionSummaryHtml(fmt(new Date(year,month,1)),fmt(new Date(year,month+1,0))))
-    +''
-    +(state.mode==='child'?'<div class="month-next-step" onclick="selectNextMonthAndAdd()"><span>✍️ 다음 달 한 걸음 정하기<span class="month-next-step-sub">이번 달 돌아본 뒤, 다음 달에 가장 먼저 할 일 하나를 정해봐요</span></span><span>›</span></div>':'')
-    +'</div>';
-
   html+='<button type="button" class="month-selected-date-btn" onclick="selectDay(\''+ds+'\')">'+koDate(state.selectedDate)+(holiday2?' <span class="month-selected-holiday">· 🎉 '+esc(holiday2)+'</span>':'')+'</button>';
   html+='<div class="month-detail-scroll" id="monthDetailScroll">';
   var tasks=tasksForDate(ds), shared=sharedForDate(ds);
   if (!tasks.length&&!shared.length) html+=emptyBox('📅','이날 계획이 없어요','달력에서 날짜를 선택하세요');
   shared.forEach(function(e){ html+=sharedCard(e,false); });
-  tasks.forEach(function(t){ html+=taskCard(t, ds); });
+  if (tasks.length) html+=b162TaskCard(tasks,ds,state.mode==='parent',function(){ return true; },'',true);
   html+='</div>';
   return html;
 }
@@ -5062,7 +5050,7 @@ function renderShared() {
 // ── DEVICES VIEW ──
 function deleteChildProfile(id, name) {
   if (!amIAdmin()) { showToast('🔒 관리자만 삭제할 수 있어요'); return; }
-  if (!confirm('"'+name+'" 자녀 프로필을 삭제할까요?\n(이미 등록된 할일/메시지는 남아있지만, 더 이상 이 자녀 것으로 표시되지 않아요)')) return;
+  if (!confirm('"'+name+'" 자녀 프로필을 삭제할까요?\n(이미 등록된 할 일/메시지는 남아있지만, 더 이상 이 자녀 것으로 표시되지 않아요)')) return;
   fsDel('children', id).then(function(){
     showToast('🗑 삭제됐어요');
   }).catch(function(){ showToast('⚠️ 삭제 실패. 네트워크를 확인해주세요'); });
@@ -5665,7 +5653,7 @@ function toggleTask(id, ds) {
     var p=pctForDate(ds);
     if (p===100 && ds===fmt(TODAY)) {
       var s=computeStreak();
-      showToast(s>1?('🎉 오늘 할일을 다 했어요! 🔥 '+s+'일 연속!'):'🎉 오늘 할일을 다 했어요! 최고예요!');
+      showToast(s>1?('🎉 오늘 할 일을 다 했어요! 🔥 '+s+'일 연속!'):'🎉 오늘 할 일을 다 했어요! 최고예요!');
     } else {
       showToast('🎉 완료! 잘했어요!');
     }
@@ -5678,10 +5666,10 @@ function deleteTask(id) {
   var t=state.tasks.find(function(x){ return String(x.id)===String(id); });
   if (!t) return;
   var isP=state.mode==='parent';
-  var canEdit=isParentChildViewMode() || isP || !t.fromParent;
+  var canEdit=isP || !t.fromParent;
   if (!canEdit) { showToast('⚠️ 본인이 등록한 일정만 삭제할 수 있어요'); return; }
   if (isP && !isParentChildViewMode()) {
-    if (!confirm('이 할일을 삭제할까요?')) return;
+    if (!confirm('이 할 일을 삭제할까요?')) return;
     fsDel('tasks',t.id);
     showToast('🗑 삭제됐어요');
   } else {
@@ -6390,7 +6378,7 @@ function openModal(taskId) {
   var wbPanel = document.getElementById('wbManagePanel');
   if (wbPanel) wbPanel.style.display = 'none';
 
-  document.getElementById('modalH').textContent = isEdit ? '계획 수정' : (isP ? '할일 추가' : '🌱 오늘 계획 세우기');
+  document.getElementById('modalH').textContent = isEdit ? '계획 수정' : (isP ? '할 일 추가' : '🌱 오늘 계획 세우기');
   document.getElementById('mSave').textContent = isEdit ? '수정하기' : '추가하기';
   document.getElementById('mSave').className = 'm-save' + (isP ? ' p' : '');
   document.getElementById('mTimeError').style.display = 'none';
@@ -7093,31 +7081,34 @@ function b162CheckMany(ids,ds){
 function b162Ev(time,tag,cls,title,sub,dim){
   return '<div class="b162-tl"><div class="b162-tm">'+time+'</div><div class="b162-ev b162-'+cls+(dim?' dim':'')+'"><span class="b162-tg">'+tag+'</span><span class="b162-evt"><b>'+esc(title)+'</b>'+(sub?'<small>'+esc(sub)+'</small>':'')+'</span></div></div>';
 }
-function b162Row(t,ds,isP,canEdit){
+function b162Row(t,ds,isP,canEdit,o){
+  o=o||{};
   var done=taskDoneForDate(t,ds), pc=done&&b162Pc(t,ds), id=t.id;
   var useModal=t.taskType==='study' && !(state.mode==='child' && !t.pageStart);
-  var chk=isP?'<span class="b162-ck'+(done?' d':'')+'">'+(done?'✓':'')+'</span>'
+  var chk=(isP||o.ro)?'<span class="b162-ck'+(done?' d':'')+'">'+(done?'✓':'')+'</span>'
     :'<button class="b162-ck'+(done?' d':'')+'" aria-label="완료 체크" onclick="'+(useModal?'openStudyProgressModal':'toggleTask')+'(\''+id+'\',\''+ds+'\');event.stopPropagation()">'+(done?'✓':'')+'</button>';
   var st='';
   if (done) st = pc ? '<span class="b162-p ok">★ 확인</span>'
-    : (isP ? '<button class="b162-p wait b162-pb" onclick="b162CheckMany(\''+id+'\',\''+ds+'\');event.stopPropagation()">확인하기</button>' : '<span class="b162-p wait">확인 대기</span>');
-  var sub=(t.time&&!t.allday)?'<small>'+esc(prettyTime(t.time))+'</small>':(t.allday?'<small>하루종일</small>':'');
-  if (t.carriedTo&&t.carriedTo!==t.date) sub+='<small>'+koDateShort(t.date)+'에서 옮겨왔어요</small>';
-  return '<div class="b162-row'+(done?' done':'')+'"'+(canEdit?' onclick="b165Menu(\''+id+'\')"':'')+'>'+chk
-    +'<div class="b162-nm"><span>'+esc(t.name)+'</span>'+sub+'</div>'+st
-    +(t.minutes?'<span class="b162-p min">'+t.minutes+'분</span>':'')
-    +'</div>';
+    : ((isP&&!o.ro) ? '<button class="b162-p wait b162-pb" onclick="b162CheckMany(\''+id+'\',\''+ds+'\');event.stopPropagation()">확인하기</button>' : '<span class="b162-p wait">확인 대기</span>');
+  var meta=[];
+  if (t.allday) meta.push('하루종일'); else if (t.time) meta.push(prettyTime(t.time));
+  if (t.minutes) meta.push(t.minutes+'분');
+  if (t.carriedTo&&t.carriedTo!==t.date) { var od=parseDate(t.date); meta.push((od.getMonth()+1)+'/'+od.getDate()+'에서 이동'); }
+  return '<div class="b162-row'+(done?' done':'')+'" data-tid="'+id+'"'+((canEdit&&!o.ro)?' onclick="b165RowClick(\''+id+'\')"':'')+'>'+chk
+    +'<div class="b162-nm"><span class="b162-n1">'+esc(t.name)+'</span><span class="b162-n2"><span class="b162-meta">'+esc(meta.join(' · '))+'</span>'+st+'</span></div></div>';
 }
-function b162TaskCard(list,ds,isP,canEditFn,label){
+function b162TaskCard(list,ds,isP,canEditFn,label,noIndent){
   var tm=0,dm=0,d=0,pend=[];
   list.forEach(function(t){ var dn=taskDoneForDate(t,ds); tm+=t.minutes||0; if(dn){ d++; dm+=t.minutes||0; if(!b162Pc(t,ds)) pend.push(t.id); } });
-  var html='<div class="b162-card"><div class="b162-ch"><b>'+label+' 할 일</b><span>'+(tm?dm+' / '+tm+'분':d+' / '+list.length)+'</span></div>';
+  var html='<div class="b162-card"'+(noIndent?' style="margin-left:0"':'')+'>';
+  if (label) html+='<div class="b162-ch"><b>'+label+' 할 일</b><span>'+(tm?dm+' / '+tm+'분':d+' / '+list.length)+'</span></div>';
   var kinds=[['school','학교 숙제'],['academy','학원 숙제'],['study','자율학습'],['etc','기타']];
   kinds.forEach(function(k){
-    var g=list.filter(function(t){ return (t.taskType||'etc')===k[0]||(k[0]==='etc'&&['school','academy','study'].indexOf(t.taskType||'etc')<0); });
+    var g=b165Sort(list.filter(function(t){ return (t.taskType||'etc')===k[0]||(k[0]==='etc'&&['school','academy','study'].indexOf(t.taskType||'etc')<0); }));
     if (!g.length) return;
-    html+='<div class="b162-kind">'+k[1]+'</div>';
+    html+='<div class="b162-kind">'+k[1]+'</div><div class="b162-kg" data-kind="'+k[0]+'">';
     g.forEach(function(t){ html+=b162Row(t,ds,isP,canEditFn(t)); });
+    html+='</div>';
   });
   if (isP && pend.length) html+='<button class="b162-all" onclick="b162CheckMany(\''+pend.join(',')+'\',\''+ds+'\')">완료한 '+pend.length+'개 모두 확인</button>';
   return html+'</div>';
@@ -7199,26 +7190,18 @@ openModal=function(id){
   var c=document.getElementById('b162MinCustom'); if (c) { c.style.display=_minCustom?'':'none'; c.value=_minCustom?m:''; }
   b162PaintMins(); b162SetSlot(s);
   if (t&&t.carriedTo) { document.getElementById('mDate').value=t.carriedTo; updateDateBtns(t.carriedTo); }
-  var mh=document.getElementById('modalH'); if (mh) mh.textContent='할일 추가/편집';
+  var mh=document.getElementById('modalH'); if (mh) mh.textContent='할 일 추가/수정';
   var ms=document.getElementById('mSave'); if (ms) ms.textContent='저장';
-  var md=document.getElementById('mDelete'); if (md) md.style.display=t?'':'none';
+  var md=document.getElementById('mDelete'); if (md) md.style.display=(t&&(state.mode==='parent'||!t.fromParent))?'':'none';
   var mm=document.querySelector('#addModal .modal-body'); if (mm) mm.scrollTop=0;
 };
-function b165CloseMenu(){ var o=document.getElementById('b165Menu'); if (o) o.parentNode.removeChild(o); }
-function b165Menu(id){
-  var t=state.tasks.find(function(x){ return String(x.id)===String(id); }); if (!t) return;
-  var ov=document.createElement('div'); ov.id='b165Menu'; ov.className='b162-pop b165-menu';
-  ov.onclick=function(e){ if (e.target===ov) b165CloseMenu(); };
-  ov.innerHTML='<div class="b165-sheet"><div class="b165-st">'+esc(t.name)+'</div><button onclick="b165CloseMenu();openModal(\''+id+'\')">수정</button>'+((state.mode==='parent'||isParentChildViewMode()||!t.fromParent)?'<button class="del" onclick="b165CloseMenu();b165DeleteTask(\''+id+'\')">삭제</button>':'')+'<button onclick="b165CloseMenu()">닫기</button></div>';
-  document.body.appendChild(ov);
-}
 function b165DeleteTask(idArg){
   var id=idArg||_editTaskId, t=id?state.tasks.find(function(x){ return String(x.id)===String(id); }):null;
   if (!t) return;
   var isP=state.mode==='parent';
-  if (!(isP||isParentChildViewMode()||!t.fromParent)) { showToast('⚠️ 부모님이 만든 계획은 삭제할 수 없어요'); return; }
+  if (!(isP||!t.fromParent)) { showToast('⚠️ 부모님이 만든 계획은 삭제할 수 없어요'); return; }
   var go=function(){ fsDel('tasks',t.id); closeModal(); showToast('🗑 삭제됐어요'); };
-  if (isP&&!isParentChildViewMode()) { if (confirm('이 할일을 삭제할까요?')) go(); }
+  if (isP&&!isParentChildViewMode()) { if (confirm('이 할 일을 삭제할까요?')) go(); }
   else openConfirmSheet('이 계획을 삭제할까요?','🗑️','삭제할게요','아니요',function(ok){ if (ok) go(); });
 }
 var _b162UDB=updateDateBtns;
@@ -7333,7 +7316,7 @@ function renderWeek(){
   }
   for (var h=7;h<=21;h++) axis+='<span style="top:'+((h*60-T0)*PX-7)+'px">'+h+'</span>';
   if (isP&&state.children.length>1) html+='<div class="b162-who">'+esc(childLabel(activeChildId()))+'의 이번 주</div>';
-  html+='<div class="b162-wg"><div></div>'+hdr+'</div><div class="b162-wg b162-wgad"><div class="b162-wl">종일</div>'+ad+'</div>'
+  html+='<div class="b162-wsticky"><div class="b162-wg"><div></div>'+hdr+'</div><div class="b162-wg b162-wgad"><div class="b162-wl">종일</div>'+ad+'</div></div>'
     +'<div class="b162-wg"><div class="b162-wax">'+axis+'</div>'+cols+'</div>'
     +'<div class="b162-leg"><span>'+b162Ico('school',12)+' 학교수업</span><span>'+b162Ico('after',12)+' 방과후수업</span><span>'+b162Ico('academy',12)+' 학원수업</span><span>'+b162Ico('study',12)+' 자율학습(초록 점선 = 대략의 시간)</span><span>빈칸 = 여유 시간</span></div>'
     +'<div class="b162-leg">박스를 누르면 상세, 빈칸을 누르면 할 일 추가, 날짜를 누르면 그날 화면으로 가요.</div>';
@@ -7356,9 +7339,7 @@ function b162Open(i){
     [['school','학교 숙제'],['academy','학원 숙제'],['study','자율학습'],['etc','기타']].forEach(function(k){
       var g=d.list.filter(function(t){ var tt=t.taskType||'etc'; return tt===k[0]||(k[0]==='etc'&&['school','academy','study'].indexOf(tt)<0); });
       if (!g.length) return; body+='<div class="b162-kind">'+k[1]+'</div>';
-      g.forEach(function(t){ var dn2=taskDoneForDate(t,d.ds), pc=dn2&&b162Pc(t,d.ds);
-        body+='<div class="b162-row"><span class="b162-ck'+(dn2?' d':'')+'">'+(dn2?'✓':'')+'</span><div class="b162-nm"><span>'+esc(t.name)+'</span></div>'
-          +(pc?'<span class="b162-p ok">★ 확인</span>':(dn2?'<span class="b162-p wait">확인 대기</span>':''))+(t.minutes?'<span class="b162-p min">'+t.minutes+'분</span>':'')+'</div>'; });
+      b165Sort(g).forEach(function(t){ body+=b162Row(t,d.ds,false,false,{ro:true}); });
     });
   } else { title=esc(d.title); sub=(d.tag?d.tag+' · ':'')+esc(d.sub||''); if (d.desc) body='<div class="b162-pd">'+esc(d.desc)+'</div>'; }
   var ov=document.createElement('div'); ov.id='b162Pop'; ov.className='b162-pop';
@@ -7386,5 +7367,76 @@ setTimeout(function(){ try { render(); } catch(e) {} },0);
 .b165-sheet button.del{color:#B3261E;border-color:#E4B4AA}
 .m-del{flex:none;min-width:72px;padding:14px;border-radius:12px;border:1.5px solid #E4B4AA;background:#fff;color:#B3261E;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer}
 </style>
+<style id="b167-style">
+.b162-row{min-height:58px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.b162-row.dragging{background:#F3F8F5;box-shadow:0 4px 14px rgba(0,0,0,.18);position:relative;z-index:5;border-radius:10px}
+.b162-nm{min-width:0;flex:1}
+.b162-n1{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.b162-n2{display:flex;align-items:center;gap:8px;min-width:0;margin-top:2px}
+.b162-meta{flex:1;min-width:0;font-size:12px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.b162-wsticky{position:sticky;top:0;z-index:20;background:var(--bg);margin:0 -16px;padding:4px 16px 2px}
+#mAdvancedToggleBtn{display:none!important}
+#mAdvancedWrap{display:block!important}
+.mStudyAdvanced{display:none!important}
+#b165Cats{flex-wrap:nowrap;gap:6px}
+#b165Cats button{flex:1;min-width:0;padding:0 4px;font-size:13px}
+.m-btns .m-save{flex:2}.m-btns .m-cancel{flex:1}
+</style>
+<script id="build167-ui">
+/* Build 167: 목록 순서 바꾸기(길게 눌러 끌기), 2줄 목록, 할 일 입력 창 정리 */
+var _b165Drag=null, _b165NoClick=false;
+function b165Sort(list){ return list.slice().sort(function(a,b){ return (a.ord==null?1e9:a.ord)-(b.ord==null?1e9:b.ord); }); }
+function b165RowClick(id){ if (_b165NoClick) return; openModal(id); }
+function b165X(e){ return e.touches?e.touches[0].clientX:e.clientX; }
+function b165Y(e){ return e.touches?e.touches[0].clientY:e.clientY; }
+function b165DStart(e){
+  var row=e.target.closest&&e.target.closest('.b162-row[data-tid]');
+  if (!row||e.target.closest('button')) return;
+  var grp=row.parentNode; if (!grp||!/b162-kg/.test(grp.className)) return;
+  var d={row:row,grp:grp,x0:b165X(e),y0:b165Y(e),active:false,
+    ids:[].map.call(grp.querySelectorAll('.b162-row'),function(r){ return r.getAttribute('data-tid'); })};
+  d.timer=setTimeout(function(){
+    if (_b165Drag!==d) return;
+    d.active=true; d.grab=d.y0-d.row.getBoundingClientRect().top; d.row.classList.add('dragging');
+    if (navigator.vibrate) { try { navigator.vibrate(12); } catch(_) {} }
+  },450);
+  _b165Drag=d;
+}
+function b165DMove(e){
+  var d=_b165Drag; if (!d) return; var y=b165Y(e);
+  if (!d.active) { if (Math.abs(y-d.y0)>10||Math.abs(b165X(e)-d.x0)>10) { clearTimeout(d.timer); _b165Drag=null; } return; }
+  if (e.cancelable) e.preventDefault();
+  var row=d.row, before=null;
+  var sibs=[].filter.call(d.grp.querySelectorAll('.b162-row'),function(r){ return r!==row; });
+  for (var i=0;i<sibs.length;i++){ var r=sibs[i].getBoundingClientRect(); if (y<r.top+r.height/2) { before=sibs[i]; break; } }
+  row.style.transform='none';
+  if (before) d.grp.insertBefore(row,before); else d.grp.appendChild(row);
+  row.style.transform='translateY('+(y-d.grab-row.getBoundingClientRect().top)+'px)';
+}
+function b165DEnd(){
+  var d=_b165Drag; if (!d) return; clearTimeout(d.timer); _b165Drag=null; if (!d.active) return;
+  d.row.classList.remove('dragging'); d.row.style.transform='';
+  _b165NoClick=true; setTimeout(function(){ _b165NoClick=false; },350);
+  var ids=[].map.call(d.grp.querySelectorAll('.b162-row'),function(r){ return r.getAttribute('data-tid'); });
+  if (ids.join()===d.ids.join()) return;
+  Promise.all(ids.map(function(id,i){
+    var t=state.tasks.find(function(x){ return String(x.id)===id; });
+    if (!t||t.ord===i) return null;
+    return fsUpdate('tasks',t.id,{ord:i}).then(function(){ t.ord=i; });
+  }).filter(Boolean)).then(function(){ render(); })
+    .catch(function(){ showToast('⚠️ 순서 저장에 실패했어요. 네트워크를 확인해주세요'); render(); });
+}
+document.addEventListener('touchstart',b165DStart,{passive:true});
+document.addEventListener('touchmove',b165DMove,{passive:false});
+document.addEventListener('touchend',b165DEnd); document.addEventListener('touchcancel',b165DEnd);
+document.addEventListener('mousedown',b165DStart); document.addEventListener('mousemove',b165DMove); document.addEventListener('mouseup',b165DEnd);
+/* 카테고리: 콤보 대신 바로 보이는 칩 */
+function b165PaintCat(){ var v=document.getElementById('mCat').value; [].forEach.call(document.querySelectorAll('#b165Cats button'),function(b){ b.classList.toggle('on',b.getAttribute('data-v')===v); }); }
+function b165SetCat(v){ document.getElementById('mCat').value=v; b165PaintCat(); }
+var _b167ST=selectTaskType;
+selectTaskType=function(type){ _b167ST(type); b165PaintCat(); };
+var _b167OM=openModal;
+openModal=function(id){ _b167OM(id); b165PaintCat(); };
+</script>
 </body>
 </html>
