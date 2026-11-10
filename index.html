@@ -14,9 +14,9 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- Build 168 -->
-<title>Build 168 · 우리가족 플래너</title>
-<script>/* 빌드 번호는 여기 한 곳에서만 바꿉니다. sw.js의 CACHE 이름도 같은 번호로 함께 바꿔야 합니다. */var APP_BUILD='168';</script>
+<!-- Build 169 -->
+<title>Build 169 · 우리가족 플래너</title>
+<script>/* 빌드 번호는 여기 한 곳에서만 바꿉니다. sw.js의 CACHE 이름도 같은 번호로 함께 바꿔야 합니다. */var APP_BUILD='169';</script>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -1455,14 +1455,12 @@ body.child-device .week-plan-day.today{background:#FBF3E9;}
   </div>
   <div class="scroll-area" id="scrollArea"></div>
   <div class="done-anim-layer" id="doneAnimLayer"></div>
-  <button class="fab" id="fab" onclick="openModal()">+</button>
+  <button class="fab" id="fab" aria-label="기록 추가" onclick="b169Plus()">+</button>
   <div class="bottom-nav">
     <button class="nav-item active" id="nav-day" onclick="setView('day')"><span class="nav-icon">📋</span>오늘</button>
     <button class="nav-item" id="nav-week" onclick="setView('week')"><span class="nav-icon">📅</span>주간</button>
     <button class="nav-item" id="nav-month" onclick="setView('month')"><span class="nav-icon">🗓️</span>월간</button>
-    <button class="nav-item" id="nav-shared" onclick="setView('shared')"><span class="nav-icon">📌</span>공유</button>
-    <button class="nav-item" id="nav-school" onclick="setView('school')"><span class="nav-icon">🏫</span>학교</button>
-    <button class="nav-item" id="nav-devices" style="display:none" onclick="setView('devices')"><span class="nav-icon">🔐</span>기기</button>
+    <button class="nav-item" id="nav-devices" style="display:none" onclick="setView('devices')"><span class="nav-icon">⚙️</span>관리</button>
   </div>
 </div>
 
@@ -4954,7 +4952,7 @@ function mdCell(d,other,cellIdx,anchorWeek) {
   var html='<div class="'+cls+'" onclick="selectMonthDate(\''+ds+'\')" data-dbtap="date:'+ds+'"><div class="md-num'+(holiday&&!isSel&&!isTod?' holiday':'')+'">'+d.getDate()+'</div><div class="month-cell-events">';
   var shown=0, maxVisible=2;
   if(holiday){html+='<div class="month-cell-event holiday" title="'+esc(holiday)+'">🎉 '+esc(holiday)+'</div>';shown++;}
-  events.forEach(function(e){if(shown>=maxVisible)return;var academic=e.desc==='학사일정';var label=(academic?'📚 ':'📌 ')+e.name;html+='<div class="month-cell-event '+(academic?'academic':'family')+'" title="'+esc(e.name)+'">'+esc(label)+'</div>';shown++;});
+  events.forEach(function(e){if(shown>=maxVisible)return;var academic=(e.desc==='학사일정'||b162Kind(e)==='acad');var label=(academic?'📚 ':'📌 ')+e.name;html+='<div class="month-cell-event '+(academic?'academic':'family')+'" title="'+esc(e.name)+'">'+esc(label)+'</div>';shown++;});
   var eventShown=Math.max(0,shown-(holiday?1:0)), more=Math.max(0,events.length-eventShown);
   if(more>0)html+='<div class="month-cell-more">+ '+more+'개</div>';
   html+='</div>';
@@ -4962,7 +4960,7 @@ function mdCell(d,other,cellIdx,anchorWeek) {
   if(hasVisible){
     html+='<div class="month-collapsed-bars">';
     if(holiday) html+='<span class="month-collapsed-bar holiday"></span>';
-    events.slice(0,3-(holiday?1:0)).forEach(function(e){html+='<span class="month-collapsed-bar '+(e.desc==='학사일정'?'academic':'family')+'"></span>';});
+    events.slice(0,3-(holiday?1:0)).forEach(function(e){html+='<span class="month-collapsed-bar '+((e.desc==='학사일정'||b162Kind(e)==='acad')?'academic':'family')+'"></span>';});
     html+='</div>';
   }
   html+='</div>'; return html;
@@ -7014,6 +7012,7 @@ function b162TaskSec(t,off){
   return s==='evening'?'ev':s;
 }
 function b162Kind(e){
+  if (e.kind) return e.kind;
   if(/시업식|개학식|종업식|입학식|방학식|졸업식|평가|시험|행사|체험학습|방과후/.test(e.name||'')) return 'acad';
   return (e.who&&e.who!=='가족')?'me':'fam';
 }
@@ -7076,8 +7075,8 @@ function b162CheckMany(ids,ds){
   Promise.all(jobs).then(function(){ render(); showToast('★ 확인했어요'); })
     .catch(function(){ showToast('⚠️ 확인 저장에 실패했어요. 네트워크를 확인해주세요'); });
 }
-function b162Ev(time,tag,cls,title,sub,dim){
-  return '<div class="b162-tl"><div class="b162-tm">'+time+'</div><div class="b162-ev b162-'+cls+(dim?' dim':'')+'"><span class="b162-tg">'+tag+'</span><span class="b162-evt"><b>'+esc(title)+'</b>'+(sub?'<small>'+esc(sub)+'</small>':'')+'</span></div></div>';
+function b162Ev(time,tag,cls,title,sub,dim,click){
+  return '<div class="b162-tl"><div class="b162-tm">'+time+'</div><div class="b162-ev b162-'+cls+(dim?' dim':'')+'"'+(click?' onclick="'+click+'" style="cursor:pointer"':'')+'><span class="b162-tg">'+tag+'</span><span class="b162-evt"><b>'+esc(title)+'</b>'+(sub?'<small>'+esc(sub)+'</small>':'')+'</span></div></div>';
 }
 function b162Row(t,ds,isP,canEdit,o){
   o=o||{};
@@ -7147,7 +7146,7 @@ function renderDay(){
     if (sec.tk.length) html+=b162TaskCard(sec.tk,ds,isP,canEditFn,LB[k]);
   });
   if (!any) html+=emptyBox('🌿','오늘은 비어 있어요','+ 버튼을 눌러 할 일을 추가해 보세요');
-  html+=renderMessages(ds,isP);
+  html+=b169MsgBtn(ds);
   return html;
 }
 /* 할 일 입력: 언제(시간대) · 몇 분 */
@@ -7259,6 +7258,9 @@ function b162Day(ds,off){
     var a=b162Min(s.startTime), b=b162Min(s.endTime); if (a===null||b===null||b<=a) return;
     var ac=s.cat==='학원';
     add(a,b,ac?'c':'b',ac?'academy':'school',b162Wrap(s.name),{title:s.name,sub:prettyTime(s.startTime+'~'+s.endTime),tag:ac?'학원':'학교'});
+    var tb=+s.travelBefore||0, ta=+s.travelAfter||0;
+    if (tb>0) add(a-tb,a,'m','bus',['차량'],{title:'학원 차량 탑승',sub:b169Fmt(a-tb)+' 출발',tag:'이동'});
+    if (ta>0) add(b,b+ta,'m','bus',['차량'],{title:'학원 차량 귀가',sub:b169Fmt(b)+' 출발',tag:'이동'});
   });
   state.sharedEvents.forEach(function(e){
     if (!isSharedForActiveChild(e)||ds<e.date||ds>(e.dateEnd||e.date)) return;
@@ -7448,11 +7450,12 @@ function b165Fill(ds,off,order,timed,tasks){
     if (s._movedAway) return;
     var m=b162Min(s.startTime), k=b162SecOf(m,off,false);
     var sub=(s.startTime&&s.endTime?prettyTime(s.startTime+'~'+s.endTime):'')+(s._cancelled?' · 휴강':(s._movedIn?' · '+koDateShort(s._origDate)+'에서 이동':''));
-    S[k].ev.push({m:m===null?0:m,html:b162Ev(s.startTime||'',s.cat==='학원'?'학원':'학교',s.cat==='학원'?'ac':'sc',s.name,sub,s._cancelled)});
+    S[k].ev.push({m:m===null?0:m,html:b162Ev(s.startTime||'',s.cat==='학원'?'학원':'학교',s.cat==='학원'?'ac':'sc',s.name,sub,s._cancelled,state.mode==='parent'?"b169OpenSchool('"+s.id+"')":'')});
   });
+  schoolForDate(ds).forEach(function(s){ b169Travel(s,off,S); });
   timed.forEach(function(e){
     var kd=b162Kind(e), m=b162Min(e.time), k=b162SecOf(m,off,kd==='acad');
-    S[k].ev.push({m:m,html:b162Ev(String(e.time).split('~')[0].trim(),kd==='acad'?'학사':(kd==='me'?'개인':'가족'),kd,e.name,e.desc||'')});
+    S[k].ev.push({m:m,html:b162Ev(String(e.time).split('~')[0].trim(),kd==='acad'?'학사':(kd==='me'?'개인':'가족'),kd,e.name,e.desc||'',false,(state.mode==='parent'||kd==='me')?"b169OpenEvent(null,'"+e.id+"')":'')});
   });
   tasks.forEach(function(t){ S[b162TaskSec(t,off)].tk.push(t); });
   return S;
@@ -7485,6 +7488,182 @@ render=function(){
     var on=!!sa.querySelector('.b162-wfixed'); sa.classList.toggle('week-mode',on);
     if (on&&top!==null) { var nw=sa.querySelector('.b162-wscroll'); if (nw) nw.scrollTop=top; }
   }
+  return r;
+};
+setTimeout(function(){ try { render(); } catch(e) {} },0);
+</script>
+<style id="b169-style">
+.b169-sheet{background:#fff;border-radius:18px 18px 0 0;width:100%;max-width:430px;padding:12px 16px calc(16px + env(safe-area-inset-bottom))}
+.b169-sh{font-size:18px;font-weight:700;padding:6px 4px 12px}
+.b169-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.b169-tile{display:flex;flex-direction:column;gap:6px;min-height:70px;padding:10px 12px;text-align:left;border-radius:14px;border:1px solid var(--border);background:#fff;font:inherit;color:var(--text)}
+.b169-th{display:flex;align-items:center;gap:8px}.b169-th b{font-size:15px}
+.b169-bd{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex:none}
+.b169-td{font-size:12px;color:var(--sub)}
+.b169-two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#b169Modal .modal{display:flex;flex-direction:column;overflow:hidden;max-height:92vh;max-height:92dvh;padding-top:8px}
+#b169Modal .modal-handle{flex:none;margin-bottom:6px}
+#b169Modal .modal-h{flex:none;margin:0;padding:6px 20px 12px;border-bottom:1px solid var(--border);background:var(--card)}
+#b169Modal .modal-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:14px 20px 8px}
+#b169Modal .m-btns{flex:none;margin:0;padding:12px 20px calc(14px + env(safe-area-inset-bottom));border-top:1px solid var(--border);background:var(--card)}
+#b169Modal .b162-slotrow button.on{background:var(--child);border-color:var(--child);color:#fff}
+.b169-mg{display:grid;gap:8px;margin-bottom:14px}
+.b169-mg button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-height:60px;padding:10px 14px;border-radius:14px;border:1px solid var(--border);background:#fff;font:inherit;color:var(--text);text-align:left}
+.b169-mg button span{font-size:12px;color:var(--sub)}
+.b169-bar{display:flex;gap:8px;margin-bottom:12px}.b169-bar button{min-height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--border);background:#fff;font:inherit;font-size:14px;font-weight:600;color:var(--text)}
+.b169-bar .go{margin-left:auto;background:var(--child);border-color:var(--child);color:#fff}
+.b162-mv{background:#ECE7DA}.b162-mv .b162-tg{background:#4A463D}
+.b162-bx.m{background:repeating-linear-gradient(135deg,#ECE7DA 0 4px,#F7F3E8 4px 8px);color:#4A463D;font-weight:500}
+</style>
+<script id="build169-ui">
+/* Build 169: 하단 탭(오늘·주간·월간·관리), "+" 선택 시트, 일정/시간표 입력 창, 학원 차량, 메시지 시트 */
+B162_IC.bus='<path d="M5 17h14V7a2 2 0 00-2-2H7a2 2 0 00-2 2zM5 12h14"/><circle cx="8.5" cy="17.5" r="1.5"/><circle cx="15.5" cy="17.5" r="1.5"/>';
+B162_IC.clock='<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>';
+var _b169={type:'fam',id:null,sch:false,ad:false,cat:'학교'};
+function b169Fmt(m){ return ('0'+Math.floor(m/60)).slice(-2)+':'+('0'+(m%60)).slice(-2); }
+function b169El(id){ return document.getElementById(id); }
+function b169Travel(s,off,S){
+  if (s._movedAway||s._cancelled) return;
+  var a=b162Min(s.startTime), b=b162Min(s.endTime), tb=+s.travelBefore||0, ta=+s.travelAfter||0;
+  function put(m,title){ var k=b162SecOf(m,off,false); if (S[k]) S[k].ev.push({m:m,html:b162Ev(b169Fmt(m),'이동','mv',title,s.name)}); }
+  if (tb>0&&a!==null) put(a-tb,'학원 차량 탑승');
+  if (ta>0&&b!==null) put(b,'학원 차량 귀가');
+}
+/* "+" 선택 시트 */
+function b169ClosePlus(){ var o=b169El('b169Plus'); if (o) o.parentNode.removeChild(o); }
+function b169Plus(){
+  var isP=state.mode==='parent';
+  var tiles=[['task','check','#DDEBE3','#1F5239','할 일','과제 · 자율학습 계획'],['me','user','#E4EAF3','#2A3F66','개인 일정','나의 일정']];
+  if (isP) tiles=[tiles[0],tiles[1],['fam','home','#EBDDEB','#4F2A55','가족 일정','가족 모두의 일정'],['acad','school','#F6E9C9','#5C4210','학사 일정','단원평가 · 방과후 · 행사'],['sch','clock','#E6DFCF','#262522','시간표','학교 · 학원 반복 수업']];
+  var o=document.createElement('div'); o.id='b169Plus'; o.className='b162-pop b165-menu';
+  o.onclick=function(e){ if (e.target===o) b169ClosePlus(); };
+  o.innerHTML='<div class="b169-sheet"><div class="b169-sh">무엇을 기록할까요?</div><div class="b169-grid">'+tiles.map(function(t){
+    return '<button class="b169-tile" onclick="b169Pick(\''+t[0]+'\')"><span class="b169-th"><span class="b169-bd" style="background:'+t[2]+';color:'+t[3]+'">'+b162Ico(t[1],18)+'</span><b>'+t[4]+'</b></span><span class="b169-td">'+t[5]+'</span></button>';
+  }).join('')+'</div></div>';
+  document.body.appendChild(o);
+}
+function b169Pick(k){ b169ClosePlus(); if (k==='task') openModal(); else if (k==='sch') b169OpenSchool(); else b169OpenEvent(k); }
+/* 일정/시간표 입력 창 */
+function b169Ensure(){
+  if (b169El('b169Modal')) return;
+  var o=document.createElement('div'); o.className='modal-overlay'; o.id='b169Modal';
+  o.innerHTML='<div class="modal"><div class="modal-handle"></div><div class="modal-h" id="b169H"></div><div class="modal-body" id="b169Body"></div><div class="m-btns"><button class="m-del" id="b169Del" style="display:none" onclick="b169Delete()">삭제</button><button class="m-save" onclick="b169Save()">저장</button><button class="m-cancel" onclick="b169Close()">닫기</button></div></div>';
+  document.body.appendChild(o);
+}
+function b169Close(){ var o=b169El('b169Modal'); if (o) o.classList.remove('open'); }
+function b169Chips(id,items,cur,fn){ return '<div class="b162-slotrow" id="'+id+'">'+items.map(function(i){ return '<button type="button" data-v="'+i[0]+'" class="'+(String(i[0])===String(cur)?'on':'')+'" onclick="'+fn+'(\''+i[0]+'\')">'+i[1]+'</button>'; }).join('')+'</div>'; }
+function b169TimeRow(a,b){ return '<div class="b169-two"><div><div class="m-label">시작</div><input class="m-field" id="b169T1" type="time" step="600" value="'+a+'"></div><div><div class="m-label">종료</div><input class="m-field" id="b169T2" type="time" step="600" value="'+b+'"></div></div>'; }
+function b169OpenEvent(kind,id){
+  b169Ensure();
+  var e=id?state.sharedEvents.find(function(x){ return String(x.id)===String(id); }):null;
+  if (id&&!e) return;
+  kind=e?b162Kind(e):(kind||'fam');
+  _b169={type:kind,id:e?e.id:null,sch:false,ad:e?!!(e.allday||!e.time):false};
+  var d1=e?e.date:fmt(state.selectedDate), d2=e&&e.dateEnd&&e.dateEnd!==e.date?e.dateEnd:'';
+  var tp=(e&&e.time)?String(e.time).split('~'):['09:00','10:00'];
+  var types=state.mode==='parent'?[['fam','가족'],['me','개인'],['acad','학사']]:[['me','개인']];
+  b169El('b169H').textContent='일정 추가/수정';
+  b169El('b169Body').innerHTML=(types.length>1?'<div class="m-label">종류</div>'+b169Chips('b169Types',types,kind,'b169SetType'):'')
+    +'<div class="m-label">제목</div><input class="m-field" id="b169Name" placeholder="예: 가족 외식, 단원평가" value="'+esc(e?e.name:'')+'">'
+    +'<div class="b169-two"><div><div class="m-label">날짜</div><input class="m-field" id="b169D1" type="date" value="'+d1+'"></div><div><div class="m-label">종료일 (선택)</div><input class="m-field" id="b169D2" type="date" value="'+d2+'"></div></div>'
+    +'<div class="m-label">시간</div><div class="b162-slotrow"><button type="button" id="b169AD" class="'+(_b169.ad?'on':'')+'" onclick="b169ToggleAD()">하루종일</button></div>'
+    +'<div id="b169TimeRow" style="'+(_b169.ad?'display:none':'')+'">'+b169TimeRow(tp[0]||'09:00',tp[1]||'10:00')+'</div>'
+    +'<div class="m-label">메모</div><textarea class="m-field" id="b169Desc" placeholder="메모 (선택)" style="height:65px;resize:none">'+esc(e?e.desc||'':'')+'</textarea>';
+  b169El('b169Del').style.display=e?'':'none';
+  b169El('b169Modal').classList.add('open'); b169El('b169Body').scrollTop=0;
+}
+function b169SetType(v){ _b169.type=v; [].forEach.call(document.querySelectorAll('#b169Types button'),function(b){ b.classList.toggle('on',b.getAttribute('data-v')===v); }); }
+function b169ToggleAD(){ _b169.ad=!_b169.ad; b169El('b169AD').classList.toggle('on',_b169.ad); b169El('b169TimeRow').style.display=_b169.ad?'none':''; }
+function b169OpenSchool(id){
+  b169Ensure();
+  var s=id?state.schoolSchedule.find(function(x){ return String(x.id)===String(id); }):null;
+  if (id&&!s) return;
+  _b169={type:'sch',id:s?s.id:null,sch:true,ad:false,cat:s?s.cat:'학교'};
+  var days=s?(s.weekdays||[]).map(Number):[];
+  b169El('b169H').textContent='시간표 추가/수정';
+  b169El('b169Body').innerHTML='<div class="m-label">이름</div><input class="m-field" id="b169Name" placeholder="예: 영어 학원, 컴퓨터 방과후" value="'+esc(s?s.name:'')+'">'
+    +'<div class="m-label">구분</div>'+b169Chips('b169Cat',[['학교','학교'],['학원','학원']],_b169.cat,'b169SetCat')
+    +'<div class="m-label">요일</div><div class="b162-slotrow" id="b169Days">'+[[1,'월'],[2,'화'],[3,'수'],[4,'목'],[5,'금'],[6,'토'],[0,'일']].map(function(d){ return '<button type="button" data-d="'+d[0]+'" class="'+(days.indexOf(d[0])>=0?'on':'')+'" onclick="this.classList.toggle(\'on\')">'+d[1]+'</button>'; }).join('')+'</div>'
+    +b169TimeRow(s?s.startTime:'16:00',s?s.endTime:'17:00')
+    +'<div id="b169Travel" style="'+(_b169.cat==='학원'?'':'display:none')+'"><div class="m-label">학원 차량(이동) 시간</div><div class="b169-two"><div><div class="s">가는 길 (분)</div><input class="m-field" id="b169TB" type="number" inputmode="numeric" placeholder="예: 20" value="'+((s&&s.travelBefore)||'')+'"></div><div><div class="s">오는 길 (분)</div><input class="m-field" id="b169TA" type="number" inputmode="numeric" placeholder="예: 30" value="'+((s&&s.travelAfter)||'')+'"></div></div></div>'
+    +'<div class="b169-two"><div><div class="m-label">반복 시작일</div><input class="m-field" id="b169R1" type="date" value="'+((s&&s.repeatStart)||fmt(TODAY))+'"></div><div><div class="m-label">반복 종료일 (선택)</div><input class="m-field" id="b169R2" type="date" value="'+((s&&s.repeatEnd)||'')+'"></div></div>';
+  b169El('b169Del').style.display=s?'':'none';
+  b169El('b169Modal').classList.add('open'); b169El('b169Body').scrollTop=0;
+}
+function b169SetCat(v){ _b169.cat=v; [].forEach.call(document.querySelectorAll('#b169Cat button'),function(b){ b.classList.toggle('on',b.getAttribute('data-v')===v); }); b169El('b169Travel').style.display=v==='학원'?'':'none'; }
+function b169Save(){
+  var name=b169El('b169Name').value.trim();
+  if (!name) { showToast('⚠️ 제목을 입력해주세요'); return; }
+  if (_b169.sch) return b169SaveSchool(name);
+  var d1=b169El('b169D1').value||fmt(state.selectedDate), d2=b169El('b169D2').value||d1; if (d2<d1) d2=d1;
+  var time='';
+  if (!_b169.ad) {
+    var a=b169El('b169T1').value||'09:00', b=b169El('b169T2').value||'10:00';
+    if (b<=a&&d1===d2) { showToast('⚠️ 종료 시간이 시작보다 빨라요'); return; }
+    time=a+'~'+b;
+  }
+  var ex=_b169.id?(state.sharedEvents.find(function(x){ return String(x.id)===String(_b169.id); })||{}):{}, k=_b169.type;
+  var ev=Object.assign({},ex,{id:ex.id||Date.now(),name:name,date:d1,dateEnd:d2,allday:_b169.ad,time:time,
+    icon:({fam:'👨‍👩‍👧',me:'👤',acad:'🏫'})[k]||'📅',desc:b169El('b169Desc').value,kind:k,
+    childId:k==='fam'?null:(ex.childId||activeChildId()||null)});
+  fsSet('sharedEvents',ev.id,ev).then(function(){ b169Close(); showToast(ex.id?'✏️ 수정됐어요':'📅 저장됐어요'); })
+    .catch(function(){ showToast('⚠️ 저장에 실패했어요. 네트워크를 확인해주세요'); });
+}
+function b169SaveSchool(name){
+  var days=[].map.call(document.querySelectorAll('#b169Days button.on'),function(b){ return +b.getAttribute('data-d'); });
+  if (!days.length) { showToast('⚠️ 요일을 선택해주세요'); return; }
+  var ts=b169El('b169T1').value||'09:00', te=b169El('b169T2').value||'10:00';
+  if (te<=ts) { showToast('⚠️ 종료 시간이 시작보다 빨라요'); return; }
+  var ex=_b169.id?(state.schoolSchedule.find(function(x){ return String(x.id)===String(_b169.id); })||{}):{}, ac=_b169.cat==='학원';
+  var item=Object.assign({},ex,{id:ex.id||Date.now(),name:name,cat:_b169.cat,weekdays:days,startTime:ts,endTime:te,
+    repeatStart:b169El('b169R1').value||'',repeatEnd:b169El('b169R2').value||'',
+    childId:ex.childId||activeChildId(),exceptions:ex.exceptions||{},
+    travelBefore:ac?(parseInt(b169El('b169TB').value,10)||0):0,travelAfter:ac?(parseInt(b169El('b169TA').value,10)||0):0});
+  fsSet('schoolSchedule',item.id,item).then(function(){ b169Close(); showToast(ex.id?'✏️ 수정됐어요':'✅ 시간표가 저장됐어요'); })
+    .catch(function(){ showToast('⚠️ 저장에 실패했어요. 네트워크를 확인해주세요'); });
+}
+function b169Delete(){
+  var id=_b169.id; if (!id) return; var sch=_b169.sch;
+  openConfirmSheet(sch?'이 시간표를 삭제할까요?':'이 일정을 삭제할까요?','🗑️','삭제할게요','아니요',function(ok){
+    if (!ok) return;
+    fsDel(sch?'schoolSchedule':'sharedEvents',id); b169Close(); showToast('🗑 삭제됐어요');
+  });
+}
+editShared=function(id){ b169OpenEvent(null,id); };
+openEditSchool=function(id){ b169OpenSchool(id); };
+/* 응원 메시지: 작은 버튼 + 시트 */
+function b169MsgBtn(ds){
+  var n=state.messages.filter(function(m){ return m.date===ds&&!m.parentId&&isForActiveChild(m); }).length;
+  return '<button class="b162-link" onclick="b169Msgs()">💬 응원 메시지'+(n?' · '+n+'개':'')+'</button>';
+}
+function b169CloseMsgs(){ var o=b169El('b169Msgs'); if (o) o.parentNode.removeChild(o); }
+function b169Msgs(){
+  var o=document.createElement('div'); o.id='b169Msgs'; o.className='b162-pop b165-menu';
+  o.onclick=function(e){ if (e.target===o) b169CloseMsgs(); };
+  o.innerHTML='<div class="b169-sheet" style="max-height:80vh;overflow:auto"><div style="text-align:right"><button aria-label="닫기" style="width:44px;height:44px;border:0;background:none;font-size:20px" onclick="b169CloseMsgs()">✕</button></div><div id="b169MsgBody">'+renderMessages(fmt(state.selectedDate),state.mode==='parent')+'</div></div>';
+  document.body.appendChild(o);
+}
+/* 관리 화면: 일정 목록·시간표 목록으로 가는 길 */
+var _b169RD=renderDevices;
+renderDevices=function(){
+  return '<div class="b169-mg"><button onclick="setView(\'shared\')"><b>📅 일정 목록</b><span>가족 · 개인 · 학사 일정 보기와 수정</span></button><button onclick="setView(\'school\')"><b>🏫 학교 · 학원 시간표</b><span>시간표 보기와 수정, 학원 차량 시간</span></button></div>'+_b169RD();
+};
+var _b169R=render;
+render=function(){
+  var r=_b169R.apply(this,arguments);
+  var sa=b169El('scrollArea'), v=state.view;
+  if (sa&&(v==='shared'||v==='school')) {
+    ['se-formTitle','sch-formTitle'].forEach(function(id){
+      var h=b169El(id); if (!h) return; var nx=h.nextElementSibling;
+      if (nx&&/form-box/.test(nx.className)) nx.parentNode.removeChild(nx);
+      h.parentNode.removeChild(h);
+    });
+    var bar=document.createElement('div'); bar.className='b169-bar';
+    bar.innerHTML='<button onclick="setView(\'devices\')">‹ 관리</button>'+(state.mode==='parent'?'<button class="go" onclick="'+(v==='school'?'b169OpenSchool()':'b169OpenEvent(\'fam\')')+'">+ '+(v==='school'?'시간표':'일정')+' 추가</button>':'');
+    sa.insertBefore(bar,sa.firstChild);
+    var nd=b169El('nav-devices'); if (nd) nd.classList.add(state.mode==='parent'?'p-active':'active');
+  }
+  var mb=b169El('b169MsgBody'); if (mb) mb.innerHTML=renderMessages(fmt(state.selectedDate),state.mode==='parent');
   return r;
 };
 setTimeout(function(){ try { render(); } catch(e) {} },0);
