@@ -14,9 +14,9 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- Build 171 -->
-<title>Build 171 · 우리가족 플래너</title>
-<script>/* 빌드 번호는 여기 한 곳에서만 바꿉니다. sw.js의 CACHE 이름도 같은 번호로 함께 바꿔야 합니다. */var APP_BUILD='171';</script>
+<!-- Build 172 -->
+<title>Build 172 · 우리가족 플래너</title>
+<script>/* 빌드 번호는 여기 한 곳에서만 바꿉니다. sw.js의 CACHE 이름도 같은 번호로 함께 바꿔야 합니다. */var APP_BUILD='172';</script>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -1624,7 +1624,7 @@ body.child-device .week-plan-day.today{background:#FBF3E9;}
     <div class="m-btns">
       <button class="m-del" id="mDelete" style="display:none" onclick="b165DeleteTask()">삭제</button>
       <button class="m-save" id="mSave" onclick="saveTask()">저장</button>
-      <button class="m-cancel" onclick="closeModal()">닫기</button>
+      <button class="m-cancel" onclick="b172TryCloseTask()">닫기</button>
     </div>
   </div>
 </div>
@@ -2510,6 +2510,7 @@ function setupFamilyListeners() {
     var q=(role==='parent')?db.collection('messages').where('parentUid','==',uid):db.collection('messages').where('childId','==',cid);
     q.onSnapshot(function(snap){ state.messages=snap.docs.map(function(d){ return d.data(); }); render(); },
       function(){ state.messages=[]; render(); });
+    db.collection('promises').onSnapshot(function(snap){ state.promises=snap.docs.map(function(d){ return d.data(); }); render(); },function(){});
   })();
   db.collection('schoolSchedule').onSnapshot(function(snap) {
     state.schoolSchedule = snap.docs.map(function(d){ return d.data(); }); render();
@@ -4682,7 +4683,7 @@ function anchorWeekInfo() {
 }
 function renderMonth() {
   var ym=state.month, year=ym.getFullYear(), month=ym.getMonth();
-  _b171LC={}; _b171MaxL=1;
+  _b171LC={}; _b171MaxL=1; _b172Rows=[];
   var html='<div class="month-cal-block" id="monthCalBlock">';
 
   var dnames=['일','월','화','수','목','금','토'];
@@ -4698,6 +4699,7 @@ function renderMonth() {
   for (var d2=1;d2<=last.getDate();d2++) { html+=mdCell(new Date(year,month,d2),false,cellIdx,anchorWeek); cellIdx++; }
   var rem=(7-(start+last.getDate())%7)%7;
   for (var j=1;j<=rem;j++) { html+=mdCell(new Date(year,month+1,j),true,cellIdx,anchorWeek); cellIdx++; }
+  html+=b172MonthBars();
   html+='</div>';
   html=html.replace('<div class="month-grid">','<div class="month-grid" data-full="'+Math.max(56,26+15*_b171MaxL)+'">');
 
@@ -7113,6 +7115,7 @@ function renderDay(){
   var html='';
   var nmsg=state.messages.filter(function(m){ return m.date===ds&&!m.parentId&&isForActiveChild(m); }).length;
   html+='<div class="b170-top">'+((isP&&state.children.length>1)?'<span class="b162-who">'+esc(childLabel(activeChildId()))+'의 하루</span>':'<span></span>')+(nmsg?'<button class="b170-badge" onclick="b170ToMsgs()">💬 메시지 '+nmsg+'</button>':'')+'</div>';
+  html+=b172PromiseCard(ds,isP);
   var chips=[], timed=[], hol=getHoliday(ds);
   if (hol) chips.push(['off',hol]);
   state.sharedEvents.forEach(function(e){
@@ -7129,7 +7132,7 @@ function renderDay(){
   }
   if (ds===fmt(TODAY) && _b162Hide!==ds) {
     var od=b162Overdue();
-    if (od.length) html+='<div class="b162-late"><b>지난 할 일이 '+od.length+'개 남았어요</b><div><button class="go" onclick="b162Carry()">오늘로 옮기기</button><button onclick="b162Skip()">그대로 두기</button></div></div>';
+    if (od.length) html+='<div class="b162-late"><b>지난 할 일이 '+od.length+'개 남았어요</b><div><button class="go" onclick="b172OpenLate()">정리하기</button></div></div>';
   }
   var order=off?['am','pm','ev']:['before','school','after','ev','night'];
   var LB=off?{am:'오전',pm:'오후',ev:'저녁'}:{before:'등교 전',school:'학교',after:'방과 후',ev:'저녁',night:'밤'};
@@ -7548,7 +7551,7 @@ function b169Pick(k){ b169ClosePlus(); if (k==='task') openModal(); else if (k==
 function b169Ensure(){
   if (b169El('b169Modal')) return;
   var o=document.createElement('div'); o.className='modal-overlay'; o.id='b169Modal';
-  o.innerHTML='<div class="modal"><div class="modal-handle"></div><div class="modal-h" id="b169H"></div><div class="modal-body" id="b169Body"></div><div class="m-btns"><button class="m-del" id="b169Del" style="display:none" onclick="b169Delete()">삭제</button><button class="m-save" onclick="b169Save()">저장</button><button class="m-cancel" onclick="b169Close()">닫기</button></div></div>';
+  o.innerHTML='<div class="modal"><div class="modal-handle"></div><div class="modal-h" id="b169H"></div><div class="modal-body" id="b169Body"></div><div class="m-btns"><button class="m-del" id="b169Del" style="display:none" onclick="b169Delete()">삭제</button><button class="m-save" onclick="b169Save()">저장</button><button class="m-cancel" onclick="b172TryClose()">닫기</button></div></div>';
   document.body.appendChild(o);
 }
 function b169Close(){ var o=b169El('b169Modal'); if (o) o.classList.remove('open'); }
@@ -7669,7 +7672,7 @@ openEditSchool=function(id){ b169OpenSchool(id); };
 /* 관리 화면: 일정 목록·시간표 목록으로 가는 길 */
 var _b169RD=renderDevices;
 renderDevices=function(){
-  return '<div class="b169-mg"><button onclick="setView(\'shared\')"><b>📅 일정 목록</b><span>가족 · 개인 · 학사 일정 보기와 수정</span></button><button onclick="setView(\'school\')"><b>🏫 학교 · 학원 시간표</b><span>시간표 보기와 수정, 학원 차량 시간</span></button>'+(state.mode==='parent'?'<button onclick="b171OpenSettings()"><b>⏰ 하루 시간 설정</b><span>학교 수업 시간(요일별), 등교 전 · 저녁 · 밤 구간</span></button>':'')+'</div>'+_b169RD();
+  return '<div class="b169-mg"><button onclick="setView(\'shared\')"><b>📅 일정 목록</b><span>가족 · 개인 · 학사 일정 보기와 수정</span></button><button onclick="setView(\'school\')"><b>🏫 학교 · 학원 시간표</b><span>시간표 보기와 수정, 학원 차량 시간</span></button>'+(state.mode==='parent'?'<button onclick="b171OpenSettings()"><b>⏰ 하루 시간 설정</b><span>학교 수업 시간(요일별), 등교 전 · 저녁 · 밤 구간</span></button><button onclick="b172OpenIcons()"><b>😀 가족 아이콘</b><span>자녀와 부모의 아이콘 설정 (메시지에 표시)</span></button>':'')+'</div>'+_b169RD();
 };
 var _b169R=render;
 render=function(){
@@ -8006,6 +8009,407 @@ msgBubbleHtml=function(m,isP){
   return h;
 };
 setTimeout(function(){ try { render(); } catch(e) {} },0);
+</script>
+<style id="b172-style">
+.msg-input-row{align-items:center!important}
+.msg-input-field{height:44px!important;min-height:44px!important;margin:0!important;box-sizing:border-box!important;padding:11px 14px!important;line-height:20px!important}
+.msg-send-btn{margin:0!important;padding:0!important;display:flex!important;align-items:center;justify-content:center}
+.b172-ir{display:flex;align-items:center;gap:10px;padding:6px 12px}
+.b172-eb{width:44px;height:44px;min-height:0;border-radius:12px;border:1px solid var(--border);background:#F6F3EA;font-size:26px;padding:0}
+.b172-pal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;padding:4px 12px 10px}
+.b172-pal button{min-height:0;height:40px;border:0;border-radius:10px;background:#fff;font-size:22px;padding:0}
+.b172-lr{display:flex;align-items:center;gap:10px;min-height:52px;border-bottom:1px solid #EFE9DA;cursor:pointer}.b172-lr:last-child{border-bottom:0}
+.b172-lr .b162-ck{color:#fff}
+.b172-dh{display:flex;gap:4px;padding:8px 8px 0 46px;font-size:10px;color:var(--sub);text-align:center}
+.b172-dr{display:flex;align-items:center;gap:4px;padding:6px 8px;border-bottom:1px solid #EFE9DA}.b172-dr:last-child{border-bottom:0}
+.b172-dn{width:34px;height:40px;min-height:0;min-width:0;border-radius:10px;border:1px solid var(--border);background:#fff;font:inherit;font-weight:700;padding:0;flex:none}
+.b172-dr.on .b172-dn{background:var(--child);color:#fff;border-color:var(--child)}
+.b172-dr input{height:40px;min-height:40px;min-width:0;box-sizing:border-box;border:1px solid #E6DFCF;border-radius:10px;background:#F6F3EA;font-size:13px;padding:0 3px;text-align:center;-webkit-appearance:none;appearance:none}
+.b172-dr input[type=number]{width:44px;flex:none}
+.b172-dr input[type=time]{flex:1}
+.b172-dr:not(.on) input{opacity:.35;pointer-events:none}
+.b172-per{display:flex;align-items:center;gap:8px;padding:8px 12px}
+.b172-per input{flex:1;min-width:0;height:40px;box-sizing:border-box;border:1px solid #E6DFCF;border-radius:10px;background:#F6F3EA;font-size:14px;padding:0 8px;-webkit-appearance:none;appearance:none}
+.b172-pc{display:block;width:100%;text-align:left;border:1px solid var(--border);background:#fff;border-radius:14px;padding:10px 14px;margin-bottom:8px;font:inherit}
+.b172-pc b{display:block;font-size:15px}.b172-pc span{font-size:12px;color:var(--sub)}
+.b172-prom{display:flex;align-items:center;gap:10px;min-height:54px;padding:6px 14px;margin:0 0 10px;background:#fff;border:1px solid var(--border);border-radius:14px}
+.b172-chk{display:flex;align-items:center;gap:8px;min-height:44px;font-size:14px}
+.month-grid{position:relative!important}
+.b172-bars{position:absolute;inset:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-auto-rows:var(--mm-row-h,64px);gap:2px;pointer-events:none;z-index:4}
+.b172-b{align-self:start;height:14px;line-height:14px;margin-left:3px;margin-right:3px;border-radius:4px;font-size:8.5px;font-weight:700;padding:0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-sizing:border-box}
+.b172-b.bar{text-align:center}
+.b172-b.bar.cl{margin-left:0;border-top-left-radius:0;border-bottom-left-radius:0}
+.b172-b.bar.cr{margin-right:0;border-top-right-radius:0;border-bottom-right-radius:0}
+.b172-b.more{background:none;color:var(--sub)}
+.month-cal-block.collapsed .b172-bars{display:none}
+.b171-sr .b171-chip{text-align:center}
+</style>
+<script id="build172-ui">
+/* Build 172: 메시지 정리·가족 아이콘, 지난 할 일 선택 이동, 시간표 요일별 입력, 하루 시간 기간 설정, 오늘의 약속, 닫기 시 저장 확인 */
+var _b172Rows=[], _b172S='', _b172TS='', _b172Ic=null;
+state.promises=state.promises||[];
+function b172El(id){ return document.getElementById(id); }
+/* ---------- 공통: 변경 확인 후 닫기 ---------- */
+function b172Ser(rootId){
+  var r=b172El(rootId); if (!r) return '';
+  var v=[].map.call(r.querySelectorAll('input,textarea,select'),function(e){ return e.type==='checkbox'?e.checked:e.value; }).join('|');
+  var b=[].map.call(r.querySelectorAll('button.on,.on[data-d]'),function(x){ return x.getAttribute('data-v')||x.getAttribute('data-d')||x.id||x.textContent; }).join(',');
+  var t=[].map.call(r.querySelectorAll('[id^=mBtn]'),function(x){ return x.textContent; }).join(',');
+  return v+'#'+b+'#'+t;
+}
+function b172Snap(){ _b172S=b172Ser('b169Body'); }
+function b169Close(){
+  var o=b172El('b169Modal'); if (!o) return; o.classList.remove('open');
+  var s=o.querySelector('.m-save'); if (s) { s.textContent='저장'; s.style.display=''; }
+  var d=b172El('b169Del'); if (d) d.style.display='none';
+}
+function b172Foot(mode){ var o=b172El('b169Modal'), s=o.querySelector('.m-save'), d=b172El('b169Del'); if (mode==='list') { s.style.display='none'; d.style.display='none'; } }
+function b172CloseNow(){ if (_b169&&_b169.type==='times') b172OpenTimes(); else b169Close(); }
+function b172TryClose(){
+  if (!_b169||_b169.late||_b169.list||b172Ser('b169Body')===_b172S) { b172CloseNow(); return; }
+  openConfirmSheet('변경된 내용을 저장하시겠습니까?','💾','저장','저장 안 함',function(ok){ if (ok) b169Save(); else b172CloseNow(); });
+}
+function b172TryCloseTask(){
+  if (b172Ser('addModal')===_b172TS) { closeModal(); return; }
+  openConfirmSheet('변경된 내용을 저장하시겠습니까?','💾','저장','저장 안 함',function(ok){ if (ok) saveTask(); else closeModal(); });
+}
+var _b172om=openModal; openModal=function(id){ _b172om(id); _b172TS=b172Ser('addModal'); };
+/* ---------- 메시지 ---------- */
+var B172_PLANE='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg>';
+function b172ParentDefault(label){ return /엄마/.test(label||'')?'👩':(/아빠/.test(label||'')?'👨':'🧑'); }
+function b172Avatar(m){
+  if (m.from==='child') { var c=state.children.find(function(x){ return String(x.id)===String(m.childId); }); return (c&&c.emoji)||'🙂'; }
+  var p=m.parentUid?devicesState.find(function(d){ return d.uid===m.parentUid; }):null;
+  return p?(p.icon||b172ParentDefault(p.label)):'👨‍👩‍👧';
+}
+var _b172MB=msgBubbleHtml;
+msgBubbleHtml=function(m,isP){ return _b172MB(m,isP).replace(/<div class="msg-avatar">[^<]*<\/div>/,'<div class="msg-avatar">'+b172Avatar(m)+'</div>'); };
+var _b172RM=renderMessages;
+renderMessages=function(ds,isP){ return _b172RM(ds,isP).replace('>📨</button>','>'+B172_PLANE+'</button>'); };
+function sendMsg(ds){
+  var el=b172El('msgInput'); if (!el) { showToast('⚠️ 오류가 발생했어요'); return; }
+  var text=el.value.trim(); if (!text) { showToast('⚠️ 메시지를 입력해주세요'); return; }
+  var now=new Date();
+  var msg={id:Date.now(),from:(state.mode==='parent'?'parent':'child'),text:text,time:pad(now.getHours())+':'+pad(now.getMinutes()),
+    date:ds||fmt(state.selectedDate),parentId:null,childId:activeChildId(),parentUid:b171ParentUid(null),fromUid:getAuthUid()};
+  el.value=''; showToast('📨 메시지를 보냈어요!');
+  fsSet('messages',msg.id,msg).catch(function(){ el.value=text; showToast('⚠️ 보내지 못했어요. 네트워크를 확인해주세요'); });
+}
+function sendReply(parentId,ds){
+  var el=b172El('msgReplyInput'); if (!el) { showToast('⚠️ 오류가 발생했어요'); return; }
+  var text=el.value.trim(); if (!text) { showToast('⚠️ 답장을 입력해주세요'); return; }
+  var now=new Date();
+  var msg={id:Date.now(),from:(state.mode==='parent'?'parent':'child'),text:text,time:pad(now.getHours())+':'+pad(now.getMinutes()),
+    date:ds||fmt(state.selectedDate),parentId:parentId,childId:activeChildId(),parentUid:b171ParentUid(parentId),fromUid:getAuthUid()};
+  _replyTargetId=null; showToast('📨 답장을 보냈어요!'); render();
+  fsSet('messages',msg.id,msg).catch(function(){ showToast('⚠️ 보내지 못했어요. 네트워크를 확인해주세요'); });
+}
+/* ---------- 가족 아이콘 ---------- */
+var B172_EMO=['🐰','🐻','🐱','🐶','🦊','🐼','🐨','🐯','🦁','🐸','🐵','🐧','🐥','🦄','🐙','🦋','🐢','🐬','🌈','⭐','🌸','🍀','🍓','⚽','🎨','🚀','🧸','👨','👩','🧑','👦','👧','👴','👵','😀','😎','🥰','🤩'];
+function b172OpenIcons(){
+  if (state.mode!=='parent') return;
+  b169Ensure(); _b169={type:'icons',id:null}; var me=b171Me(), rows=[];
+  state.children.forEach(function(c){ rows.push({kind:'c',id:c.id,label:c.name,cur:c.emoji||'🙂',edit:true}); });
+  devicesState.filter(function(d){ return d.role==='parent'&&d.status==='approved'; }).forEach(function(d){ rows.push({kind:'p',id:d.uid,label:d.label||'부모',cur:d.icon||b172ParentDefault(d.label),edit:!!me.isAdmin||d.uid===me.uid}); });
+  _b172Ic=rows;
+  function sec(k,title){ return '<div class="m-label">'+title+'</div><div class="b170-dt">'+rows.map(function(r,i){ return r.kind!==k?'':'<div class="b172-ir"><button type="button" class="b172-eb" '+(r.edit?'':'disabled')+' id="b172eb'+i+'" onclick="b172PickRow('+i+')">'+r.cur+'</button><b>'+esc(r.label)+(r.edit?'':' <span class="s">(본인만 변경)</span>')+'</b></div><div class="b172-pal" id="b172pal'+i+'" style="display:none">'+B172_EMO.map(function(e){ return '<button type="button" onclick="b172SetEmo('+i+',\''+e+'\')">'+e+'</button>'; }).join('')+'</div>'; }).join('')+'</div>'; }
+  b169El('b169H').textContent='가족 아이콘';
+  b169El('b169Body').innerHTML=sec('c','자녀')+sec('p','부모')+'<div class="s" style="margin:6px 2px 10px;line-height:1.5">아이콘을 누르고 원하는 이모지를 고르세요. 메시지의 보낸 사람 옆에 표시돼요.</div>';
+  b169El('b169Modal').classList.add('open'); b169El('b169Body').scrollTop=0; b172Snap();
+}
+function b172PickRow(i){ var p=b172El('b172pal'+i); var open=p.style.display==='none'; [].forEach.call(document.querySelectorAll('.b172-pal'),function(x){ x.style.display='none'; }); p.style.display=open?'':'none'; }
+function b172SetEmo(i,e){ _b172Ic[i].cur=e; b172El('b172eb'+i).textContent=e; b172El('b172pal'+i).style.display='none'; }
+function b172SaveIcons(){
+  var jobs=[];
+  _b172Ic.forEach(function(r){
+    if (!r.edit) return;
+    if (r.kind==='c') { var c=state.children.find(function(x){ return String(x.id)===String(r.id); }); if (c&&(c.emoji||'🙂')!==r.cur) { c.emoji=r.cur; jobs.push(fsUpdate('children',r.id,{emoji:r.cur})); } }
+    else { var d=devicesState.find(function(x){ return x.uid===r.id; }); if (d&&(d.icon||b172ParentDefault(d.label))!==r.cur) { d.icon=r.cur; jobs.push(fsUpdate('devices',r.id,{icon:r.cur})); } }
+  });
+  b169Close(); render(); showToast('😀 저장됐어요');
+  Promise.all(jobs).catch(function(){ showToast('⚠️ 일부 저장에 실패했어요. 네트워크를 확인해주세요'); });
+}
+/* ---------- 지난 할 일 정리 ---------- */
+function b172OpenLate(){
+  var od=b162Overdue(); if (!od.length) { render(); return; }
+  b169Ensure(); _b169={type:'late',late:true,sel:{},when:'today'}; od.forEach(function(t){ _b169.sel[t.id]=true; });
+  b169El('b169H').textContent='지난 할 일 정리';
+  var rows=od.map(function(t){ var d=parseDate(t.carriedTo||t.date);
+    return '<div class="b172-lr" onclick="b172TogLate(\''+t.id+'\')"><span class="b162-ck d" id="b172lc'+t.id+'">✓</span><div class="b162-nm"><span class="b162-n1">'+esc(t.name)+'</span><span class="b162-n2"><span class="b162-meta">'+(d.getMonth()+1)+'/'+d.getDate()+' ('+B170_DN[d.getDay()]+')에 하기로 한 일</span></span></div></div>'; }).join('');
+  b169El('b169Body').innerHTML='<div class="s" style="margin:2px 2px 8px">정리할 할 일을 고르세요</div><div class="b170-dt" style="padding:0 12px">'+rows+'</div>'
+    +'<div class="m-label">옮길 날짜</div>'+b169Chips('b172LD',[['today','오늘'],['tomorrow','내일'],['pick','날짜 선택']],'today','b172SetLD')
+    +'<input class="m-field" type="date" id="b172LDate" style="display:none;margin-top:8px">'
+    +'<button type="button" class="b162-all" style="background:#fff;color:var(--text);border-color:var(--border);margin-top:14px" onclick="b172SkipLate()">선택한 일은 그대로 두기</button>';
+  var s=b169El('b169Modal').querySelector('.m-save'); s.textContent='옮기기'; b169El('b169Del').style.display='none';
+  b169El('b169Modal').classList.add('open'); b169El('b169Body').scrollTop=0;
+}
+function b172TogLate(id){ _b169.sel[id]=!_b169.sel[id]; b172El('b172lc'+id).classList.toggle('d',!!_b169.sel[id]); b172El('b172lc'+id).textContent=_b169.sel[id]?'✓':''; }
+function b172SetLD(v){ _b169.when=v; [].forEach.call(document.querySelectorAll('#b172LD button'),function(b){ b.classList.toggle('on',b.getAttribute('data-v')===v); }); b172El('b172LDate').style.display=v==='pick'?'':'none'; }
+function b172LateIds(){ return Object.keys(_b169.sel).filter(function(k){ return _b169.sel[k]; }); }
+function b172SaveLate(){
+  var ids=b172LateIds(); if (!ids.length) { showToast('⚠️ 옮길 할 일을 골라주세요'); return; }
+  var tgt=fmt(TODAY); if (_b169.when==='tomorrow') { var x=new Date(TODAY); x.setDate(x.getDate()+1); tgt=fmt(x); }
+  else if (_b169.when==='pick') { tgt=b172El('b172LDate').value; if (!tgt) { showToast('⚠️ 옮길 날짜를 골라주세요'); return; } }
+  var jobs=[]; ids.forEach(function(id){ var t=state.tasks.find(function(x){ return String(x.id)===id; }); if (t) { t.carriedTo=tgt; jobs.push(fsUpdate('tasks',t.id,{carriedTo:tgt})); } });
+  b169Close(); render(); showToast('📌 '+ids.length+'개를 옮겼어요');
+  Promise.all(jobs).catch(function(){ showToast('⚠️ 일부 저장에 실패했어요. 네트워크를 확인해주세요'); });
+}
+function b172SkipLate(){
+  var ids=b172LateIds(); if (!ids.length) { showToast('⚠️ 할 일을 골라주세요'); return; }
+  var jobs=[]; ids.forEach(function(id){ var t=state.tasks.find(function(x){ return String(x.id)===id; }); if (t) { t.overdueSkip=true; jobs.push(fsUpdate('tasks',t.id,{overdueSkip:true})); } });
+  b169Close(); render();
+  Promise.all(jobs).catch(function(){ showToast('⚠️ 일부 저장에 실패했어요. 네트워크를 확인해주세요'); });
+}
+/* ---------- 시간표 (요일별 시간, 차량, 적용 기간) ---------- */
+function b172DayT(s,d){ var p=s.perDay&&s.perDay[d]; return p?[b162Min(p.s),b162Min(p.e)]:[b162Min(s.startTime),b162Min(s.endTime)]; }
+var _b172SFD=schoolForDate;
+schoolForDate=function(ds){
+  var dow=parseDate(ds).getDay();
+  return _b172SFD(ds).map(function(s){ var p=(!s._movedIn&&s.perDay)?s.perDay[dow]:null; return p?Object.assign({},s,{startTime:p.s,endTime:p.e,travelBefore:p.b||0,travelAfter:p.a||0}):s; });
+};
+function b172TimeText(s){
+  var order=[1,2,3,4,5,6,0], g={}, keys=[];
+  order.forEach(function(d){ if ((s.weekdays||[]).map(Number).indexOf(d)<0) return; var p=s.perDay&&s.perDay[d]; var k=p?p.s+'~'+p.e:s.startTime+'~'+s.endTime; if (!g[k]) { g[k]=[]; keys.push(k); } g[k].push(B170_DN[d]); });
+  return keys.map(function(k){ return g[k].join('·')+' '+k.replace('~',' ~ '); }).join(' / ');
+}
+function b170Conflicts(item){
+  if (item.cat!=='학원') return [];
+  var rs=item.repeatStart||'0000-00-00', re=item.repeatEnd||'9999-12-31';
+  return state.schoolSchedule.filter(function(o){
+    if (String(o.id)===String(item.id)||o.cat!=='학원') return false;
+    if (o.childId&&item.childId&&String(o.childId)!==String(item.childId)) return false;
+    var os=o.repeatStart||'0000-00-00', oe=o.repeatEnd||'9999-12-31';
+    if (rs>oe||os>re) return false;
+    return (item.weekdays||[]).some(function(d){
+      if ((o.weekdays||[]).map(Number).indexOf(+d)<0) return false;
+      var a=b172DayT(item,d), b=b172DayT(o,d); return a[0]<b[1]&&b[0]<a[1];
+    });
+  });
+}
+function b172TimeCell(k,v){ return k==='b'||k==='a' ? '<input type="number" inputmode="numeric" min="0" placeholder="분" data-k="'+k+'" value="'+(v||'')+'">' : '<input type="time" step="600" data-k="'+k+'" value="'+(v||'')+'">'; }
+function b169OpenSchool(id,tpl){
+  b169Ensure();
+  var s=id?state.schoolSchedule.find(function(x){ return String(x.id)===String(id); }):null;
+  if (id&&!s) return;
+  var src=s||tpl||null; _b169={type:'sch',id:s?s.id:null,sch:true,ad:false,cat:src?src.cat:'학교'};
+  var days=src?(src.weekdays||[]).map(Number):[];
+  function vals(d){ var p=src&&src.perDay&&src.perDay[d]; return p?p:{s:src&&src.startTime||'16:00',e:src&&src.endTime||'17:00',b:src&&src.travelBefore||'',a:src&&src.travelAfter||''}; }
+  var rows=[[1,'월'],[2,'화'],[3,'수'],[4,'목'],[5,'금'],[6,'토'],[0,'일']].map(function(x){
+    var on=days.indexOf(x[0])>=0, v=vals(x[0]);
+    return '<div class="b172-dr'+(on?' on':'')+'" data-d="'+x[0]+'"><button type="button" class="b172-dn" onclick="b172TD('+x[0]+')">'+x[1]+'</button>'+b172TimeCell('b',v.b)+b172TimeCell('s',v.s)+b172TimeCell('e',v.e)+b172TimeCell('a',v.a)+'</div>';
+  }).join('');
+  var rs=s?(s.repeatStart||''):(tpl&&tpl.repeatEnd?(function(){ var x=parseDate(tpl.repeatEnd); x.setDate(x.getDate()+1); return fmt(x); })():fmt(TODAY)), re=s?(s.repeatEnd||''):'';
+  b169El('b169H').textContent='시간표 추가/수정';
+  b169El('b169Body').innerHTML='<div class="m-label">이름</div><input class="m-field" id="b169Name" placeholder="예: 영어 학원, 컴퓨터 방과후" value="'+esc(src?src.name:'')+'">'
+    +'<div class="m-label">구분</div>'+b169Chips('b169Cat',[['학교','학교'],['학원','학원']],_b169.cat,'b169SetCat')
+    +'<div class="m-label">요일별 시간 <span class="s">(요일을 눌러 선택 · 차량은 학원 차량을 이용할 때만)</span></div>'
+    +'<div class="b170-dt"><div class="b172-dh"><span style="width:44px">가는 길</span><span style="flex:1">시작</span><span style="flex:1">종료</span><span style="width:44px">오는 길</span></div><div id="b172Days">'+rows+'</div></div>'
+    +'<div class="m-label">적용 기간</div><div class="b170-dt"><div class="b172-per"><input type="date" id="b169R1" value="'+rs+'"><span>~</span><input type="date" id="b169R2" value="'+re+'"></div></div>'
+    +'<div class="s" style="margin:6px 2px 10px;line-height:1.5">학기와 방학처럼 기간이 바뀌면 기간별로 따로 등록하세요. 새 기간을 등록할 때 이전 시간표에 종료일이 없으면 종료일을 정하도록 안내해 드려요.</div>'
+    +(s?'<button type="button" class="b162-all" style="background:#fff;color:var(--text);border-color:var(--border)" onclick="b170CopySchool(\''+s.id+'\')">같은 시간표를 다른 기간으로 추가</button>':'');
+  b169El('b169Del').style.display=s?'':'none';
+  b169El('b169Modal').classList.add('open'); b169El('b169Body').scrollTop=0; b172Snap();
+}
+function b172TD(d){
+  var row=document.querySelector('#b172Days .b172-dr[data-d="'+d+'"]'), on=!row.classList.contains('on');
+  row.classList.toggle('on',on);
+  if (on) { var ref=document.querySelector('#b172Days .b172-dr.on:not([data-d="'+d+'"])'); if (ref) [].forEach.call(row.querySelectorAll('input'),function(i){ var o=ref.querySelector('[data-k="'+i.getAttribute('data-k')+'"]'); if (o&&o.value) i.value=o.value; }); }
+}
+function b170CopySchool(id){
+  var s=state.schoolSchedule.find(function(x){ return String(x.id)===String(id); }); if (!s) return;
+  b169OpenSchool(null,s); showToast('요일과 시간, 적용 기간을 바꿔서 저장하세요');
+}
+function b169SaveSchool(name){
+  var rows=[].slice.call(document.querySelectorAll('#b172Days .b172-dr.on')), per={}, wd=[];
+  if (!rows.length) { showToast('⚠️ 요일을 선택해주세요'); return; }
+  var ac=_b169.cat==='학원';
+  for (var i=0;i<rows.length;i++){
+    var r=rows[i], d=+r.getAttribute('data-d'), g=function(k){ return r.querySelector('[data-k="'+k+'"]').value; };
+    var s=g('s'), e=g('e'); if (!s||!e||e<=s) { showToast('⚠️ '+B170_DN[d]+'요일 종료가 시작보다 빨라요'); return; }
+    per[d]={s:s,e:e,b:ac?(parseInt(g('b'),10)||0):0,a:ac?(parseInt(g('a'),10)||0):0}; wd.push(d);
+  }
+  var rs=b172El('b169R1').value, re=b172El('b169R2').value;
+  if (re&&rs&&re<rs) { showToast('⚠️ 종료일이 시작일보다 빨라요'); return; }
+  var ex=_b169.id?(state.schoolSchedule.find(function(x){ return String(x.id)===String(_b169.id); })||{}):{}, f=per[wd[0]];
+  var item=Object.assign({},ex,{id:ex.id||Date.now(),name:name,cat:_b169.cat,weekdays:wd,startTime:f.s,endTime:f.e,travelBefore:f.b,travelAfter:f.a,perDay:per,repeatStart:rs||'',repeatEnd:re||'',childId:ex.childId||activeChildId()||null});
+  var wasEdit=!!ex.id;
+  var doSave=function(){ b169Close(); showToast(wasEdit?'✏️ 수정됐어요':'✅ 시간표가 저장됐어요'); fsSet('schoolSchedule',item.id,item).catch(function(){ showToast('⚠️ 저장에 실패했어요. 네트워크를 확인해주세요'); }); };
+  var proceed=function(){
+    var cf=b170Conflicts(item);
+    if (cf.length) openConfirmSheet('⚠️ 같은 시간에 다른 학원이 있어요\n'+cf.map(function(o){ return o.name+' ('+b172TimeText(o)+')'; }).join('\n')+'\n그래도 저장할까요?','⚠️','그래도 저장','돌아가기',function(ok){ if (ok) doSave(); });
+    else doSave();
+  };
+  var prev=b171Prev(item);
+  if (prev) {
+    var x1=parseDate(item.repeatStart); x1.setDate(x1.getDate()-1); var endDs=fmt(x1);
+    openConfirmSheet('이전 시간표에 종료일이 없어요\n"'+prev.name+'" ('+b172TimeText(prev)+')\n종료일을 '+koDateShort(endDs)+'로 정할까요?\n(정하지 않으면 두 시간표가 함께 적용돼요)','📅','종료일 정하기','그대로 저장',function(ok){
+      if (!ok) { proceed(); return; }
+      prev.repeatEnd=endDs; fsUpdate('schoolSchedule',prev.id,{repeatEnd:endDs}).catch(function(){ showToast('⚠️ 이전 시간표 수정에 실패했어요'); }); proceed();
+    });
+  } else proceed();
+}
+var _b172RS0=renderSchool;
+renderSchool=function(){
+  var isP=state.mode==='parent', orig=_b170RS(), bulk='';
+  if (isP) { var a=orig.indexOf('<div class="sec-title">📋 학사일정 일괄 등록</div>'), b=orig.indexOf('<div class="sec-title">등록된 시간표</div>'); if (a>=0&&b>a) bulk=orig.slice(a,b); }
+  var list=state.schoolSchedule.filter(isForActiveChild).sort(function(x,y){ return (x.cat||'').localeCompare(y.cat||'')||(x.name||'').localeCompare(y.name||'')||(x.repeatStart||'').localeCompare(y.repeatStart||''); });
+  var html='<div class="b162-sec">'+(state.children.length>1?esc(childLabel(activeChildId()))+'의 ':'')+'등록된 시간표 <i>'+list.length+'개</i></div>';
+  if (!list.length) html+=emptyBox('🏫','등록된 시간표가 없어요',isP?'위의 + 시간표 추가를 눌러 보세요':'부모님이 시간표를 등록하면 여기 표시돼요');
+  list.forEach(function(s){
+    var ac=s.cat==='학원', sub=b172TimeText(s);
+    if (s.repeatStart||s.repeatEnd) sub+=' · '+(s.repeatStart?koDateShort(s.repeatStart):'')+' ~ '+(s.repeatEnd?koDateShort(s.repeatEnd):'계속');
+    var tb=+s.travelBefore||0, ta=+s.travelAfter||0; if (s.perDay) { Object.keys(s.perDay).forEach(function(k){ tb=Math.max(tb,+s.perDay[k].b||0); ta=Math.max(ta,+s.perDay[k].a||0); }); }
+    if (tb||ta) sub+=' · 차량 '+tb+'/'+ta+'분';
+    html+=b170Item(s.startTime||'',ac?'학원':'학교',ac?'ac':'sc',s.name,sub,false,isP?"b169OpenSchool('"+s.id+"')":'');
+  });
+  return html+bulk;
+};
+/* ---------- 하루 시간 설정: 기간별 ---------- */
+function b172Child(){ return state.children.find(function(x){ return String(x.id)===String(activeChildId()); }); }
+function b172TimesList(c){ var l=c.dayTimesList; if (!l) l=c.dayTimes?[Object.assign({from:'',to:''},c.dayTimes)]:[]; return l; }
+function b171T(ds){
+  var c=b172Child()||{}, pick=null;
+  b172TimesList(c).forEach(function(x){ if ((!x.from||x.from<=ds)&&(!x.to||ds<=x.to)&&(!pick||(x.from||'')>(pick.from||''))) pick=x; });
+  var cfg=pick||{}, dow=ds?parseDate(ds).getDay():1, sc=(cfg.school&&cfg.school[dow])||[];
+  return {be:b162Min(cfg.be||'08:30'),ss:b162Min(sc[0]||'09:00'),se:b162Min(sc[1]||'14:30'),eve:b162Min(cfg.eve||'18:00'),night:b162Min(cfg.night||'21:00')};
+}
+function b171OpenSettings(){ b172OpenTimes(); }
+function b172OpenTimes(){
+  if (state.mode!=='parent') return;
+  var c=b172Child(); if (!c) { showToast('⚠️ 자녀를 먼저 선택해주세요'); return; }
+  b169Ensure(); _b169={type:'timesList',id:c.id,list:true};
+  var l=b172TimesList(c), idx=l.map(function(x,i){ return i; }).sort(function(a,b){ return (l[b].from||'').localeCompare(l[a].from||''); });
+  var cards=idx.map(function(i){ var x=l[i], sc=x.school&&(x.school[1]||x.school[3]||x.school[2]);
+    var per=(x.from?koDateShort(x.from):'처음부터')+' ~ '+(x.to?koDateShort(x.to):'계속');
+    return '<button type="button" class="b172-pc" onclick="b172EditTimes('+i+')"><b>'+per+'</b><span>학교 '+(sc?sc[0]+' ~ '+sc[1]:'09:00 ~ 14:30')+' · 등교 전 ~'+(x.be||'08:30')+' · 저녁 '+(x.eve||'18:00')+' · 밤 '+(x.night||'21:00')+'</span></button>'; }).join('');
+  b169El('b169H').textContent=c.name+'의 하루 시간 설정';
+  b169El('b169Body').innerHTML=(cards||'<div class="s" style="margin:8px 2px 12px;line-height:1.5">아직 설정이 없어요. 기본값(학교 09:00~14:30, 등교 전 08:30, 저녁 18:00, 밤 21:00)이 적용돼요.</div>')
+    +'<button type="button" class="b162-all" onclick="b172EditTimes(-1)">+ 새 기간 추가</button>'
+    +'<div class="s" style="margin:6px 2px 10px;line-height:1.5">학기나 학년이 바뀌면 기간별로 따로 등록하세요. 해당 날짜에 맞는 설정이 자동으로 적용돼요.</div>';
+  b172Foot('list'); b169El('b169Modal').classList.add('open'); b169El('b169Body').scrollTop=0;
+}
+function b172EditTimes(i){
+  var c=b172Child(), l=b172TimesList(c), x=i>=0?l[i]:null, cfg=x||{};
+  var from=x?(x.from||''):(function(){ var m=''; l.forEach(function(p){ if (p.to&&p.to>m) m=p.to; }); if (!m) return fmt(TODAY); var d=parseDate(m); d.setDate(d.getDate()+1); return fmt(d); })();
+  _b169={type:'times',id:c.id,idx:i};
+  b169El('b169H').textContent=c.name+'의 하루 시간 설정';
+  var rows=[1,2,3,4,5].map(function(d){ var sc=(cfg.school&&cfg.school[d])||['09:00','14:30'];
+    return '<div class="b170-r"><b>'+B170_DN[d]+'요일</b><input class="m-field" id="b171S'+d+'" type="time" step="600" value="'+sc[0]+'"><input class="m-field" id="b171E'+d+'" type="time" step="600" value="'+sc[1]+'"></div>'; }).join('');
+  function one(lb,id,v){ return '<div class="b170-r"><b>'+lb+'</b><input class="m-field" id="'+id+'" type="time" step="600" value="'+v+'"></div>'; }
+  b169El('b169Body').innerHTML='<div class="m-label">학교 수업 시간 <span class="s">(왼쪽 시작 · 오른쪽 종료)</span></div><div class="b170-dt">'+rows+'</div>'
+    +'<div class="m-label">하루 구간</div><div class="b170-dt">'+one('등교 전 끝','b171BE',cfg.be||'08:30')+one('저녁 시작','b171EV',cfg.eve||'18:00')+one('밤 시작','b171NT',cfg.night||'21:00')+'</div>'
+    +'<div class="m-label">적용 기간</div><div class="b170-dt"><div class="b172-per"><input type="date" id="b172TF" value="'+from+'"><span>~</span><input type="date" id="b172TT" value="'+(x?(x.to||''):'')+'"></div></div>'
+    +'<div class="s" style="margin:6px 2px 10px;line-height:1.5">종료일을 비우면 계속 적용돼요. 새 학기·학년의 설정은 새 기간으로 추가하세요.</div>';
+  var s=b169El('b169Modal').querySelector('.m-save'); s.style.display=''; b169El('b169Del').style.display=i>=0?'':'none';
+  b169El('b169Modal').classList.add('open'); b169El('b169Body').scrollTop=0; b172Snap();
+}
+function b172PutTimes(c,list){ c.dayTimesList=list; fsUpdate('children',c.id,{dayTimesList:list}).catch(function(){ showToast('⚠️ 저장에 실패했어요. 네트워크를 확인해주세요'); }); render(); }
+function b172SaveTimes(){
+  var c=b172Child(); if (!c) return; var v=function(id){ return b169El(id).value; }, school={};
+  for (var d=1;d<=5;d++){ var a=v('b171S'+d)||'09:00', b=v('b171E'+d)||'14:30'; if (b<=a) { showToast('⚠️ '+B170_DN[d]+'요일 종료가 시작보다 빨라요'); return; } school[d]=[a,b]; }
+  var cfg={from:v('b172TF'),to:v('b172TT'),school:school,be:v('b171BE')||'08:30',eve:v('b171EV')||'18:00',night:v('b171NT')||'21:00'};
+  if (!(cfg.be<cfg.eve&&cfg.eve<cfg.night)) { showToast('⚠️ 등교 전 끝 < 저녁 시작 < 밤 시작 순서로 입력해주세요'); return; }
+  if (!cfg.from) { showToast('⚠️ 적용 기간 시작일을 입력해주세요'); return; }
+  if (cfg.to&&cfg.to<cfg.from) { showToast('⚠️ 종료일이 시작일보다 빨라요'); return; }
+  var list=b172TimesList(c).slice(), idx=_b169.idx;
+  var finish=function(){ if (idx>=0) list[idx]=cfg; else list.push(cfg); b172PutTimes(c,list); showToast('⏰ 저장됐어요'); b172OpenTimes(); };
+  var prev=list.filter(function(p,i){ return i!==idx&&(p.from||'')<cfg.from&&(!p.to||p.to>=cfg.from); })[0];
+  if (prev) {
+    var x1=parseDate(cfg.from); x1.setDate(x1.getDate()-1); var endDs=fmt(x1);
+    openConfirmSheet('이전 기간('+(prev.from?koDateShort(prev.from):'처음')+' ~ '+(prev.to?koDateShort(prev.to):'계속')+')과 겹쳐요\n이전 기간의 종료일을 '+koDateShort(endDs)+'로 정할까요?','📅','종료일 정하기','그대로 저장',function(ok){ if (ok) prev.to=endDs; finish(); });
+  } else finish();
+}
+function b172DelTimes(){
+  var c=b172Child(), list=b172TimesList(c).slice(), idx=_b169.idx; if (idx<0) return;
+  openConfirmSheet('이 기간의 설정을 삭제할까요?','🗑️','삭제할게요','아니요',function(ok){ if (!ok) return; list.splice(idx,1); b172PutTimes(c,list); showToast('🗑 삭제됐어요'); b172OpenTimes(); });
+}
+/* ---------- 오늘의 약속 ---------- */
+function b172Prom(ds){
+  var cid=activeChildId(), all=state.promises||[];
+  var d=all.find(function(p){ return p.id===cid+'_'+ds; }), dy=all.find(function(p){ return p.id===cid+'_daily'; });
+  return {doc:d,daily:dy,text:d&&d.text!==undefined&&d.text!==''?d.text:(dy?dy.text:''),kept:!!(d&&d.kept),pc:!!(d&&d.parentChecked)};
+}
+function b172WriteProm(ds,patch){
+  var cid=activeChildId(), id=cid+'_'+ds, P=b172Prom(ds);
+  var doc=Object.assign({id:id,childId:cid,date:ds,text:P.text,kept:false,parentChecked:false},P.doc||{},patch);
+  var i=state.promises.findIndex(function(p){ return p.id===id; }); if (i>=0) state.promises[i]=doc; else state.promises.push(doc);
+  render();
+  return fsSet('promises',id,doc).catch(function(){ showToast('⚠️ 저장에 실패했어요. 네트워크를 확인해주세요'); });
+}
+function b172PromiseCard(ds,isP){
+  var cid=activeChildId(); if (!cid) return '';
+  var P=b172Prom(ds), has=!!P.text;
+  var chk=isP?'<span class="b162-ck'+(P.kept?' d':'')+'">'+(P.kept?'✓':'')+'</span>':'<button class="b162-ck'+(P.kept?' d':'')+'" aria-label="약속 지켰어요" onclick="b172ToggleKept(\''+ds+'\');event.stopPropagation()">'+(P.kept?'✓':'')+'</button>';
+  var st=P.kept?(P.pc?'<span class="b162-p ok">★ 확인</span>':(isP?'<button class="b162-p wait b162-pb" onclick="b172ConfirmProm(\''+ds+'\');event.stopPropagation()">확인하기</button>':'<span class="b162-p wait">확인 대기</span>')):'';
+  return '<div class="b172-prom">'+(has?chk:'<span class="b162-ck" style="opacity:.35"></span>')+'<div class="b162-nm" onclick="b172OpenProm(\''+ds+'\')" style="cursor:pointer"><span class="b162-n1" style="font-size:12px;font-weight:700;color:var(--child)">🤝 오늘의 약속</span><span class="b162-n2"><span class="b162-meta" style="font-size:14px;color:'+(has?'var(--text)':'var(--sub)')+'">'+esc(has?P.text:'눌러서 오늘의 약속을 적어 보세요')+'</span>'+st+'</span></div></div>';
+}
+function b172ToggleKept(ds){ var P=b172Prom(ds); if (!P.text) return; b172WriteProm(ds,{kept:!P.kept,parentChecked:P.kept?false:!!(P.doc&&P.doc.parentChecked)}); }
+function b172ConfirmProm(ds){ if (state.mode!=='parent') return; b172WriteProm(ds,{parentChecked:true}); showToast('★ 확인했어요'); }
+function b172OpenProm(ds){
+  var P=b172Prom(ds), isP=state.mode==='parent'; b169Ensure(); _b169={type:'promise',id:null,ds:ds};
+  b169El('b169H').textContent='오늘의 약속';
+  b169El('b169Body').innerHTML='<div class="m-label">오늘의 약속</div><textarea class="m-field" id="b172PT" maxlength="80" style="height:84px;resize:none" placeholder="예: 숙제를 먼저 끝내고 놀기">'+esc(P.text)+'</textarea>'
+    +(isP?'<label class="b172-chk"><input type="checkbox" id="b172PD"'+(P.daily?' checked':'')+'> 매일 같은 약속으로 계속하기</label>':'')
+    +'<div class="s" style="margin:8px 2px 10px;line-height:1.5">부모와 자녀가 함께 정하고, 누구든 고칠 수 있어요. 자녀가 \'지켰어요\'를 누르면 부모가 ★ 확인해요.</div>';
+  b169El('b169Del').style.display='none'; b169El('b169Modal').classList.add('open'); b172Snap();
+}
+function b172SaveProm(){
+  var ds=_b169.ds, text=b172El('b172PT').value.trim(), cid=activeChildId(), dy=b172El('b172PD');
+  b169Close(); b172WriteProm(ds,{text:text});
+  if (dy&&state.mode==='parent') {
+    var did=cid+'_daily', ex=state.promises.find(function(p){ return p.id===did; });
+    if (dy.checked&&text) { var doc={id:did,childId:cid,date:'daily',text:text,kept:false,parentChecked:false}; if (ex) Object.assign(ex,doc); else state.promises.push(doc); fsSet('promises',did,doc).catch(function(){}); }
+    else if (!dy.checked&&ex) { state.promises=state.promises.filter(function(p){ return p.id!==did; }); fsDel('promises',did); render(); }
+  }
+  showToast('🤝 저장됐어요');
+}
+/* ---------- 저장 처리(모든 입력 창) ---------- */
+function b169Save(){
+  var t=_b169&&_b169.type;
+  if (t==='times') return b172SaveTimes();
+  if (t==='promise') return b172SaveProm();
+  if (t==='icons') return b172SaveIcons();
+  if (t==='late') return b172SaveLate();
+  var name=b172El('b169Name').value.trim();
+  if (!name) { showToast('⚠️ 제목을 입력해주세요'); return; }
+  if (_b169.sch) return b169SaveSchool(name);
+  var d1=b172El('b169D1').value||fmt(state.selectedDate), d2=b172El('b169D2').value||d1, time='';
+  if (d2<d1) { showToast('⚠️ 종료일이 시작일보다 빨라요'); return; }
+  if (!_b169.ad) {
+    var a=b172El('b169T1').value||'09:00', b=b172El('b169T2').value||'10:00';
+    if ((d2+'T'+b)<=(d1+'T'+a)) { showToast('⚠️ 종료가 시작보다 빨라요'); return; }
+    time=a+'~'+b;
+  }
+  var ex=_b169.id?(state.sharedEvents.find(function(x){ return String(x.id)===String(_b169.id); })||{}):{}, k=_b169.type;
+  var ev=Object.assign({},ex,{id:ex.id||Date.now(),name:name,date:d1,dateEnd:d2,allday:_b169.ad,time:time,icon:({fam:'👨‍👩‍👧',me:'👤',acad:'🏫'})[k]||'📅',desc:b172El('b169Desc').value,kind:k,childId:k==='fam'?null:(ex.childId||activeChildId()||null)});
+  b169Close(); showToast(ex.id?'✏️ 수정됐어요':'📅 저장됐어요');
+  fsSet('sharedEvents',ev.id,ev).catch(function(){ showToast('⚠️ 저장에 실패했어요. 네트워크를 확인해주세요'); });
+}
+var _b172D=b169Delete;
+b169Delete=function(){ if (_b169&&_b169.type==='times') return b172DelTimes(); return _b172D(); };
+/* 입력 창이 열릴 때 현재 값을 기억해 두었다가, 닫기에서 변경 여부를 비교합니다 */
+var _b172oe=b169OpenEvent; b169OpenEvent=function(){ _b172oe.apply(this,arguments); b172Snap(); };
+setTimeout(function(){ try { render(); } catch(e) {} },0);
+/* ---------- 월간: 이어지는 일정 막대(겹침 없이 한 층 위에 그림) ---------- */
+function b172MonthBars(){
+  var h='';
+  _b172Rows.forEach(function(key,r){
+    var T=_b171LC[key]; if (!T) return;
+    for (var c=0;c<7;c++) for (var L=0;L<T.L;L++){
+      var s=T.slots[c][L]; if (!s) continue;
+      var st='grid-row:'+(r+1)+';grid-column:'+(c+1)+(s.bar&&s.first?' / span '+s.n:'')+';margin-top:'+(21+15*L)+'px';
+      if (s.more) h+='<div class="b172-b more" style="'+st+'">+'+s.more+'</div>';
+      else if (s.bar) { if (!s.first) continue; var cr=T.slots[c+s.n-1][L].cr; h+='<div class="b172-b k-'+s.it.kind+' bar'+(s.cl?' cl':'')+(cr?' cr':'')+'" style="'+st+'">'+esc(s.it.name)+'</div>'; }
+      else h+='<div class="b172-b k-'+s.it.kind+'" style="'+st+'">'+esc(s.it.name)+'</div>';
+    }
+  });
+  return '<div class="b172-bars">'+h+'</div>';
+}
+function b171CellSlots(ds,d){
+  var days=b171WeekOf(d);
+  if (!_b171LC[days[0]]) { var T=b171Lanes(days,b171Items(days,true),3); _b171LC[days[0]]=T; _b172Rows.push(days[0]); if (T.L>_b171MaxL) _b171MaxL=T.L; }
+  return '';
+}
 </script>
 </body>
 </html>
