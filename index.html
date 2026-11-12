@@ -14,9 +14,9 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- Build 172 -->
-<title>Build 172 · 우리가족 플래너</title>
-<script>/* 빌드 번호는 여기 한 곳에서만 바꿉니다. sw.js의 CACHE 이름도 같은 번호로 함께 바꿔야 합니다. */var APP_BUILD='172';</script>
+<!-- Build 173 -->
+<title>Build 173 · 우리가족 플래너</title>
+<script>/* 빌드 번호는 여기 한 곳에서만 바꿉니다. sw.js의 CACHE 이름도 같은 번호로 함께 바꿔야 합니다. */var APP_BUILD='173';</script>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -8204,7 +8204,7 @@ function b169OpenSchool(id,tpl){
     +'<div class="m-label">구분</div>'+b169Chips('b169Cat',[['학교','학교'],['학원','학원']],_b169.cat,'b169SetCat')
     +'<div class="m-label">요일별 시간 <span class="s">(요일을 눌러 선택 · 차량은 학원 차량을 이용할 때만)</span></div>'
     +'<div class="b170-dt"><div class="b172-dh"><span style="width:44px">가는 길</span><span style="flex:1">시작</span><span style="flex:1">종료</span><span style="width:44px">오는 길</span></div><div id="b172Days">'+rows+'</div></div>'
-    +'<div class="m-label">적용 기간</div><div class="b170-dt"><div class="b172-per"><input type="date" id="b169R1" value="'+rs+'"><span>~</span><input type="date" id="b169R2" value="'+re+'"></div></div>'
+    +'<div class="m-label">적용 기간</div><div class="b170-dt"><div class="b172-per"><input type="date" id="b169R1" value="'+rs+'"><span>~</span><input type="date" id="b169R2" value="'+re+'"><button type="button" class="b173-clr" onclick="b173Clr(\'b169R2\')">비우기</button></div></div><div class="s" style="margin:6px 2px 0;line-height:1.5">종료일을 비우면 계속 적용돼요.</div>'
     +'<div class="s" style="margin:6px 2px 10px;line-height:1.5">학기와 방학처럼 기간이 바뀌면 기간별로 따로 등록하세요. 새 기간을 등록할 때 이전 시간표에 종료일이 없으면 종료일을 정하도록 안내해 드려요.</div>'
     +(s?'<button type="button" class="b162-all" style="background:#fff;color:var(--text);border-color:var(--border)" onclick="b170CopySchool(\''+s.id+'\')">같은 시간표를 다른 기간으로 추가</button>':'');
   b169El('b169Del').style.display=s?'':'none';
@@ -8233,13 +8233,13 @@ function b169SaveSchool(name){
   var ex=_b169.id?(state.schoolSchedule.find(function(x){ return String(x.id)===String(_b169.id); })||{}):{}, f=per[wd[0]];
   var item=Object.assign({},ex,{id:ex.id||Date.now(),name:name,cat:_b169.cat,weekdays:wd,startTime:f.s,endTime:f.e,travelBefore:f.b,travelAfter:f.a,perDay:per,repeatStart:rs||'',repeatEnd:re||'',childId:ex.childId||activeChildId()||null});
   var wasEdit=!!ex.id;
-  var doSave=function(){ b169Close(); showToast(wasEdit?'✏️ 수정됐어요':'✅ 시간표가 저장됐어요'); fsSet('schoolSchedule',item.id,item).catch(function(){ showToast('⚠️ 저장에 실패했어요. 네트워크를 확인해주세요'); }); };
+  var doSave=function(){ b169Close(); b173Upsert(state.schoolSchedule,item); render(); showToast(wasEdit?'✏️ 수정됐어요':'✅ 시간표가 저장됐어요'); fsSet('schoolSchedule',item.id,item).catch(b173Fail); };
   var proceed=function(){
     var cf=b170Conflicts(item);
     if (cf.length) openConfirmSheet('⚠️ 같은 시간에 다른 학원이 있어요\n'+cf.map(function(o){ return o.name+' ('+b172TimeText(o)+')'; }).join('\n')+'\n그래도 저장할까요?','⚠️','그래도 저장','돌아가기',function(ok){ if (ok) doSave(); });
     else doSave();
   };
-  var prev=b171Prev(item);
+  var prev=wasEdit?null:b171Prev(item);
   if (prev) {
     var x1=parseDate(item.repeatStart); x1.setDate(x1.getDate()-1); var endDs=fmt(x1);
     openConfirmSheet('이전 시간표에 종료일이 없어요\n"'+prev.name+'" ('+b172TimeText(prev)+')\n종료일을 '+koDateShort(endDs)+'로 정할까요?\n(정하지 않으면 두 시간표가 함께 적용돼요)','📅','종료일 정하기','그대로 저장',function(ok){
@@ -8298,7 +8298,7 @@ function b172EditTimes(i){
   function one(lb,id,v){ return '<div class="b170-r"><b>'+lb+'</b><input class="m-field" id="'+id+'" type="time" step="600" value="'+v+'"></div>'; }
   b169El('b169Body').innerHTML='<div class="m-label">학교 수업 시간 <span class="s">(왼쪽 시작 · 오른쪽 종료)</span></div><div class="b170-dt">'+rows+'</div>'
     +'<div class="m-label">하루 구간</div><div class="b170-dt">'+one('등교 전 끝','b171BE',cfg.be||'08:30')+one('저녁 시작','b171EV',cfg.eve||'18:00')+one('밤 시작','b171NT',cfg.night||'21:00')+'</div>'
-    +'<div class="m-label">적용 기간</div><div class="b170-dt"><div class="b172-per"><input type="date" id="b172TF" value="'+from+'"><span>~</span><input type="date" id="b172TT" value="'+(x?(x.to||''):'')+'"></div></div>'
+    +'<div class="m-label">적용 기간</div><div class="b170-dt"><div class="b172-per"><input type="date" id="b172TF" value="'+from+'"><span>~</span><input type="date" id="b172TT" value="'+(x?(x.to||''):'')+'"><button type="button" class="b173-clr" onclick="b173Clr(\'b172TT\')">비우기</button></div></div>'
     +'<div class="s" style="margin:6px 2px 10px;line-height:1.5">종료일을 비우면 계속 적용돼요. 새 학기·학년의 설정은 새 기간으로 추가하세요.</div>';
   var s=b169El('b169Modal').querySelector('.m-save'); s.style.display=''; b169El('b169Del').style.display=i>=0?'':'none';
   b169El('b169Modal').classList.add('open'); b169El('b169Body').scrollTop=0; b172Snap();
@@ -8382,8 +8382,8 @@ function b169Save(){
   }
   var ex=_b169.id?(state.sharedEvents.find(function(x){ return String(x.id)===String(_b169.id); })||{}):{}, k=_b169.type;
   var ev=Object.assign({},ex,{id:ex.id||Date.now(),name:name,date:d1,dateEnd:d2,allday:_b169.ad,time:time,icon:({fam:'👨‍👩‍👧',me:'👤',acad:'🏫'})[k]||'📅',desc:b172El('b169Desc').value,kind:k,childId:k==='fam'?null:(ex.childId||activeChildId()||null)});
-  b169Close(); showToast(ex.id?'✏️ 수정됐어요':'📅 저장됐어요');
-  fsSet('sharedEvents',ev.id,ev).catch(function(){ showToast('⚠️ 저장에 실패했어요. 네트워크를 확인해주세요'); });
+  b169Close(); b173Upsert(state.sharedEvents,ev); render(); showToast(ex.id?'✏️ 수정됐어요':'📅 저장됐어요');
+  fsSet('sharedEvents',ev.id,ev).catch(b173Fail);
 }
 var _b172D=b169Delete;
 b169Delete=function(){ if (_b169&&_b169.type==='times') return b172DelTimes(); return _b172D(); };
@@ -8410,6 +8410,30 @@ function b171CellSlots(ds,d){
   if (!_b171LC[days[0]]) { var T=b171Lanes(days,b171Items(days,true),3); _b171LC[days[0]]=T; _b172Rows.push(days[0]); if (T.L>_b171MaxL) _b171MaxL=T.L; }
   return '';
 }
+</script>
+<style id="b173-style">
+.b173-clr{flex:none;min-height:0;min-width:0;height:40px;padding:0 10px;border-radius:10px;border:1px solid var(--border);background:#fff;font:inherit;font-size:12px;font-weight:600;color:var(--text)}
+</style>
+<script id="build173-ui">
+/* Build 173: 시간표 저장·삭제를 단순하게(저장 → 닫힘, 삭제 → 재확인 → 삭제), 날짜 비우기 */
+function b173Upsert(arr,item){ var i=arr.findIndex(function(x){ return String(x.id)===String(item.id); }); if (i>=0) arr[i]=item; else arr.push(item); }
+function b173Fail(e){ showToast('⚠️ 저장에 실패했어요 ('+((e&&e.code)||'오류')+')'); }
+function b173Clr(id){ var e=document.getElementById(id); if (!e) return; e.value=''; e.dispatchEvent(new Event('change',{bubbles:true})); }
+function b173FootReset(){ var m=document.getElementById('b169Modal'); if (!m) return; var s=m.querySelector('.m-save'); if (s) { s.style.display=''; s.textContent='저장'; } }
+function b169Delete(){
+  if (_b169&&_b169.type==='times') return b172DelTimes();
+  var id=_b169&&_b169.id; if (!id) return; var sch=_b169.sch;
+  openConfirmSheet(sch?'이 시간표를 삭제할까요?':'이 일정을 삭제할까요?','🗑️','삭제할게요','아니요',function(ok){
+    if (!ok) return;
+    var col=sch?'schoolSchedule':'sharedEvents', arr=sch?state.schoolSchedule:state.sharedEvents;
+    var i=arr.findIndex(function(x){ return String(x.id)===String(id); }); if (i>=0) arr.splice(i,1);
+    b169Close(); render(); showToast('🗑 삭제됐어요');
+    fsDel(col,id).catch(b173Fail);
+  });
+}
+var _b173os=b169OpenSchool; b169OpenSchool=function(){ _b173os.apply(this,arguments); b173FootReset(); };
+var _b173oe=b169OpenEvent; b169OpenEvent=function(){ _b173oe.apply(this,arguments); b173FootReset(); };
+setTimeout(function(){ try { render(); } catch(e) {} },0);
 </script>
 </body>
 </html>
