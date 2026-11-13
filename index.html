@@ -14,9 +14,9 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- Build 174 -->
-<title>Build 174 · 우리가족 플래너</title>
-<script>/* 빌드 번호는 여기 한 곳에서만 바꿉니다. sw.js의 CACHE 이름도 같은 번호로 함께 바꿔야 합니다. */var APP_BUILD='174';</script>
+<!-- Build 175 -->
+<title>Build 175 · 우리가족 플래너</title>
+<script>/* 빌드 번호는 여기 한 곳에서만 바꿉니다. sw.js의 CACHE 이름도 같은 번호로 함께 바꿔야 합니다. */var APP_BUILD='175';</script>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -7825,7 +7825,7 @@ function b171T(ds){
   var dow=ds?parseDate(ds).getDay():1, sc=(cfg.school&&cfg.school[dow])||[];
   return {be:b162Min(cfg.be||'08:30'),ss:b162Min(sc[0]||'09:00'),se:b162Min(sc[1]||'14:30'),eve:b162Min(cfg.eve||'18:00'),night:b162Min(cfg.night||'21:00')};
 }
-function B171LS(k,T){ return ({before:Math.max(420,T.be-60),am:600,school:T.ss,after:T.se+90,pm:840,ev:T.eve+120,night:T.night+30})[k]||960; }
+function B171LS(k,T){ return ({before:Math.max(420,T.be-60),am:600,school:T.ss,after:T.se+90,pm:840,ev:T.eve,night:T.night})[k]||960; }
 function B171MIN(k,T){ return ({before:420,am:540,school:T.ss,after:T.se,pm:720,ev:T.eve,night:T.night})[k]||420; }
 function b162SecOf(m,off,force){
   var T=b171T(_b171Ds);
