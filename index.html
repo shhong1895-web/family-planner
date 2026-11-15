@@ -14,9 +14,9 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- Build 176 -->
-<title>Build 176 · 우리가족 플래너</title>
-<script>/* 빌드 번호는 여기 한 곳에서만 바꿉니다. sw.js의 CACHE 이름도 같은 번호로 함께 바꿔야 합니다. */var APP_BUILD='176';</script>
+<!-- Build 177 -->
+<title>Build 177 · 우리가족 플래너</title>
+<script>/* 빌드 번호는 여기 한 곳에서만 바꿉니다. sw.js의 CACHE 이름도 같은 번호로 함께 바꿔야 합니다. */var APP_BUILD='177';</script>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -8566,20 +8566,11 @@ function b174DelExc(id,k,btn){
 }
 /* ---------- 응원 메시지: 자녀가 쓴 메시지에는 '답장하기'를 보이지 않습니다 ---------- */
 function b174MsgBase(ds,isP){
-  var top=state.messages.filter(function(m){ return m.date===ds&&!m.parentId&&isForActiveChild(m); }).sort(function(a,b){ return a.time.localeCompare(b.time); });
+  // 카카오톡처럼: 그날의 메시지를 시간 순서대로 한 줄로 보여 주고, 아래 입력창으로만 보냅니다(답장 버튼 없음).
+  var list=state.messages.filter(function(m){ return m.date===ds&&isForActiveChild(m); }).sort(function(a,b){ return a.time.localeCompare(b.time); });
   var html='<div class="sec-title">💬 응원 메시지</div><div class="msg-thread">';
-  if (!top.length) html+=emptyBox('💬','아직 메시지가 없어요',isP?'자녀에게 응원 메시지를 남겨보세요':'부모님께 메시지를 남겨보세요');
-  else top.forEach(function(m){
-    var replies=state.messages.filter(function(r){ return r.parentId===m.id; }).sort(function(a,b){ return a.time.localeCompare(b.time); });
-    html+=msgBubbleHtml(m,isP);
-    if (m.from!=='child') html+='<div class="msg-reply-link" onclick="toggleReply(\''+m.id+'\')">'+(_replyTargetId===m.id?'취소':'💬 답장하기')+'</div>';
-    replies.forEach(function(r){ html+=msgBubbleHtml(r,isP); });
-    if (m.from!=='child'&&_replyTargetId===m.id) {
-      html+='<div class="msg-reply-box"><textarea class="f-field" id="msgReplyInput" placeholder="답장을 입력해주세요..."></textarea>'
-        +'<div class="msg-reply-btns"><button class="f-btn'+(isP?' p':'')+'" style="flex:2" onclick="sendReply(\''+m.id+'\',\''+ds+'\')">답장 보내기</button>'
-        +'<button class="f-btn" style="flex:1;background:#EFEDE5;color:var(--text)" onclick="toggleReply(\''+m.id+'\')">취소</button></div></div>';
-    }
-  });
+  if (!list.length) html+=emptyBox('💬','아직 메시지가 없어요',isP?'자녀에게 응원 메시지를 남겨보세요':'부모님께 메시지를 보내보세요');
+  else list.forEach(function(m){ html+=msgBubbleHtml(m,isP); });
   html+='</div><div class="msg-input-row"><textarea class="f-field msg-input-field" id="msgInput" placeholder="'+(isP?'자녀에게 응원 메시지를 남겨보세요...':'부모님께 메시지를 보내세요...')+'"></textarea>'
     +'<button class="msg-send-btn" onclick="sendMsg(\''+ds+'\')">📨</button></div>';
   return html;
