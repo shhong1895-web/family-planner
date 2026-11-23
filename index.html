@@ -14,9 +14,9 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- Build 177 -->
-<title>Build 177 · 우리가족 플래너</title>
-<script>/* 빌드 번호는 여기 한 곳에서만 바꿉니다. sw.js의 CACHE 이름도 같은 번호로 함께 바꿔야 합니다. */var APP_BUILD='177';</script>
+<!-- Build 178 -->
+<title>Build 178 · 우리가족 플래너</title>
+<script>/* 빌드 번호는 여기 한 곳에서만 바꿉니다. sw.js의 CACHE 이름도 같은 번호로 함께 바꿔야 합니다. */var APP_BUILD='178';</script>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -2510,6 +2510,7 @@ function setupFamilyListeners() {
     var q=(role==='parent')?db.collection('messages').where('parentUid','==',uid):db.collection('messages').where('childId','==',cid);
     q.onSnapshot(function(snap){ state.messages=snap.docs.map(function(d){ return d.data(); }); render(); },
       function(){ state.messages=[]; render(); });
+    db.collection('routines').onSnapshot(function(snap){ state.routines=snap.docs.map(function(d){ return d.data(); }); render(); },function(){});
     db.collection('promises').onSnapshot(function(snap){ state.promises=snap.docs.map(function(d){ return d.data(); }); render(); },function(){});
   })();
   db.collection('schoolSchedule').onSnapshot(function(snap) {
@@ -7105,7 +7106,6 @@ function b162TaskCard(list,ds,isP,canEditFn,label,noIndent,flat){
     g.forEach(function(t){ html+=b162Row(t,ds,isP,canEditFn(t)); });
     html+='</div>';
   });
-  if (isP && pend.length) html+='<button class="b162-all" onclick="b162CheckMany(\''+pend.join(',')+'\',\''+ds+'\')">완료한 '+pend.length+'개 모두 확인</button>';
   return html+'</div>';
 }
 function renderDay(){
@@ -7541,7 +7541,7 @@ function b169ClosePlus(){ var o=b169El('b169Plus'); if (o) o.parentNode.removeCh
 function b169Plus(){
   var isP=state.mode==='parent';
   var tiles=[['task','check','#DDEBE3','#1F5239','할 일','과제 · 자율학습 계획'],['me','user','#E4EAF3','#2A3F66','개인 일정','나의 일정']];
-  if (isP) tiles=[tiles[0],tiles[1],['fam','home','#EBDDEB','#4F2A55','가족 일정','가족 모두의 일정'],['acad','school','#F6E9C9','#5C4210','학사 일정','단원평가 · 방과후 · 행사'],['sch','clock','#E6DFCF','#262522','시간표','학교 · 학원 반복 수업']];
+  if (isP) tiles=[tiles[0],tiles[1],['fam','home','#EBDDEB','#4F2A55','가족 일정','가족 모두의 일정'],['acad','school','#F6E9C9','#5C4210','학사 일정','단원평가 · 방과후 · 행사'],['sch','clock','#E6DFCF','#262522','시간표','학교 · 학원 반복 수업'],['routine','loop','#D8EEF0','#17525A','생활 루틴','매일 반복하는 습관']];
   var o=document.createElement('div'); o.id='b169Plus'; o.className='b162-pop b165-menu';
   o.onclick=function(e){ if (e.target===o) b169ClosePlus(); };
   o.innerHTML='<div class="b169-sheet"><div class="b169-sh">무엇을 기록할까요?</div><div class="b169-grid">'+tiles.map(function(t){
@@ -7549,7 +7549,7 @@ function b169Plus(){
   }).join('')+'</div></div>';
   document.body.appendChild(o);
 }
-function b169Pick(k){ b169ClosePlus(); if (k==='task') openModal(); else if (k==='sch') b169OpenSchool(); else b169OpenEvent(k); }
+function b169Pick(k){ b169ClosePlus(); if (k==='task') openModal(); else if (k==='sch') b169OpenSchool(); else if (k==='routine') b175OpenEditor(); else b169OpenEvent(k); }
 /* 일정/시간표 입력 창 */
 function b169Ensure(){
   if (b169El('b169Modal')) return;
@@ -7675,7 +7675,7 @@ openEditSchool=function(id){ b169OpenSchool(id); };
 /* 관리 화면: 일정 목록·시간표 목록으로 가는 길 */
 var _b169RD=renderDevices;
 renderDevices=function(){
-  return '<div class="b169-mg"><button onclick="setView(\'shared\')"><b>📅 일정 목록</b><span>가족 · 개인 · 학사 일정 보기와 수정</span></button><button onclick="setView(\'school\')"><b>🏫 학교 · 학원 시간표</b><span>시간표 보기와 수정, 학원 차량 시간</span></button>'+(state.mode==='parent'?'<button onclick="b171OpenSettings()"><b>⏰ 하루 시간 설정</b><span>학교 수업 시간(요일별), 등교 전 · 저녁 · 밤 구간</span></button><button onclick="b172OpenIcons()"><b>😀 가족 아이콘</b><span>자녀와 부모의 아이콘 설정 (메시지에 표시)</span></button>':'')+'</div>'+_b169RD();
+  return '<div class="b169-mg"><button onclick="setView(\'shared\')"><b>📅 일정 목록</b><span>가족 · 개인 · 학사 일정 보기와 수정</span></button><button onclick="setView(\'school\')"><b>🏫 학교 · 학원 시간표</b><span>시간표 보기와 수정, 학원 차량 시간</span></button>'+(state.mode==='parent'?'<button onclick="b171OpenSettings()"><b>⏰ 하루 시간 설정</b><span>학교 수업 시간(요일별), 등교 전 · 저녁 · 밤 구간</span></button><button onclick="b172OpenIcons()"><b>😀 가족 아이콘</b><span>자녀와 부모의 아이콘 설정 (메시지에 표시)</span></button><button onclick="b175OpenList()"><b>🔁 생활 루틴</b><span>양치 · 약 먹기 같은 매일 습관 목록과 수정</span></button>':'')+'</div>'+_b169RD();
 };
 var _b169R=render;
 render=function(){
@@ -8375,6 +8375,7 @@ function b169Save(){
   if (t==='icons') return b172SaveIcons();
   if (t==='late') return b172SaveLate();
   if (t==='resched') return b174SaveResched();
+  if (t==='routine') return b175SaveRoutine();
   var name=b172El('b169Name').value.trim();
   if (!name) { showToast('⚠️ 제목을 입력해주세요'); return; }
   if (_b169.sch) return b169SaveSchool(name);
@@ -8593,6 +8594,172 @@ function b174Paint(){
 function b174Nav(n){ _b174C.m+=n; if (_b174C.m<0) { _b174C.m=11; _b174C.y--; } if (_b174C.m>11) { _b174C.m=0; _b174C.y++; } b174Paint(); }
 function b174Pick(ds){ var id=_b174C.id; b172El(id).value=ds; b172El(id+'_b').textContent=b174DLabel(ds); b172El(id).dispatchEvent(new Event('change',{bubbles:true})); b174CloseCal(); }
 function b174CloseCal(){ var o=b172El('b174Cal'); if (o) o.parentNode.removeChild(o); }
+setTimeout(function(){ try { render(); } catch(e) {} },0);
+</script>
+<style id="b175-style">
+.b175-l{display:flex;align-items:center;gap:8px;min-width:0}
+.b175-wait{font-size:12px;font-weight:700;padding:4px 9px;border-radius:99px;background:#F6E9C9;color:#5C4210;white-space:nowrap}
+.b175-pg{margin-left:auto;font-style:normal;font-weight:500;font-size:12px;color:var(--sub)}
+.b175-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:0 12px;margin:0 0 8px 48px}
+.b175-row{display:flex;align-items:center;gap:10px;min-height:42px;border-bottom:1px solid #EFE9DA}.b175-row:last-child{border-bottom:0}
+.b175-row[onclick]{cursor:pointer}
+.b175-ck{width:24px;height:24px;min-height:0;min-width:0;border-radius:50%;border:2px solid #9A937F;background:#fff;flex:none;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;padding:0;position:relative}
+button.b175-ck::after{content:"";position:absolute;inset:-10px}
+.b175-ck.d{background:var(--child);border-color:var(--child)}
+.b175-nm{flex:1;min-width:0;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.b175-row.done .b175-nm{color:var(--sub)}
+</style>
+<script id="build175-ui">
+/* Build 178: 생활 루틴, 오늘 화면 문구 정리(구간 옆에 실행 시간, 확인 대기 개수는 위쪽으로) */
+state.routines=state.routines||[];
+B162_IC.loop='<path d="M4 12a8 8 0 0114-5l2 2M20 12a8 8 0 01-14 5l-2-2M20 4v5h-5M4 20v-5h5"/>';
+var B175_G=[['before','아침 · 등교 전'],['after','귀가 후 · 방과 후'],['ev','저녁'],['night','밤']];
+function b175Key(ds){ return 'd'+ds.replace(/-/g,''); }
+function b175Show(r,ds,off){
+  if (String(r.childId)!==String(activeChildId())) return false;
+  var sc=r.scope||'all';
+  if (sc==='school'&&off) return false;
+  if (sc==='off'&&!off) return false;
+  if (sc==='days'&&(r.days||[]).map(Number).indexOf(parseDate(ds).getDay())<0) return false;
+  if (r.nextSchool) { var nx=parseDate(ds); nx.setDate(nx.getDate()+1); if (b162IsOff(fmt(nx))) return false; }
+  if (r.skip&&r.skip[b175Key(ds)]) return false;
+  return true;
+}
+function b175Sec(g,off){ return off?({before:'am',after:'pm',ev:'ev',night:'ev'})[g]:g; }
+function b175ForDay(ds,off){
+  var out={}, all=0, dn=0, key=b175Key(ds);
+  (state.routines||[]).slice().sort(function(a,b){ return (a.order||0)-(b.order||0)||String(a.name).localeCompare(b.name); }).forEach(function(r){
+    if (!b175Show(r,ds,off)) return;
+    var k=b175Sec(r.group||'before',off); (out[k]=out[k]||[]).push(r); all++; if (r.done&&r.done[key]) dn++;
+  });
+  return {map:out,all:all,done:dn};
+}
+function b175Rows(list,ds,isP){
+  var key=b175Key(ds);
+  return '<div class="b175-card">'+list.map(function(r){
+    var d=!!(r.done&&r.done[key]);
+    var ck=isP?'<span class="b175-ck'+(d?' d':'')+'">'+(d?'✓':'')+'</span>':'<button class="b175-ck'+(d?' d':'')+'" aria-label="완료 체크" onclick="b175Toggle(\''+r.id+'\',\''+ds+'\')">'+(d?'✓':'')+'</button>';
+    return '<div class="b175-row'+(d?' done':'')+'"'+(isP?' onclick="b175OpenEditor(\''+r.id+'\')"':'')+'>'+ck+'<span class="b175-nm">'+esc(r.name)+'</span></div>';
+  }).join('')+'</div>';
+}
+function b175Toggle(id,ds){
+  if (state.mode==='parent') return;
+  var r=(state.routines||[]).find(function(x){ return String(x.id)===String(id); }); if (!r) return;
+  var k=b175Key(ds), v=!(r.done&&r.done[k]); r.done=Object.assign({},r.done); r.done[k]=v; render();
+  var up={}; up['done.'+k]=v; fsUpdate('routines',r.id,up).catch(b173Fail);
+}
+/* ---------- 오늘 화면 ---------- */
+function renderDay(){
+  var ds=fmt(state.selectedDate), isP=state.mode==='parent', off=b162IsOff(ds); _b171Ds=ds;
+  var tasks=tasksForDate(ds), done=tasks.filter(function(t){ return taskDoneForDate(t,ds); }).length;
+  var canEditFn=function(){ return true; };
+  var html='';
+  var nmsg=state.messages.filter(function(m){ return m.date===ds&&!m.parentId&&isForActiveChild(m); }).length;
+  var pend=isP?tasks.filter(function(t){ return taskDoneForDate(t,ds)&&!b162Pc(t,ds); }).length:0;
+  var who=(isP&&state.children.length>1)?'<span class="b162-who">'+esc(childLabel(activeChildId()))+'의 하루</span>':'';
+  html+='<div class="b170-top"><span class="b175-l">'+who+(pend?'<span class="b175-wait">확인 대기 '+pend+'</span>':'')+'</span>'+(nmsg?'<button class="b170-badge" onclick="b170ToMsgs()">💬 메시지 '+nmsg+'</button>':'')+'</div>';
+  html+=b172PromiseCard(ds,isP);
+  var chips=[], timed=[], hol=getHoliday(ds);
+  if (hol) chips.push(['off',hol]);
+  if (!hol&&b174Vac(ds)) chips.push(['off','방학 중']);
+  state.sharedEvents.forEach(function(e){
+    if (!isSharedForActiveChild(e)) return; e=b170Day(e,ds); if (!e) return;
+    if (b162Min(e.time)===null) chips.push([b162Kind(e),e.name]); else timed.push(e);
+  });
+  if (chips.length) html+='<div class="b162-chips">'+chips.map(function(c){ return '<span class="b162-chip b162-c-'+c[0]+'">'+esc(c[1])+'</span>'; }).join('')+'</div>';
+  var RT=b175ForDay(ds,off), tm=0, dm=0; tasks.forEach(function(t){ tm+=t.minutes||0; if (taskDoneForDate(t,ds)) dm+=t.minutes||0; });
+  var pct=tasks.length?Math.round(done/tasks.length*100):0;
+  html+='<div class="b162-prog"><div><i style="width:'+pct+'%"></i></div><span>할 일 '+done+' / '+tasks.length+(tm?' · '+dm+' / '+tm+'분':'')+(RT.all?' · 루틴 '+RT.done+' / '+RT.all:'')+'</span></div>';
+  if (ds===fmt(TODAY) && _b162Hide!==ds) {
+    var od=b162Overdue();
+    if (od.length) html+='<div class="b162-late"><b>지난 할 일이 '+od.length+'개 남았어요</b><div><button class="go" onclick="b172OpenLate()">정리하기</button></div></div>';
+  }
+  var order=off?['am','pm','ev']:['before','school','after','ev','night'];
+  var LB=off?{am:'오전',pm:'오후',ev:'저녁'}:{before:'등교 전',school:'학교',after:'방과 후',ev:'저녁',night:'밤'};
+  var TT=b171T(ds), HT=off?{}:{before:'~ '+b171Fmt(TT.be),school:b171Fmt(TT.be)+' ~ '+b171Fmt(TT.se),after:b171Fmt(TT.se)+' ~ '+b171Fmt(TT.eve),ev:b171Fmt(TT.eve)+' ~ '+b171Fmt(TT.night),night:b171Fmt(TT.night)+' ~'};
+  var S=b165Fill(ds,off,order,timed,tasks), any=false;
+  order.forEach(function(k){
+    var sec=S[k], rl=RT.map[k]||[]; if (!sec.ev.length&&!sec.tk.length&&!rl.length) return; any=true;
+    var pg=''; if (sec.tk.length) { var smm=0,sdm=0,sd=0; sec.tk.forEach(function(t){ var dn=taskDoneForDate(t,ds); smm+=t.minutes||0; if (dn) { sd++; sdm+=t.minutes||0; } }); pg='<span class="b175-pg">'+(smm?sdm+' / '+smm+'분':sd+' / '+sec.tk.length)+'</span>'; }
+    html+='<div class="b162-sec">'+LB[k]+(HT[k]?' <i>'+HT[k]+'</i>':'')+pg+'</div>';
+    sec.ev.sort(function(a,b){ return a.m-b.m; }).forEach(function(e){ html+=e.html; });
+    if (rl.length) html+=b175Rows(rl,ds,isP);
+    if (sec.tk.length) html+=b162TaskCard(sec.tk,ds,isP,canEditFn,'');
+  });
+  if (!any) html+=emptyBox('🌿','오늘은 비어 있어요','+ 버튼을 눌러 할 일을 추가해 보세요');
+  html+='<div id="b170Msgs">'+renderMessages(ds,isP)+'</div>';
+  return html;
+}
+/* ---------- 생활 루틴 입력 ---------- */
+function b175SetG(v){ _b169.group=v; [].forEach.call(document.querySelectorAll('#b175G button'),function(b){ b.classList.toggle('on',b.getAttribute('data-v')===v); }); }
+function b175SetS(v){ _b169.scope=v; [].forEach.call(document.querySelectorAll('#b175S button'),function(b){ b.classList.toggle('on',b.getAttribute('data-v')===v); }); b172El('b175Days').style.display=v==='days'?'':'none'; }
+function b175ToggleNS(){ _b169.nextSchool=!_b169.nextSchool; var b=b172El('b175NS'); b.classList.toggle('on',_b169.nextSchool); }
+function b175ScopeText(r){
+  var sc=r.scope||'all', t=sc==='all'?'매일':(sc==='school'?'등교하는 날':(sc==='off'?'쉬는 날':[1,2,3,4,5,6,0].filter(function(d){ return (r.days||[]).map(Number).indexOf(d)>=0; }).map(function(d){ return B170_DN[d]; }).join('·')));
+  return t+(r.nextSchool?' · 다음 날 등교하는 날만':'');
+}
+function b175OpenEditor(id,back){
+  if (state.mode!=='parent') return;
+  var cid=activeChildId(); if (!cid) { showToast('⚠️ 자녀를 먼저 선택해주세요'); return; }
+  b169Ensure();
+  var r=id?(state.routines||[]).find(function(x){ return String(x.id)===String(id); }):null; if (id&&!r) return;
+  _b169={type:'routine',id:r?r.id:null,back:!!back,group:r?(r.group||'before'):'before',scope:r?(r.scope||'all'):'all',nextSchool:!!(r&&r.nextSchool)};
+  var days=r&&r.days&&r.days.length?r.days.map(Number):[1,2,3,4,5];
+  var dayBtns=[[1,'월'],[2,'화'],[3,'수'],[4,'목'],[5,'금'],[6,'토'],[0,'일']].map(function(d){ return '<button type="button" data-d="'+d[0]+'" class="'+(days.indexOf(d[0])>=0?'on':'')+'" onclick="this.classList.toggle(\'on\')">'+d[1]+'</button>'; }).join('');
+  var ds=fmt(state.selectedDate), skipped=!!(r&&r.skip&&r.skip[b175Key(ds)]);
+  b169El('b169H').textContent='생활 루틴 추가/수정';
+  b169El('b169Body').innerHTML='<div class="m-label">이름</div><input class="m-field" id="b175Name" placeholder="예: 양치, 안약 넣기, 감기약 먹기" value="'+esc(r?r.name:'')+'">'
+    +'<div class="m-label">언제 하나요?</div>'+b169Chips('b175G',B175_G,_b169.group,'b175SetG')
+    +'<div class="m-label">적용 날짜</div>'+b169Chips('b175S',[['all','매일'],['school','등교하는 날'],['off','쉬는 날'],['days','요일 선택']],_b169.scope,'b175SetS')
+    +'<div class="b162-slotrow" id="b175Days" style="margin-top:8px;display:'+(_b169.scope==='days'?'':'none')+'">'+dayBtns+'</div>'
+    +'<div class="b170-dt" style="margin-top:12px"><div class="b170-r"><b style="width:auto;flex:1">다음 날 등교하는 날만 보이기</b><button type="button" id="b175NS" class="b170-sw'+(_b169.nextSchool?' on':'')+'" onclick="b175ToggleNS()"><i></i></button></div></div>'
+    +'<div class="s" style="margin:6px 2px 10px;line-height:1.5">예: "다음 날 학교 준비물 챙기기"는 다음 날이 등교하는 날일 때만 나와요. 쉬는 날에는 오전 · 오후 · 저녁 구간에 표시돼요.</div>'
+    +(r?'<button type="button" class="b162-all" style="background:#fff;color:var(--text);border-color:var(--border)" onclick="b175Skip()">'+(skipped?'이 날은 다시 하기':'이 날('+koDateShort(ds)+')만 건너뛰기')+'</button>':'');
+  b173FootReset(); b169El('b169Del').style.display=r?'':'none';
+  b169El('b169Modal').classList.add('open'); b169El('b169Body').scrollTop=0; b172Snap();
+}
+function b175Skip(){
+  var r=(state.routines||[]).find(function(x){ return String(x.id)===String(_b169.id); }); if (!r) return;
+  var k=b175Key(fmt(state.selectedDate)), sk=Object.assign({},r.skip||{}); if (sk[k]) delete sk[k]; else sk[k]=true;
+  r.skip=sk; var back=_b169.back; if (back) b175OpenList(); else b169Close(); render(); showToast(sk[k]?'이 날은 건너뛰어요':'이 날도 다시 해요');
+  fsUpdate('routines',r.id,{skip:sk}).catch(b173Fail);
+}
+function b175SaveRoutine(){
+  var name=b172El('b175Name').value.trim(); if (!name) { showToast('⚠️ 이름을 입력해주세요'); return; }
+  var sc=_b169.scope, days=[].slice.call(document.querySelectorAll('#b175Days button.on')).map(function(b){ return +b.getAttribute('data-d'); });
+  if (sc==='days'&&!days.length) { showToast('⚠️ 요일을 선택해주세요'); return; }
+  var ex=_b169.id?((state.routines||[]).find(function(x){ return String(x.id)===String(_b169.id); })||{}):{};
+  var item=Object.assign({},ex,{id:ex.id||('r'+Date.now()),childId:ex.childId||activeChildId(),name:name,group:_b169.group,scope:sc,days:sc==='days'?days:[],nextSchool:!!_b169.nextSchool,order:ex.order!=null?ex.order:Date.now()});
+  b173Upsert(state.routines,item); var back=_b169.back; if (back) b175OpenList(); else b169Close(); render(); showToast(ex.id?'✏️ 수정됐어요':'🔁 루틴이 저장됐어요');
+  fsSet('routines',item.id,item).catch(b173Fail);
+}
+function b175DelRoutine(){
+  var id=_b169.id, back=_b169.back; if (!id) return;
+  openConfirmSheet('이 루틴을 삭제할까요?','🗑️','삭제할게요','아니요',function(ok){
+    if (!ok) return;
+    var i=state.routines.findIndex(function(x){ return String(x.id)===String(id); }); if (i>=0) state.routines.splice(i,1);
+    if (back) b175OpenList(); else b169Close(); render(); showToast('🗑 삭제됐어요');
+    fsDel('routines',id).catch(b173Fail);
+  });
+}
+function b175OpenList(){
+  if (state.mode!=='parent') return;
+  var cid=activeChildId(); if (!cid) { showToast('⚠️ 자녀를 먼저 선택해주세요'); return; }
+  b169Ensure(); _b169={type:'rlist',list:true};
+  var c=state.children.find(function(x){ return String(x.id)===String(cid); })||{name:''};
+  var rs=(state.routines||[]).filter(function(r){ return String(r.childId)===String(cid); }).sort(function(a,b){ return (a.order||0)-(b.order||0); });
+  var html='';
+  B175_G.forEach(function(g){
+    var l=rs.filter(function(r){ return (r.group||'before')===g[0]; }); if (!l.length) return;
+    html+='<div class="m-label">'+g[1]+'</div>'+l.map(function(r){ return '<button type="button" class="b172-pc" onclick="b175OpenEditor(\''+r.id+'\',true)"><b>'+esc(r.name)+'</b><span>'+esc(b175ScopeText(r))+'</span></button>'; }).join('');
+  });
+  b169El('b169H').textContent=c.name+'의 생활 루틴';
+  b169El('b169Body').innerHTML=(html||'<div class="s" style="margin:8px 2px 12px;line-height:1.5">아직 루틴이 없어요. 아침 양치, 안약 넣기처럼 매일 하는 습관을 등록해 보세요.</div>')
+    +'<button type="button" class="b162-all" onclick="b175OpenEditor(null,true)">+ 새 루틴 추가</button>';
+  b172Foot('list'); b169El('b169Modal').classList.add('open'); b169El('b169Body').scrollTop=0;
+}
+function b172CloseNow(){ var t=_b169&&_b169.type; if (t==='times') b172OpenTimes(); else if (t==='routine'&&_b169.back) b175OpenList(); else b169Close(); }
+var _b175D=b169Delete; b169Delete=function(){ if (_b169&&_b169.type==='routine') return b175DelRoutine(); return _b175D(); };
 setTimeout(function(){ try { render(); } catch(e) {} },0);
 </script>
 </body>
