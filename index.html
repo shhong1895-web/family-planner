@@ -14,9 +14,9 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- Build 178 -->
-<title>Build 178 · 우리가족 플래너</title>
-<script>/* 빌드 번호는 여기 한 곳에서만 바꿉니다. sw.js의 CACHE 이름도 같은 번호로 함께 바꿔야 합니다. */var APP_BUILD='178';</script>
+<!-- Build 179 -->
+<title>Build 179 · 우리가족 플래너</title>
+<script>/* 빌드 번호는 여기 한 곳에서만 바꿉니다. sw.js의 CACHE 이름도 같은 번호로 함께 바꿔야 합니다. */var APP_BUILD='179';</script>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -2478,6 +2478,7 @@ function setupListeners() {
   db.collection('devices').onSnapshot(function(snap) {
     devicesState = snap.docs.map(function(d){ return d.data(); });
     updatePendingBadge(devicesState.filter(function(d){ return d.status==='pending'; }).length);
+    try { if (typeof b179CheckSub==='function') b179CheckSub(); } catch(e) {}
     render();
   }, function(){
     // 연결이 끊기면 잠시 후 재구독 (조용히 멈춰서 승인 요청이 안 보이는 문제 방지)
@@ -2505,11 +2506,7 @@ function setupFamilyListeners() {
     state.sharedEvents = snap.docs.map(function(d){ return d.data(); }); render();
   });
   (function(){
-    var uid=getAuthUid(), me=devicesState.find(function(d){ return d.uid===uid; })||{};
-    var role=me.role||localStorage.getItem('fp_role'), cid=me.childId||myChildId()||'__none__';
-    var q=(role==='parent')?db.collection('messages').where('parentUid','==',uid):db.collection('messages').where('childId','==',cid);
-    q.onSnapshot(function(snap){ state.messages=snap.docs.map(function(d){ return d.data(); }); render(); },
-      function(){ state.messages=[]; render(); });
+    b179SubMsgs();
     db.collection('routines').onSnapshot(function(snap){ state.routines=snap.docs.map(function(d){ return d.data(); }); render(); },function(){});
     db.collection('promises').onSnapshot(function(snap){ state.promises=snap.docs.map(function(d){ return d.data(); }); render(); },function(){});
   })();
@@ -8760,6 +8757,209 @@ function b175OpenList(){
 }
 function b172CloseNow(){ var t=_b169&&_b169.type; if (t==='times') b172OpenTimes(); else if (t==='routine'&&_b169.back) b175OpenList(); else b169Close(); }
 var _b175D=b169Delete; b169Delete=function(){ if (_b169&&_b169.type==='routine') return b175DelRoutine(); return _b175D(); };
+setTimeout(function(){ try { render(); } catch(e) {} },0);
+</script>
+<style id="b179-style">
+.b179-set{flex-shrink:0;min-height:34px;padding:0 14px;border-radius:17px;border:1px solid var(--border);background:var(--bg);font:inherit;font-size:13px;font-weight:700;color:var(--text)}
+.b179-rev{display:block;width:100%;margin:18px 0 6px;min-height:44px;border-radius:12px;border:0;background:#FBEEEA;color:var(--danger);font:inherit;font-size:14px;font-weight:700}
+.kt-tabs{display:flex;gap:6px;margin:6px 0 8px;overflow-x:auto}
+.kt-tabs button{flex-shrink:0;min-height:36px;padding:0 16px;border-radius:18px;border:1px solid var(--border);background:#fff;font:inherit;font-size:13px;font-weight:700;color:var(--text)}
+.kt-tabs button.on{background:var(--child);border-color:var(--child);color:#fff}
+.kt-room{background:#B2C7D9;border-radius:16px;padding:12px 10px 8px;max-height:min(52vh,430px);min-height:120px;overflow-y:auto;margin-bottom:8px;display:flex;flex-direction:column;-webkit-overflow-scrolling:touch}
+.kt-date{align-self:center;background:rgba(0,0,0,.2);color:#fff;font-size:11px;padding:3px 12px;border-radius:12px;margin:2px 0 12px}
+.kt-empty{margin:auto;text-align:center;color:#3c4b58;font-size:13px;font-weight:700;line-height:1.7}.kt-empty span{font-weight:500;font-size:12px}
+.kt-row{display:flex;align-items:flex-start;gap:7px;margin-bottom:10px;max-width:100%}
+.kt-row.cont{margin-top:-6px}
+.kt-row.me{flex-direction:row-reverse}
+.kt-av{width:34px;height:34px;border-radius:14px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+.kt-av.sp{visibility:hidden}
+.kt-col{display:flex;flex-direction:column;min-width:0;max-width:74%}
+.kt-row.me .kt-col{align-items:flex-end}
+.kt-name{font-size:11.5px;color:#2f3b46;margin:0 0 3px 2px}
+.kt-line{display:flex;align-items:flex-end;gap:5px}
+.kt-row.me .kt-line{flex-direction:row-reverse}
+.kt-b{background:#fff;color:#1e1e1e;border-radius:4px 14px 14px 14px;padding:8px 11px;font-size:14px;line-height:1.45;word-break:break-word;white-space:pre-wrap}
+.kt-row.cont .kt-b{border-radius:14px}
+.kt-row.me .kt-b{background:#FEE500;border-radius:14px 4px 14px 14px}
+.kt-row.me.cont .kt-b{border-radius:14px}
+.kt-t{font-size:10px;color:#46586a;white-space:nowrap;flex-shrink:0}
+</style>
+<script id="build179-ui">
+/* Build 179: 기기 설정(이름·관계·관리자·연결 자녀), 응원 메시지 카카오톡 스타일 + 아빠/엄마 단위 대화 */
+var _b179T=null, _b179U=[], _b179SubKey='';
+function b179Me(){ var u=getAuthUid(); return devicesState.find(function(d){ return d.uid===u; })||{}; }
+function b179Sig(){ var me=b179Me(); var role=me.role||localStorage.getItem('fp_role'); return [role,me.person||'',me.childId||myChildId()||'__none__',getAuthUid()].join('|'); }
+/* ---------- 메시지 구독: 부모 기기는 '내 기기로 온 것' + '내 아빠/엄마 앞으로 온 것'을 함께 받습니다 ---------- */
+function b179SubMsgs(){
+  var uid=getAuthUid(), me=b179Me();
+  var role=me.role||localStorage.getItem('fp_role'), cid=me.childId||myChildId()||'__none__';
+  _b179U.forEach(function(u){ try { u(); } catch(e) {} }); _b179U=[];
+  _b179SubKey=b179Sig();
+  if (role==='parent') {
+    var A=[], B=[];
+    var merge=function(){ var m={}; A.concat(B).forEach(function(x){ m[x.id]=x; }); state.messages=Object.keys(m).map(function(k){ return m[k]; }); render(); };
+    _b179U.push(db.collection('messages').where('parentUid','==',uid).onSnapshot(function(s){ A=s.docs.map(function(d){ return d.data(); }); merge(); }, function(){ A=[]; merge(); }));
+    if (me.person) _b179U.push(db.collection('messages').where('parentKey','==',me.person).onSnapshot(function(s){ B=s.docs.map(function(d){ return d.data(); }); merge(); }, function(){ B=[]; merge(); }));
+  } else {
+    _b179U.push(db.collection('messages').where('childId','==',cid).onSnapshot(function(s){ state.messages=s.docs.map(function(d){ return d.data(); }); render(); }, function(){ state.messages=[]; render(); }));
+  }
+}
+function b179CheckSub(){ if (_b179SubKey && getAuthUid() && b179Sig()!==_b179SubKey) b179SubMsgs(); }
+/* ---------- 기기 이름·그룹 ---------- */
+function b179Parents(){ return devicesState.filter(function(d){ return d.role==='parent'&&d.status==='approved'; }); }
+function b179DevName(d){ return (d.label&&d.label.indexOf('기기')<0)?d.label:(d.isAdmin?'관리자 기기':(d.role==='parent'?'부모 기기':(d.childId?childLabel(d.childId)+' 기기':'자녀 기기'))); }
+function b179KeyOfDev(d){ return d.person?d.person:'u:'+d.uid; }
+function b179KeyOfMsg(m){
+  if (m.parentKey) return m.parentKey;
+  var d=m.parentUid?devicesState.find(function(x){ return x.uid===m.parentUid; }):null;
+  return d?b179KeyOfDev(d):(m.parentUid?'u:'+m.parentUid:'');
+}
+function b179Groups(){
+  var g=[], seen={};
+  b179Parents().forEach(function(d){ var k=b179KeyOfDev(d); if (!seen[k]) { seen[k]={key:k,person:d.person||'',label:d.person||b179DevName(d),uid:d.uid}; g.push(seen[k]); } });
+  var ord={'아빠':0,'엄마':1};
+  return g.sort(function(a,b){ var x=a.person in ord?ord[a.person]:2, y=b.person in ord?ord[b.person]:2; return x-y; });
+}
+function b179SenderName(m){
+  if (m.from==='child') { var c=state.children.find(function(x){ return String(x.id)===String(m.childId); }); return (c&&c.name)||'자녀'; }
+  var k=b179KeyOfMsg(m);
+  if (k&&k.indexOf('u:')!==0) return k;
+  var d=devicesState.find(function(x){ return x.uid===(m.parentUid||(k||'').slice(2)); });
+  return d?b179DevName(d):'부모님';
+}
+function b179SetThread(i){ var g=b179Groups()[i]; if (g) { _b179T=g.key; render(); } }
+/* ---------- 카카오톡 스타일 응원 메시지 ---------- */
+function b179Who(m){ return m.from+'|'+(m.from==='parent'?b179KeyOfMsg(m):m.childId); }
+renderMessages=function(ds,isP){
+  var me=b179Me(), childSide=(me.role!=='parent'), groups=b179Groups(), th=null, tabs='';
+  if (childSide&&groups.length) {
+    th=groups.some(function(g){ return g.key===_b179T; })?_b179T:groups[0].key; _b179T=th;
+    if (groups.length>1) tabs='<div class="kt-tabs">'+groups.map(function(g,i){ return '<button type="button" class="'+(g.key===th?'on':'')+'" onclick="b179SetThread('+i+')">'+esc(g.label)+'</button>'; }).join('')+'</div>';
+  }
+  var list=state.messages.filter(function(m){
+    if (m.date!==ds||m.parentId||!isForActiveChild(m)) return false;
+    if (th) { var k=b179KeyOfMsg(m); if (k&&k!==th) return false; }
+    return true;
+  }).sort(function(a,b){ return a.time.localeCompare(b.time)||(Number(a.id)-Number(b.id)); });
+  var d0=parseDate(ds), rows='';
+  if (!list.length) rows='<div class="kt-empty">아직 메시지가 없어요<br><span>'+(isP?'자녀에게 응원 메시지를 남겨보세요':'부모님께 메시지를 보내보세요')+'</span></div>';
+  else {
+    rows='<div class="kt-date">'+d0.getFullYear()+'년 '+koDate(d0)+'</div>';
+    list.forEach(function(m,i){
+      var mine=isP?m.from==='parent':m.from==='child', who=b179Who(m), prev=list[i-1], next=list[i+1];
+      var first=!prev||b179Who(prev)!==who, last=!next||b179Who(next)!==who||next.time!==m.time;
+      var side=mine?'':(first?'<div class="kt-av">'+b172Avatar(m)+'</div>':'<div class="kt-av sp"></div>');
+      var nm=(!mine&&first)?'<div class="kt-name">'+esc(b179SenderName(m))+'</div>':'';
+      rows+='<div class="kt-row'+(mine?' me':'')+(first?'':' cont')+'">'+side+'<div class="kt-col">'+nm
+        +'<div class="kt-line"><div class="kt-b">'+esc(m.text)+'</div>'+(last?'<div class="kt-t">'+prettyTime(m.time)+'</div>':'')+'</div></div></div>';
+    });
+  }
+  var to=th?(groups.filter(function(g){ return g.key===th; })[0]||{}).label:'';
+  var ph=isP?'자녀에게 응원 메시지를 남겨보세요...':(to?to+'에게 메시지를 보내세요...':'부모님께 메시지를 보내세요...');
+  return '<div class="sec-title">💬 응원 메시지</div>'+tabs+'<div class="kt-room">'+rows+'</div>'
+    +'<div class="msg-input-row"><textarea class="f-field msg-input-field" id="msgInput" placeholder="'+esc(ph)+'"></textarea>'
+    +'<button class="msg-send-btn" onclick="sendMsg(\''+ds+'\')" aria-label="보내기">'+B172_PLANE+'</button></div>';
+};
+function sendMsg(ds){
+  var el=b172El('msgInput'); if (!el) { showToast('⚠️ 오류가 발생했어요'); return; }
+  var text=el.value.trim(); if (!text) { showToast('⚠️ 메시지를 입력해주세요'); return; }
+  var me=b179Me(), pu, pk='';
+  if (me.role==='parent') { pu=me.uid; pk=me.person||''; }
+  else {
+    var gs=b179Groups(), g=gs.filter(function(x){ return x.key===_b179T; })[0]||gs[0];
+    if (!g) { showToast('⚠️ 승인된 부모 기기가 없어요'); return; }
+    pu=g.uid; pk=g.person||'';
+  }
+  var now=new Date();
+  var msg={id:Date.now(),from:(state.mode==='parent'?'parent':'child'),text:text,time:pad(now.getHours())+':'+pad(now.getMinutes()),
+    date:ds||fmt(state.selectedDate),parentId:null,childId:activeChildId(),parentUid:pu,parentKey:pk,fromUid:getAuthUid()};
+  el.value=''; showToast('📨 메시지를 보냈어요!');
+  fsSet('messages',msg.id,msg).catch(function(){ el.value=text; showToast('⚠️ 보내지 못했어요. 네트워크를 확인해주세요'); });
+}
+var _b179R=render;
+render=function(){
+  var r=_b179R.apply(this,arguments);
+  try { [].forEach.call(document.querySelectorAll('.kt-room'),function(e){ e.scrollTop=e.scrollHeight; }); } catch(e) {}
+  return r;
+};
+/* ---------- 관리 화면: 승인된 기기 + 설정 시트 ---------- */
+function b179ApprovedHtml(){
+  var me=b179Me(), isAdmin=!!me.isAdmin;
+  var approved=devicesState.filter(function(d){ return d.status==='approved'; });
+  var html='<div class="sec-title">승인된 기기</div>';
+  if (!approved.length) html+=emptyBox('📱','승인된 기기가 없어요','');
+  approved.forEach(function(d){
+    var isMe=d.uid===me.uid, meta=[];
+    if (d.role==='parent') { meta.push(d.person||'부모'); if (d.isAdmin) meta.push('관리자'); }
+    else meta.push(d.childId?'연결된 자녀: '+esc(childLabel(d.childId)):'연결된 자녀 없음');
+    if (d.registeredAt) meta.push(new Date(d.registeredAt).toLocaleDateString('ko'));
+    html+='<div class="device-card"><div class="dev-avatar" style="background:'+(d.role==='parent'?'var(--parent-l)':'var(--child-l)')+'">'+(d.isAdmin?'👑':(d.role==='parent'?'👨‍👩‍👧':'👦'))+'</div>'
+      +'<div class="dev-info"><div class="dev-name">'+esc(b179DevName(d))+(isMe?' <span style="font-size:11px;color:var(--sub)">(이 기기)</span>':'')+'</div>'
+      +'<div class="dev-meta">'+meta.join(' · ')+'</div></div>'
+      +((isAdmin||isMe)?'<button type="button" class="b179-set" onclick="b179OpenDev(\''+d.uid+'\')">설정</button>':'')+'</div>';
+  });
+  return html;
+}
+var _b179RD=renderDevices;
+renderDevices=function(){
+  var html=_b179RD.apply(this,arguments);
+  var a=html.indexOf('<div class="sec-title">승인된 기기</div>'); if (a<0) return html;
+  var p=html.indexOf('가족 사진 (환영 화면)</div>',a), b=p<0?html.length:html.lastIndexOf('<div class="sec-title">',p);
+  return html.slice(0,a)+b179ApprovedHtml()+html.slice(b);
+};
+function b179Pick(id,v){ [].forEach.call(document.querySelectorAll('#'+id+' button'),function(b){ b.classList.toggle('on',b.getAttribute('data-v')===String(v)); }); }
+function b179SetRel(v){ _b169.person=v; b179Pick('b179Rel',v); }
+function b179SetAdm(v){ _b169.admin=(v==='1'); b179Pick('b179Adm',v); }
+function b179SetKid(v){ _b169.child=v; b179Pick('b179Kid',v); }
+function b179OpenDev(uid){
+  var d=devicesState.find(function(x){ return x.uid===uid; }); if (!d) return;
+  var me=b179Me(), isAdmin=!!me.isAdmin, isMe=d.uid===me.uid;
+  if (!isAdmin&&!isMe) { showToast('🔒 관리자만 변경할 수 있어요'); return; }
+  b169Ensure(); _b169={type:'dev',uid:uid,person:d.person||'',admin:!!d.isAdmin,child:d.childId||''};
+  var body='<div class="m-label">기기 이름</div><input class="m-field" id="b179Name" maxlength="20" placeholder="예: 아빠 아이폰, 첫째 아이패드" value="'+esc(d.label||'')+'">';
+  if (d.role==='parent'&&isAdmin) {
+    body+='<div class="m-label">자녀와의 관계</div>'+b169Chips('b179Rel',[['아빠','아빠'],['엄마','엄마'],['','지정 안 함']],_b169.person,'b179SetRel')
+      +'<div class="s" style="margin:2px 2px 12px;line-height:1.5">같은 관계로 지정한 기기끼리는 자녀와의 메시지를 함께 봐요. 자녀 화면에도 기기 이름 대신 아빠/엄마로 표시돼요.</div>';
+  }
+  if (d.role==='parent'&&isAdmin) {
+    body+='<div class="m-label">관리자 권한</div>'+b169Chips('b179Adm',[['0','일반'],['1','관리자']],_b169.admin?'1':'0','b179SetAdm')
+      +'<div class="s" style="margin:2px 2px 12px;line-height:1.5">관리자는 기기 승인·거절과 설정 변경 권한을 가져요.</div>';
+  }
+  if (d.role==='child'&&isAdmin&&state.children.length) {
+    body+='<div class="m-label">연결된 자녀</div>'+b169Chips('b179Kid',state.children.map(function(c){ return [esc(c.id),esc((c.emoji||'🧒')+' '+c.name)]; }),_b169.child,'b179SetKid');
+  }
+  if (isAdmin&&!isMe&&!d.isAdmin) body+='<button type="button" class="b179-rev" onclick="b179Revoke(\''+uid+'\')">이 기기 승인 취소</button>';
+  b169El('b169H').textContent='기기 설정';
+  b169El('b169Body').innerHTML=body;
+  var s=b169El('b169Modal').querySelector('.m-save'); s.textContent='저장'; s.style.display='';
+  b169El('b169Del').style.display='none';
+  b169El('b169Modal').classList.add('open'); b169El('b169Body').scrollTop=0; b172Snap();
+}
+function b179SaveDev(){
+  var d=devicesState.find(function(x){ return x.uid===_b169.uid; }); if (!d) { b169Close(); return; }
+  var me=b179Me(), isAdmin=!!me.isAdmin, patch={};
+  var name=b172El('b179Name').value.trim(); if (!name) { showToast('⚠️ 기기 이름을 입력해주세요'); return; }
+  if (name!==(d.label||'')) patch.label=name;
+  if (d.role==='parent'&&isAdmin&&(d.person||'')!==_b169.person) patch.person=_b169.person;
+  if (d.role==='parent'&&isAdmin&&!!d.isAdmin!==_b169.admin) {
+    if (!_b169.admin&&devicesState.filter(function(x){ return x.status==='approved'&&x.isAdmin; }).length<=1) { showToast('⚠️ 관리자가 한 명도 없어지면 안 돼요. 먼저 다른 기기를 관리자로 지정해주세요'); return; }
+    patch.isAdmin=_b169.admin;
+  }
+  if (d.role==='child'&&isAdmin&&_b169.child&&_b169.child!==(d.childId||'')) patch.childId=_b169.child;
+  var uid=d.uid;
+  if (!Object.keys(patch).length) { b169Close(); return; }
+  Object.assign(d,patch); b169Close(); render(); showToast('✅ 저장됐어요');
+  fsUpdate('devices',uid,patch).then(function(){ b179CheckSub(); }).catch(function(){ showToast('⚠️ 저장 실패. 네트워크를 확인해주세요'); });
+}
+function b179Revoke(uid){
+  var d=devicesState.find(function(x){ return x.uid===uid; }); if (!d) return;
+  openConfirmSheet('이 기기의 승인을 취소할까요?','🔒','취소할게요','아니요',function(ok){
+    if (!ok) return;
+    b169Close(); showToast('🔒 승인이 취소됐어요');
+    fsSet('devices',uid,Object.assign({},d,{status:'pending'})).catch(function(){ showToast('⚠️ 저장 실패. 네트워크를 확인해주세요'); });
+  });
+}
+var _b179S=b169Save; b169Save=function(){ if (_b169&&_b169.type==='dev') return b179SaveDev(); return _b179S.apply(this,arguments); };
 setTimeout(function(){ try { render(); } catch(e) {} },0);
 </script>
 </body>
