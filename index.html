@@ -14,9 +14,9 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- Build 179 -->
-<title>Build 179 · 우리가족 플래너</title>
-<script>/* 빌드 번호는 여기 한 곳에서만 바꿉니다. sw.js의 CACHE 이름도 같은 번호로 함께 바꿔야 합니다. */var APP_BUILD='179';</script>
+<!-- Build 180 -->
+<title>Build 180 · 우리가족 플래너</title>
+<script>/* 빌드 번호는 여기 한 곳에서만 바꿉니다. sw.js의 CACHE 이름도 같은 번호로 함께 바꿔야 합니다. */var APP_BUILD='180';</script>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -8893,7 +8893,7 @@ function b179ApprovedHtml(){
     if (d.role==='parent') { meta.push(d.person||'부모'); if (d.isAdmin) meta.push('관리자'); }
     else meta.push(d.childId?'연결된 자녀: '+esc(childLabel(d.childId)):'연결된 자녀 없음');
     if (d.registeredAt) meta.push(new Date(d.registeredAt).toLocaleDateString('ko'));
-    html+='<div class="device-card"><div class="dev-avatar" style="background:'+(d.role==='parent'?'var(--parent-l)':'var(--child-l)')+'">'+(d.isAdmin?'👑':(d.role==='parent'?'👨‍👩‍👧':'👦'))+'</div>'
+    html+='<div class="device-card"><div class="dev-avatar" style="background:'+(d.role==='parent'?'var(--parent-l)':'var(--child-l)')+'">'+((typeof b180DevIconHtml==='function'&&b180DevIconHtml(d))||(d.isAdmin?'👑':(d.role==='parent'?'👨‍👩‍👧':'👦')))+'</div>'
       +'<div class="dev-info"><div class="dev-name">'+esc(b179DevName(d))+(isMe?' <span style="font-size:11px;color:var(--sub)">(이 기기)</span>':'')+'</div>'
       +'<div class="dev-meta">'+meta.join(' · ')+'</div></div>'
       +((isAdmin||isMe)?'<button type="button" class="b179-set" onclick="b179OpenDev(\''+d.uid+'\')">설정</button>':'')+'</div>';
@@ -8960,6 +8960,250 @@ function b179Revoke(uid){
   });
 }
 var _b179S=b169Save; b169Save=function(){ if (_b169&&_b169.type==='dev') return b179SaveDev(); return _b179S.apply(this,arguments); };
+setTimeout(function(){ try { render(); } catch(e) {} },0);
+</script>
+<style id="b180-style">
+.b180-ic{display:flex;align-items:center;gap:14px;margin:4px 0 8px}
+.b180-prev{width:64px;height:64px;border-radius:20px;background:#F6F3EA;display:flex;align-items:center;justify-content:center;font-size:34px;overflow:hidden;flex-shrink:0}
+.b180-prev svg,.b180-prev img{width:100%;height:100%;display:block;object-fit:cover}
+.b180-tabs{display:flex;gap:6px;flex-wrap:wrap}
+.b180-tab{min-height:38px;padding:0 14px;border-radius:19px;border:1px solid var(--border);background:#fff;font:inherit;font-size:13px;font-weight:700;color:var(--text)}
+.b180-tab.sel{background:var(--child);border-color:var(--child);color:#fff}
+.b180-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:4px 0 12px}
+.b180-cell{padding:0;border:2px solid transparent;border-radius:16px;overflow:hidden;background:none;line-height:0}
+.b180-cell.pick{border-color:var(--child)}
+.b180-cell svg{width:100%;height:auto;display:block;border-radius:14px}
+.b180-emo{grid-template-columns:repeat(7,1fr);gap:4px}
+.b180-emo button{height:40px;border:2px solid transparent;border-radius:10px;background:#fff;font-size:22px;padding:0}
+.b180-emo button.pick{border-color:var(--child)}
+.dev-avatar,.kt-av{overflow:hidden}
+.dev-avatar svg,.dev-avatar img,.kt-av svg,.kt-av img{width:100%;height:100%;display:block;object-fit:cover}
+</style>
+<script id="build180-ui">
+/* Build 180: 지난 시간표는 아래로, 가족 아이콘을 기기 설정으로 이동(캐릭터·이모지·사진→수채화) */
+/* ---- 캐릭터 아바타(검은 머리 일러스트) ---- */
+var B180_AV={
+  dad1:{n:'아빠',bg:'#CFE3F5',shirt:'#5B8DB8',hair:'short'},
+  dad2:{n:'안경 아빠',bg:'#DDEBD6',shirt:'#6C8F5E',hair:'side',glasses:1},
+  dad3:{n:'멋쟁이 아빠',bg:'#F3DDD0',shirt:'#8A6A5A',hair:'spiky'},
+  mom1:{n:'엄마',bg:'#F8D9E2',shirt:'#D9778F',hair:'bob'},
+  mom2:{n:'긴머리 엄마',bg:'#E4DBF3',shirt:'#8F7BC4',hair:'long'},
+  mom3:{n:'묶음머리 엄마',bg:'#FBE7C6',shirt:'#E39A4B',hair:'bun'},
+  boy1:{n:'아들',bg:'#D3EEE8',shirt:'#3FA58F',hair:'spiky'},
+  boy2:{n:'씩씩이',bg:'#FFE7A8',shirt:'#E8873A',hair:'short',cap:1},
+  girl1:{n:'딸',bg:'#FFD9E6',shirt:'#F07CA3',hair:'twin'},
+  girl2:{n:'단발 딸',bg:'#D8E6FF',shirt:'#6A93E0',hair:'bob',clip:1},
+  gpa:{n:'할아버지',bg:'#E7E4DC',shirt:'#7B7A6B',hair:'gpa',glasses:1},
+  gma:{n:'할머니',bg:'#F3E3EA',shirt:'#B27C98',hair:'gma',glasses:1},
+  baby:{n:'아기',bg:'#FFF1C9',shirt:'#9CD3C4',hair:'baby'}
+};
+function b180Svg(key,size){
+  var a=B180_AV[key]; if (!a) return '';
+  var H=a.hair==='gpa'||a.hair==='gma'?'#C9C6C2':'#2A2523', SK='#F8D7BD', back='', front='', extra='';
+  var h=a.hair;
+  if (h==='short') front='<path d="M19 30C17 15 25 10 32 10C40 10 47 15 45 30C43 23 39 20 32 20C25 20 21 23 19 30Z" fill="'+H+'"/>';
+  if (h==='side') front='<path d="M19 30C17 14 27 9 34 10C42 11 48 17 45 30C44 24 41 20 37 19C33 24 25 23 19 30Z" fill="'+H+'"/>';
+  if (h==='spiky') front='<path d="M18 31L19 17L24 21L26 11L31 18L36 9L39 18L45 13L45 31C43 24 39 21 32 21C25 21 21 24 18 31Z" fill="'+H+'" stroke="'+H+'" stroke-linejoin="round" stroke-width="2"/>';
+  if (h==='bob') { back='<path d="M16 38C13 17 23 8 32 8C41 8 51 17 48 38C48 43 45 45 42 45L22 45C19 45 16 43 16 38Z" fill="'+H+'"/>'; front='<path d="M19 29C20 17 26 14 32 14C38 14 44 17 45 29C40 24 36 19 32 18C27 20 23 24 19 29Z" fill="'+H+'"/>'; }
+  if (h==='long') { back='<path d="M15 54C12 20 21 8 32 8C43 8 52 20 49 54Z" fill="'+H+'"/>'; front='<path d="M19 31C18 17 25 12 33 12C41 12 46 18 45 31C42 24 37 18 32 17C27 20 22 25 19 31Z" fill="'+H+'"/>'; }
+  if (h==='bun') { back='<circle cx="32" cy="8" r="6.5" fill="'+H+'"/>'; front='<path d="M19 30C17 16 25 11 32 11C40 11 47 16 45 30C43 23 39 19 32 19C25 19 21 23 19 30Z" fill="'+H+'"/>'; extra='<rect x="27" y="11" width="10" height="2.4" rx="1.2" fill="#E8708A"/>'; }
+  if (h==='twin') { back='<ellipse cx="14.5" cy="40" rx="6" ry="9" fill="'+H+'"/><ellipse cx="49.5" cy="40" rx="6" ry="9" fill="'+H+'"/><path d="M18 30C17 12 47 12 46 30Z" fill="'+H+'"/>'; front='<path d="M19 29C20 17 26 14 32 14C38 14 44 17 45 29C40 23 36 20 32 19C27 21 23 24 19 29Z" fill="'+H+'"/>'; extra='<circle cx="17.5" cy="29" r="3" fill="#FF7FA6"/><circle cx="46.5" cy="29" r="3" fill="#FF7FA6"/>'; }
+  if (h==='gpa') front='<path d="M18 33C16 24 20 18 24 17C22 22 21 27 21 33ZM46 33C48 24 44 18 40 17C42 22 43 27 43 33ZM25 14C29 11 35 11 39 14C36 13 28 13 25 14Z" fill="'+H+'"/>';
+  if (h==='gma') { back='<circle cx="32" cy="9" r="7" fill="'+H+'"/>'; front='<path d="M19 30C17 16 25 11 32 11C40 11 47 16 45 30C43 23 39 19 32 19C25 19 21 23 19 30Z" fill="'+H+'"/>'; }
+  if (h==='baby') front='<path d="M28 15C30 8 36 9 36 14C34 12 31 12 28 15Z" fill="'+H+'"/>';
+  if (a.cap) extra+='<path d="M17 25C17 12 47 12 47 25Z" fill="#2F6FB5"/><path d="M33 22L52 24C52 27 40 27 33 26Z" fill="#245A94"/>';
+  if (a.clip) extra+='<rect x="38" y="15" width="8" height="2.6" rx="1.3" fill="#FF8FB3" transform="rotate(25 42 16)"/>';
+  var glasses=a.glasses?'<g fill="none" stroke="#4A4340" stroke-width="1.3"><circle cx="26.5" cy="31" r="4.6"/><circle cx="37.5" cy="31" r="4.6"/><path d="M31 31H33"/></g>':'';
+  var ear='<ellipse cx="18.6" cy="32" rx="2" ry="3" fill="'+SK+'"/><ellipse cx="45.4" cy="32" rx="2" ry="3" fill="'+SK+'"/>';
+  var s='<svg viewBox="0 0 64 64" width="'+(size||40)+'" height="'+(size||40)+'" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">'
+   +'<rect width="64" height="64" fill="'+a.bg+'"/>'
+   +'<path d="M8 64C9 51 20 46 32 46C44 46 55 51 56 64Z" fill="'+a.shirt+'"/>'
+   +'<rect x="28" y="40" width="8" height="9" rx="3" fill="'+SK+'"/>'
+   +back+ear+'<ellipse cx="32" cy="31" rx="13.2" ry="14.2" fill="'+SK+'"/>'
+   +front
+   +'<ellipse cx="26.5" cy="32.5" rx="1.5" ry="1.9" fill="#3A302C"/><ellipse cx="37.5" cy="32.5" rx="1.5" ry="1.9" fill="#3A302C"/>'
+   +'<circle cx="22.5" cy="37" r="2.6" fill="#F5A8A0" opacity=".55"/><circle cx="41.5" cy="37" r="2.6" fill="#F5A8A0" opacity=".55"/>'
+   +'<path d="M28.6 38.2Q32 41.2 35.4 38.2" fill="none" stroke="#B5675D" stroke-width="1.4" stroke-linecap="round"/>'
+   +glasses+extra+'</svg>';
+  return s;
+}
+/* ---- 사진 → 수채화풍 (브라우저에서만 처리, 원본은 저장·전송하지 않음) ---- */
+function b180Watercolor(src,N){
+  /* src: 정사각형으로 이미 잘라 N×N으로 그려진 ImageData 호환 {data,width,height} */
+  var W=src.width,Hh=src.height,d=src.data,i,x,y,c;
+  var px=new Float32Array(W*Hh*3);
+  for(i=0;i<W*Hh;i++){ px[i*3]=d[i*4]; px[i*3+1]=d[i*4+1]; px[i*3+2]=d[i*4+2]; }
+  /* 1) Kuwahara: 가장자리는 살리고 면은 붓칠처럼 뭉개기 */
+  function kuwa(inp,r){
+    var out=new Float32Array(inp.length);
+    for(y=0;y<Hh;y++)for(x=0;x<W;x++){
+      var best=1e18,bm=[0,0,0];
+      for(var q=0;q<4;q++){
+        var x0=x+((q&1)?0:-r),x1=x+((q&1)?r:0),y0=y+((q&2)?0:-r),y1=y+((q&2)?r:0);
+        var n=0,s0=0,s1=0,s2=0,sl=0,sq=0;
+        for(var yy=y0;yy<=y1;yy++){ var cy=yy<0?0:yy>=Hh?Hh-1:yy;
+          for(var xx=x0;xx<=x1;xx++){ var cx=xx<0?0:xx>=W?W-1:xx, k=(cy*W+cx)*3;
+            var a=inp[k],b=inp[k+1],cc=inp[k+2], l=.299*a+.587*b+.114*cc;
+            s0+=a;s1+=b;s2+=cc;sl+=l;sq+=l*l;n++; } }
+        var v=sq/n-(sl/n)*(sl/n);
+        if(v<best){ best=v; bm=[s0/n,s1/n,s2/n]; }
+      }
+      var o=(y*W+x)*3; out[o]=bm[0]; out[o+1]=bm[1]; out[o+2]=bm[2];
+    }
+    return out;
+  }
+  var r1=Math.max(1,Math.round(W/80));
+  var kw=kuwa(px,r1), sm=new Float32Array(px.length);
+  for(i=0;i<px.length;i++) sm[i]=kw[i]*.72+px[i]*.28;   /* 이목구비가 사라지지 않도록 원본을 조금 섞기 */
+  (function(){ var t=new Float32Array(sm.length); /* 가벼운 번짐 */
+    for(y=0;y<Hh;y++)for(x=0;x<W;x++)for(c=0;c<3;c++){ var s0=0,n=0; for(var oy=-1;oy<=1;oy++)for(var ox=-1;ox<=1;ox++){ var cx=Math.min(W-1,Math.max(0,x+ox)),cy=Math.min(Hh-1,Math.max(0,y+oy)); s0+=sm[(cy*W+cx)*3+c]*(ox||oy?1:2); n+=(ox||oy?1:2); } t[(y*W+x)*3+c]=s0/n; }
+    sm=t; })();
+  /* 2) 명암 윤곽(안료가 모이는 가장자리) */
+  var lum=new Float32Array(W*Hh);
+  for(i=0;i<W*Hh;i++) lum[i]=.299*sm[i*3]+.587*sm[i*3+1]+.114*sm[i*3+2];
+  function L(xx,yy){ xx=xx<0?0:xx>=W?W-1:xx; yy=yy<0?0:yy>=Hh?Hh-1:yy; return lum[yy*W+xx]; }
+  /* 3) 색 정리: 연하게, 채도 살짝, 소프트 포스터라이즈 + 종이 질감 */
+  var seed=7; function rnd(){ seed=(seed*16807)%2147483647; return seed/2147483647; }
+  var grain=new Float32Array(W*Hh); for(i=0;i<grain.length;i++) grain[i]=rnd()-.5;
+  var out=new Uint8ClampedArray(W*Hh*4);
+  for(y=0;y<Hh;y++)for(x=0;x<W;x++){
+    i=y*W+x;
+    var gx=-L(x-1,y-1)-2*L(x-1,y)-L(x-1,y+1)+L(x+1,y-1)+2*L(x+1,y)+L(x+1,y+1);
+    var gy=-L(x-1,y-1)-2*L(x,y-1)-L(x+1,y-1)+L(x-1,y+1)+2*L(x,y+1)+L(x+1,y+1);
+    var edge=Math.min(1,Math.sqrt(gx*gx+gy*gy)/340);
+    var rgb=[sm[i*3],sm[i*3+1],sm[i*3+2]], l=lum[i];
+    for(c=0;c<3;c++){
+      var v=l+(rgb[c]-l)*1.18;               /* 채도 */
+      var p=Math.round(v/36)*36; v=v*.70+p*.30; /* 소프트 포스터라이즈 */
+      v=v*.84+255*.16;                          /* 물을 많이 탄 듯 연하게 */
+      v=v*(1-edge*.34*(c===2?.8:1));            /* 가장자리 안료 번짐 */
+      v+=grain[i]*5;                            /* 종이 결 */
+      rgb[c]=v;
+    }
+    /* 가장자리는 종이색으로 번지듯 사라지기 */
+    var dx=(x+.5)/W-.5, dy=(y+.5)/Hh-.5, rr=Math.sqrt(dx*dx+dy*dy)*2;
+    var fade=rr<.78?0:Math.min(1,(rr-.78)/.34); fade=fade*fade*(.65+.35*(grain[i]+.5));
+    for(c=0;c<3;c++){ var vv=rgb[c]*(1-fade)+250*fade; out[i*4+c]=vv<0?0:vv>255?255:vv; }
+    out[i*4+3]=255;
+  }
+  return out;
+}
+/* ---------- 시간표: 기간이 지난 것은 '지난 시간표'로 아래에 ---------- */
+renderSchool=function(){
+  var isP=state.mode==='parent', orig=_b170RS(), bulk='', td=fmt(TODAY);
+  if (isP) { var a=orig.indexOf('<div class="sec-title">📋 학사일정 일괄 등록</div>'), b=orig.indexOf('<div class="sec-title">등록된 시간표</div>'); if (a>=0&&b>a) bulk=orig.slice(a,b); }
+  var all=state.schoolSchedule.filter(isForActiveChild), up=[], past=[];
+  all.forEach(function(s){ (s.repeatEnd&&s.repeatEnd<td?past:up).push(s); });
+  up.sort(function(x,y){ return (x.cat||'').localeCompare(y.cat||'')||(x.name||'').localeCompare(y.name||'')||(x.repeatStart||'').localeCompare(y.repeatStart||''); });
+  past.sort(function(x,y){ return (y.repeatEnd||'').localeCompare(x.repeatEnd||'')||(x.name||'').localeCompare(y.name||''); });
+  function item(s,pastFlag){
+    var ac=s.cat==='학원', sub=b172TimeText(s);
+    if (s.repeatStart||s.repeatEnd) sub+=' · '+(s.repeatStart?koDateShort(s.repeatStart):'')+' ~ '+(s.repeatEnd?koDateShort(s.repeatEnd):'계속');
+    var tb=+s.travelBefore||0, ta=+s.travelAfter||0; if (s.perDay) { Object.keys(s.perDay).forEach(function(k){ tb=Math.max(tb,+s.perDay[k].b||0); ta=Math.max(ta,+s.perDay[k].a||0); }); }
+    if (tb||ta) sub+=' · 차량 '+tb+'/'+ta+'분';
+    return b170Item(s.startTime||'',ac?'학원':'학교',ac?'ac':'sc',s.name,sub,pastFlag,isP?"b169OpenSchool('"+s.id+"')":'');
+  }
+  var html='<div class="b162-sec">'+(state.children.length>1?esc(childLabel(activeChildId()))+'의 ':'')+'등록된 시간표 <i>'+up.length+'개</i></div>';
+  if (!up.length) html+=emptyBox('🏫','등록된 시간표가 없어요',isP?'위의 + 시간표 추가를 눌러 보세요':'부모님이 시간표를 등록하면 여기 표시돼요');
+  up.forEach(function(s){ html+=item(s,false); });
+  if (past.length) { html+='<div class="b162-sec">지난 시간표 <i>'+past.length+'개</i></div>'; past.forEach(function(s){ html+=item(s,true); }); }
+  return html+bulk;
+};
+/* ---------- 아이콘 표시 ---------- */
+function b180Cust(o){ if (!o) return null; if (o.iconImg) return '<img src="'+o.iconImg+'" alt="">'; if (o.avatar&&B180_AV[o.avatar]) return b180Svg(o.avatar,64); return null; }
+function b180DevIconHtml(d){
+  if (d.role==='child') { var c=state.children.find(function(x){ return String(x.id)===String(d.childId); }); return b180Cust(c)||''; }
+  return b180Cust(d)||'';
+}
+function b180ParentObj(m){
+  var k=b179KeyOfMsg(m);
+  var cand=devicesState.filter(function(d){ return d.role==='parent'&&d.status==='approved'&&b179KeyOfDev(d)===k; });
+  var w=cand.filter(function(d){ return d.iconImg||d.avatar||d.icon; })[0];
+  return w||devicesState.find(function(d){ return d.uid===m.parentUid; })||cand[0]||null;
+}
+var _b180A=b172Avatar;
+b172Avatar=function(m){
+  var o=(m.from==='child')?state.children.find(function(x){ return String(x.id)===String(m.childId); }):b180ParentObj(m);
+  var h=b180Cust(o); if (h) return h;
+  if (m.from!=='child'&&o&&o.icon) return o.icon;
+  return _b180A(m);
+};
+/* ---------- 기기 설정 시트 안의 아이콘 ---------- */
+function b180Target(d){
+  var me=b179Me(), isAdmin=!!me.isAdmin;
+  if (d.role==='parent') return {col:'devices',id:d.uid,obj:d,emoKey:'icon',def:b172ParentDefault(d.label)};
+  if (isAdmin) { var c=state.children.find(function(x){ return String(x.id)===String(d.childId); }); if (c) return {col:'children',id:c.id,obj:c,emoKey:'emoji',def:'🙂'}; }
+  return null;
+}
+function b180CurHtml(t){ return b180Cust(t.obj)||t.obj[t.emoKey]||t.def; }
+function b180Prev(html){ var p=b172El('b180Prev'); if (p) p.innerHTML=html; }
+function b180Mark(type,val){
+  var ic=_b169.ic; ic.sel={type:type,val:val};
+  b172El('b180Sel').value=type+':'+(val||'').slice(0,40);
+  [].forEach.call(document.querySelectorAll('#b180Panel .b180-cell,#b180Panel .b180-emo button'),function(b){ b.classList.toggle('pick',b.getAttribute('data-k')===val); });
+}
+function b180PickSvg(k){ b180Mark('svg',k); b180Prev(b180Svg(k,64)); }
+function b180PickEmo(e){ b180Mark('emo',e); b180Prev(e); }
+function b180Tab(v){
+  [].forEach.call(document.querySelectorAll('#b180Tabs button'),function(b){ b.classList.toggle('sel',b.getAttribute('data-v')===v); });
+  var html='';
+  if (v==='svg') html='<div class="b180-grid">'+Object.keys(B180_AV).map(function(k){ return '<button type="button" class="b180-cell" data-k="'+k+'" onclick="b180PickSvg(\''+k+'\')" aria-label="'+B180_AV[k].n+'">'+b180Svg(k,64)+'</button>'; }).join('')+'</div>';
+  if (v==='emo') html='<div class="b180-grid b180-emo">'+B172_EMO.map(function(e){ return '<button type="button" data-k="'+e+'" onclick="b180PickEmo(\''+e+'\')">'+e+'</button>'; }).join('')+'</div>';
+  if (v==='img') html='<button type="button" class="b162-all" onclick="b172El(\'b180File\').click()">📷 사진 고르기</button><input type="file" id="b180File" accept="image/*" style="display:none" onchange="b180Photo(this.files)"><div class="s" style="margin:6px 2px 12px;line-height:1.5">고른 사진은 이 기기에서 수채화 그림으로만 바꿔 저장하고, 원본 사진은 저장하지 않아요. 얼굴이 가운데 오는 사진이 가장 잘 나와요.</div>';
+  b172El('b180Panel').innerHTML=html;
+  var s=_b169.ic&&_b169.ic.sel; if (s&&s.type!=='img') [].forEach.call(document.querySelectorAll('#b180Panel [data-k]'),function(b){ b.classList.toggle('pick',b.getAttribute('data-k')===s.val); });
+}
+function b180Photo(files){
+  var f=files&&files[0]; if (!f) return;
+  showToast('🎨 수채화로 그리는 중...');
+  var url=URL.createObjectURL(f), img=new Image();
+  img.onerror=function(){ URL.revokeObjectURL(url); showToast('⚠️ 사진을 불러오지 못했어요'); };
+  img.onload=function(){
+    try {
+      var N=160, cv=document.createElement('canvas'); cv.width=cv.height=N; var cx=cv.getContext('2d');
+      var w=img.naturalWidth, h=img.naturalHeight, s=Math.min(w,h), sx=(w-s)/2, sy=Math.max(0,(h-s)/2-s*0.06);
+      cx.fillStyle='#fff'; cx.fillRect(0,0,N,N); cx.drawImage(img,sx,sy,s,s,0,0,N,N); URL.revokeObjectURL(url);
+      var out=b180Watercolor(cx.getImageData(0,0,N,N)), id=cx.createImageData(N,N); id.data.set(out); cx.putImageData(id,0,0);
+      var c2=document.createElement('canvas'); c2.width=c2.height=128; c2.getContext('2d').drawImage(cv,0,0,128,128);
+      var data=c2.toDataURL('image/jpeg',0.82);
+      b180Mark('img',data); b180Prev('<img src="'+data+'" alt="">'); showToast('✅ 수채화 아이콘이 만들어졌어요');
+    } catch(e) { showToast('⚠️ 사진을 변환하지 못했어요'); }
+  };
+  img.src=url;
+}
+var _b180Open=b179OpenDev;
+b179OpenDev=function(uid){
+  _b180Open(uid);
+  var d=devicesState.find(function(x){ return x.uid===uid; }), nm=b172El('b179Name'); if (!d||!nm||_b169.type!=='dev') return;
+  var t=b180Target(d); if (!t) return;
+  _b169.ic={col:t.col,id:t.id,obj:t.obj,emoKey:t.emoKey,sel:null};
+  nm.insertAdjacentHTML('afterend','<div class="m-label">아이콘'+(d.role==='child'?' <span class="s">('+esc(childLabel(d.childId))+')</span>':'')+'</div>'
+    +'<div class="b180-ic"><div class="b180-prev" id="b180Prev">'+b180CurHtml(t)+'</div><div class="b180-tabs" id="b180Tabs">'
+    +'<button type="button" class="b180-tab sel" data-v="svg" onclick="b180Tab(\'svg\')">캐릭터</button><button type="button" class="b180-tab" data-v="emo" onclick="b180Tab(\'emo\')">이모지</button><button type="button" class="b180-tab" data-v="img" onclick="b180Tab(\'img\')">내 사진</button></div></div>'
+    +'<input type="hidden" id="b180Sel" value=""><div id="b180Panel"></div>'
+    +(d.role==='parent'?'<div class="s" style="margin:0 2px 12px;line-height:1.5">메시지의 보낸 사람 옆에 표시돼요. 같은 아빠/엄마 기기 중 아이콘이 정해진 기기의 것이 쓰여요.</div>':''));
+  b180Tab('svg'); b172Snap();
+};
+function b180SaveIcon(){
+  var ic=_b169&&_b169.ic; if (!ic||!ic.sel) return; var s=ic.sel, o=ic.obj, p={};
+  if (s.type==='emo') { p[ic.emoKey]=s.val; p.avatar=''; p.iconImg=''; }
+  if (s.type==='svg') { p.avatar=s.val; p.iconImg=''; }
+  if (s.type==='img') { p.iconImg=s.val; p.avatar=''; }
+  Object.assign(o,p); _b169.ic=null; render();
+  fsUpdate(ic.col,ic.id,p).catch(function(){ showToast('⚠️ 아이콘 저장에 실패했어요. 네트워크를 확인해주세요'); });
+}
+var _b180S=b169Save;
+b169Save=function(){
+  var dev=_b169&&_b169.type==='dev', ic=dev&&_b169.ic;
+  var r=_b180S.apply(this,arguments);
+  if (dev&&ic&&_b169&&_b169.ic===ic) { var m=b169El('b169Modal'); if (m&&!m.classList.contains('open')) b180SaveIcon(); }
+  return r;
+};
+/* ---------- 관리 화면: '가족 아이콘' 버튼 제거 + 기기 카드에 아이콘 표시 ---------- */
+var _b180RD=renderDevices;
+renderDevices=function(){
+  return _b180RD.apply(this,arguments).replace(/<button onclick="b172OpenIcons\(\)">[\s\S]*?<\/button>/,'');
+};
 setTimeout(function(){ try { render(); } catch(e) {} },0);
 </script>
 </body>
