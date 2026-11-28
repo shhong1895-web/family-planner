@@ -14,9 +14,9 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- Build 181 -->
-<title>Build 181 · 우리가족 플래너</title>
-<script>/* 빌드 번호는 여기 한 곳에서만 바꿉니다. sw.js의 CACHE 이름도 같은 번호로 함께 바꿔야 합니다. */var APP_BUILD='181';</script>
+<!-- Build 182 -->
+<title>Build 182 · 우리가족 플래너</title>
+<script>/* 빌드 번호는 여기 한 곳에서만 바꿉니다. sw.js의 CACHE 이름도 같은 번호로 함께 바꿔야 합니다. */var APP_BUILD='182';</script>
 
 <!-- Firebase SDK (compat version - no module needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -8962,7 +8962,7 @@ function b179Revoke(uid){
 var _b179S=b169Save; b169Save=function(){ if (_b169&&_b169.type==='dev') return b179SaveDev(); return _b179S.apply(this,arguments); };
 setTimeout(function(){ try { render(); } catch(e) {} },0);
 </script>
-<style id="b181-style">
+<style id="b182-style">
 .b180-ic{display:flex;align-items:center;gap:14px;margin:4px 0 8px}
 .b180-prev{width:88px;height:88px;border-radius:26px;background:#F6F3EA;display:flex;align-items:center;justify-content:center;font-size:46px;overflow:hidden;flex-shrink:0}
 .b180-prev svg,.b180-prev img{width:100%;height:100%;display:block;object-fit:cover}
@@ -8980,9 +8980,11 @@ setTimeout(function(){ try { render(); } catch(e) {} },0);
 .b180-cmp img{width:140px;height:140px;border-radius:18px;object-fit:cover;display:block;margin-bottom:4px}
 .dev-avatar,.kt-av{overflow:hidden}
 .dev-avatar svg,.dev-avatar img,.kt-av svg,.kt-av img{width:100%;height:100%;display:block;object-fit:cover}
+.b180-opt{display:flex;align-items:center;gap:10px;margin:2px 0 6px;justify-content:center}
+.b182-fd{display:block;width:100%;margin:16px 0 6px;min-height:44px;border-radius:12px;border:1px solid var(--border);background:#fff;color:var(--danger);font:inherit;font-size:14px;font-weight:700}
 </style>
-<script id="build181-ui">
-/* Build 181: 아이콘 = 이모지 + 내 사진(위치·크기 조절 → 수채화), 같은 아빠/엄마 기기는 아이콘 공통 적용, 지난 시간표는 아래로 */
+<script id="build182-ui">
+/* Build 182: 아이콘 = 이모지 + 내 사진(위치·크기 조절 → 수채화), 같은 아빠/엄마 기기는 아이콘 공통 적용, 지난 시간표는 아래로 */
 /* ---- 사진 → 수채화풍 (브라우저에서만 처리, 원본은 저장·전송하지 않음) ---- */
 function b180Watercolor(src){
   var W=src.width,Hh=src.height,d=src.data,i,x,y,c;
@@ -9111,25 +9113,27 @@ function b180Tab(v){
   if (v==='emo') html='<div class="b180-emo">'+B180_EMO.map(function(e){ return '<button type="button" data-k="'+e+'" onclick="b180PickEmo(\''+e+'\')">'+e+'</button>'; }).join('')+'</div>';
   if (v==='img') {
     var file='<input type="file" id="b180File" accept="image/*" style="display:none" onchange="b180Photo(this.files)">';
-    if (!_b180I) html='<button type="button" class="b162-all" onclick="b172El(\'b180File\').click()">📷 사진 고르기</button>'+file+'<div class="s" style="margin:6px 2px 12px;line-height:1.5">고른 사진은 이 기기에서 수채화 그림으로만 바꿔 저장하고, 원본 사진은 저장하지 않아요.</div>';
+    if (!_b180I) html='<button type="button" class="b162-all" onclick="b172El(\'b180File\').click()">📷 사진 고르기</button>'+file+'<div class="s" style="margin:6px 2px 12px;line-height:1.5">사진은 위치와 크기를 맞춘 뒤 그대로 쓸 수 있고, 원하면 수채화 효과를 더할 수 있어요. 원본 사진은 저장하지 않고 동그라미 안쪽만 작게 줄여 저장해요.</div>';
     else html='<div class="b180-ed"><canvas id="b180Cv" width="280" height="280"></canvas><input type="range" id="b180Z" min="100" max="400" value="'+Math.round(_b180I.zoom*100)+'" oninput="b180Zoom(this.value)">'
       +'<div class="s" style="margin:2px 2px 10px;line-height:1.5;text-align:center">손가락으로 끌어 위치를, 슬라이더나 두 손가락으로 크기를 맞춰요.<br>동그라미 안이 아이콘으로 쓰여요.</div>'
-      +'<button type="button" class="b162-all" onclick="b180Make()">🎨 수채화로 만들기</button><button type="button" class="b162-all b180-sub" onclick="b172El(\'b180File\').click()">다른 사진 고르기</button>'+file+'<div id="b180Res"></div></div>';
+      +'<div class="b180-opt"><button type="button" class="b180-tab'+(_b180I.wc?' sel':'')+'" id="b180Wc" onclick="b180ToggleWc()">🎨 수채화 효과</button><span class="s">선택 사항이에요. 끄면 사진 그대로 써요.</span></div>'
+      +'<div id="b180Res"></div><button type="button" class="b162-all b180-sub" onclick="b172El(\'b180File\').click()">다른 사진 고르기</button>'+file+'</div>';
   }
   b172El('b180Panel').innerHTML=html;
   if (v==='img'&&_b180I) { b180Bind(); b180Draw(); b180ShowRes(); }
   if (v==='emo'&&_b169.ic&&_b169.ic.sel&&_b169.ic.sel.type==='emo') b180Mark('emo',_b169.ic.sel.val);
 }
-/* 사진 불러오기 + 위치·크기 조절 */
+/* 사진 불러오기 + 위치·크기 조절 (수채화 효과는 선택 사항) */
+var _b180T=0;
 function b180Photo(files){
   var f=files&&files[0]; if (!f) return;
   try { if (_b180Url) URL.revokeObjectURL(_b180Url); } catch(e) {}
   var url=_b180Url=URL.createObjectURL(f), img=new Image();
   img.onerror=function(){ showToast('⚠️ 사진을 불러오지 못했어요'); };
   img.onload=function(){
-    var V=280, s=V/Math.min(img.naturalWidth,img.naturalHeight), dh=img.naturalHeight*s;
-    _b180I={img:img,zoom:1,ox:0,oy:Math.max(0,(dh-V)/2)*0.35,res:null};   /* 세로 사진은 위쪽(얼굴)이 보이도록 */
-    b180Tab('img');
+    var V=280, s=V/Math.min(img.naturalWidth,img.naturalHeight), dh=img.naturalHeight*s, keepWc=!!(_b180I&&_b180I.wc);
+    _b180I={img:img,zoom:1,ox:0,oy:Math.max(0,(dh-V)/2)*0.35,res:null,wc:keepWc};   /* 세로 사진은 위쪽(얼굴)이 보이도록 */
+    b180Tab('img'); b180Refresh(true);
   };
   img.src=url;
 }
@@ -9146,7 +9150,7 @@ function b180Draw(){
   cx.strokeStyle='rgba(255,255,255,.95)'; cx.lineWidth=2; cx.beginPath(); cx.arc(V/2,V/2,V*.46,0,Math.PI*2); cx.stroke();
 }
 function b180SetZoom(z){ z=Math.max(1,Math.min(4,z)); _b180I.zoom=z; var s=b172El('b180Z'); if (s) s.value=Math.round(z*100); }
-function b180Zoom(v){ if (!_b180I) return; b180SetZoom(v/100); b180Draw(); }
+function b180Zoom(v){ if (!_b180I) return; b180SetZoom(v/100); b180Draw(); b180Refresh(); }
 function b180Dist(p){ var k=Object.keys(p); if (k.length<2) return 0; var a=p[k[0]], b=p[k[1]]; return Math.sqrt((a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y)); }
 function b180Bind(){
   var cv=b172El('b180Cv'); if (!cv) return; var pts={}, last=0;
@@ -9159,29 +9163,49 @@ function b180Bind(){
     if (n===2) { var d=b180Dist(pts); if (last) b180SetZoom(_b180I.zoom*d/last); last=d; }
     b180Draw();
   });
-  ['pointerup','pointercancel'].forEach(function(ev){ cv.addEventListener(ev,function(e){ delete pts[e.pointerId]; last=0; }); });
-  cv.addEventListener('wheel',function(e){ e.preventDefault(); if (!_b180I) return; b180SetZoom(_b180I.zoom*(e.deltaY<0?1.08:0.93)); b180Draw(); },{passive:false});
+  ['pointerup','pointercancel'].forEach(function(ev){ cv.addEventListener(ev,function(e){ delete pts[e.pointerId]; last=0; b180Refresh(); }); });
+  cv.addEventListener('wheel',function(e){ e.preventDefault(); if (!_b180I) return; b180SetZoom(_b180I.zoom*(e.deltaY<0?1.08:0.93)); b180Draw(); b180Refresh(); },{passive:false});
 }
-/* 수채화로 변환 (크게 보여줘서 원본과 비교) */
+function b180Crop(N){
+  var V=280, k=N/V, g=b180Geom(V), cv=document.createElement('canvas'); cv.width=cv.height=N;
+  var cx=cv.getContext('2d'); cx.fillStyle='#fff'; cx.fillRect(0,0,N,N); cx.drawImage(_b180I.img,g.dx*k,g.dy*k,g.dw*k,g.dh*k); return cv;
+}
 function b180ShowRes(){
-  var r=b172El('b180Res'), res=_b180I&&_b180I.res; if (!r||!res) return;
-  r.innerHTML='<div class="b180-cmp"><figure><img src="'+res.orig+'" alt=""><figcaption>원본</figcaption></figure><figure><img src="'+res.wc+'" alt=""><figcaption>수채화</figcaption></figure></div>'
-    +'<div class="s" style="text-align:center;margin:0 2px 12px">마음에 들면 아래 저장을 눌러주세요. 위치나 크기를 바꿨다면 다시 만들기를 눌러요.</div>';
+  var r=b172El('b180Res'), res=_b180I&&_b180I.res; if (!r) return;
+  if (_b180I&&_b180I.busy) { r.innerHTML='<div class="s" style="text-align:center;margin:10px 0">🎨 수채화로 그리는 중...</div>'; return; }
+  if (!res) { r.innerHTML=''; return; }
+  r.innerHTML='<div class="b180-cmp">'+(res.wc?'<figure><img src="'+res.orig+'" alt=""><figcaption>원본</figcaption></figure><figure><img src="'+res.wc+'" alt=""><figcaption>수채화 (저장될 모습)</figcaption></figure>'
+    :'<figure><img src="'+res.orig+'" alt=""><figcaption>저장될 모습</figcaption></figure>')+'</div>';
 }
-function b180Make(){
-  var I=_b180I; if (!I) return; showToast('🎨 수채화로 그리는 중...');
-  setTimeout(function(){
+function b180ToggleWc(){
+  if (!_b180I) return; _b180I.wc=!_b180I.wc;
+  var b=b172El('b180Wc'); if (b) b.classList.toggle('sel',_b180I.wc);
+  b180Refresh(true);
+}
+/* 위치·크기·효과가 바뀌면 저장될 이미지를 다시 만듭니다 (사진 그대로가 기본, 수채화는 선택) */
+function b180Refresh(now){
+  clearTimeout(_b180T);
+  var I=_b180I; if (!I) return;
+  var go=function(){
+    if (_b180I!==I) return;
     try {
-      var V=280, N=256, k=N/V, g=b180Geom(V), cv=document.createElement('canvas'); cv.width=cv.height=N;
-      var cx=cv.getContext('2d'); cx.fillStyle='#fff'; cx.fillRect(0,0,N,N); cx.drawImage(I.img,g.dx*k,g.dy*k,g.dw*k,g.dh*k);
-      var oc=document.createElement('canvas'); oc.width=oc.height=192; oc.getContext('2d').drawImage(cv,0,0,192,192);
-      var orig=oc.toDataURL('image/jpeg',0.8);
-      var out=b180Watercolor(cx.getImageData(0,0,N,N)), id=cx.createImageData(N,N); id.data.set(out); cx.putImageData(id,0,0);
-      var c2=document.createElement('canvas'); c2.width=c2.height=192; c2.getContext('2d').drawImage(cv,0,0,192,192);
-      var data=c2.toDataURL('image/jpeg',0.86);
-      I.res={orig:orig,wc:data}; b180ShowRes(); b180Mark('img',data); b180Prev('<img src="'+data+'" alt="">'); showToast('✅ 수채화 아이콘이 만들어졌어요');
-    } catch(e) { showToast('⚠️ 사진을 변환하지 못했어요'); }
-  },40);
+      var orig=b180Crop(192).toDataURL('image/jpeg',0.86), data=orig, wc=null;
+      if (I.wc) {
+        I.busy=true; b180ShowRes();
+        setTimeout(function(){
+          try {
+            if (_b180I!==I||!I.wc) { I.busy=false; return; }
+            var cv=b180Crop(256), cx=cv.getContext('2d'), out=b180Watercolor(cx.getImageData(0,0,256,256)), id=cx.createImageData(256,256); id.data.set(out); cx.putImageData(id,0,0);
+            var c2=document.createElement('canvas'); c2.width=c2.height=192; c2.getContext('2d').drawImage(cv,0,0,192,192);
+            wc=c2.toDataURL('image/jpeg',0.86); I.busy=false; I.res={orig:orig,wc:wc}; b180ShowRes(); b180Mark('img',wc); b180Prev('<img src="'+wc+'" alt="">');
+          } catch(e) { I.busy=false; showToast('⚠️ 수채화 변환에 실패했어요'); }
+        },30);
+        return;
+      }
+      I.busy=false; I.res={orig:orig,wc:null}; b180ShowRes(); b180Mark('img',orig); b180Prev('<img src="'+orig+'" alt="">');
+    } catch(e) { showToast('⚠️ 사진을 처리하지 못했어요'); }
+  };
+  if (now) go(); else _b180T=setTimeout(go,I.wc?450:90);
 }
 var _b180Open=b179OpenDev;
 b179OpenDev=function(uid){
@@ -9219,6 +9243,116 @@ b169Save=function(){
 /* ---------- 관리 화면: '가족 아이콘' 버튼 제거 ---------- */
 var _b180RD=renderDevices;
 renderDevices=function(){ return _b180RD.apply(this,arguments).replace(/<button onclick="b172OpenIcons\(\)">[\s\S]*?<\/button>/,''); };
+setTimeout(function(){ try { render(); } catch(e) {} },0);
+/* ---------- 생활 루틴: 바꾼 날부터 적용하고, 지난 기록은 그대로 둡니다 ---------- */
+function b182Prev(ds){ var d=parseDate(ds); d.setDate(d.getDate()-1); return fmt(d); }
+function b182Find(id){ return (state.routines||[]).find(function(x){ return String(x.id)===String(id); }); }
+function b182Split(map,key){ var a={}, b={}; Object.keys(map||{}).forEach(function(k){ (k>=key?b:a)[k]=map[k]; }); return {before:a,after:b}; }
+/* 적용 기간(from~until)을 반영해서 보여줍니다. 기간이 없는 기존 루틴은 예전처럼 항상 적용돼요. */
+function b175Show(r,ds,off){
+  if (String(r.childId)!==String(activeChildId())) return false;
+  if (r.from&&ds<r.from) return false;
+  if (r.until&&ds>r.until) return false;
+  var sc=r.scope||'all';
+  if (sc==='school'&&off) return false;
+  if (sc==='off'&&!off) return false;
+  if (sc==='days'&&(r.days||[]).map(Number).indexOf(parseDate(ds).getDay())<0) return false;
+  if (r.nextSchool) { var nx=parseDate(ds); nx.setDate(nx.getDate()+1); if (b162IsOff(fmt(nx))) return false; }
+  if (r.skip&&r.skip[b175Key(ds)]) return false;
+  return true;
+}
+var _b182ST=b175ScopeText;
+b175ScopeText=function(r){ var t=_b182ST(r); if (r.from) t+=' · '+koDateShort(r.from)+'부터'; if (r.until) t+=' · '+koDateShort(r.until)+'까지'; return t; };
+function b182SetRS(v){ _b169.rscope=v; [].forEach.call(document.querySelectorAll('#b182RS button'),function(b){ b.classList.toggle('on',b.getAttribute('data-v')===v); }); }
+var _b182OE=b175OpenEditor;
+b175OpenEditor=function(id,back){
+  _b182OE(id,back);
+  if (!_b169||_b169.type!=='routine') return;
+  var r=id?b182Find(id):null, ds=fmt(state.selectedDate), sd=koDateShort(ds), body=b169El('b169Body'), ended=!!(r&&r.until&&r.until<ds);
+  _b169.rscope='from';
+  if (!r) body.insertAdjacentHTML('beforeend','<div class="s" style="margin:12px 2px 6px;line-height:1.5">📌 '+esc(sd)+'부터 적용돼요. 지난 날짜에는 나오지 않아요.</div>');
+  else if (ended) {
+    body.innerHTML='<div class="m-label">'+esc(r.name)+'</div><div class="s" style="margin:4px 2px 14px;line-height:1.6">'+esc(koDateShort(r.until))+'까지 적용된 루틴이에요.<br>지난 기록은 그대로 남아 있어요.</div>'
+      +'<button type="button" class="b162-all" onclick="b182Restart()">'+esc(sd)+'부터 다시 시작</button>'
+      +'<button type="button" class="b182-fd" onclick="b182FullDel()">과거 기록까지 완전히 삭제</button>';
+    b169El('b169Modal').querySelector('.m-save').style.display='none'; b169El('b169Del').style.display='none';
+  } else {
+    body.insertAdjacentHTML('beforeend','<div class="m-label" style="margin-top:16px">바꾼 내용을 언제부터 적용할까요?</div>'+b169Chips('b182RS',[['from',esc(sd)+'부터'],['all','전체 기간']],'from','b182SetRS')
+      +'<div class="s" style="margin:2px 2px 8px;line-height:1.5">'+esc(sd)+'부터: 이전 날짜의 기록은 그대로 두고 이 날부터 바뀌어요.<br>전체 기간: 지난 날짜에도 바뀐 내용이 보여요.</div>'
+      +'<button type="button" class="b182-fd" onclick="b182FullDel()">과거 기록까지 완전히 삭제</button>');
+  }
+  b172Snap();
+};
+function b175SaveRoutine(){
+  var name=b172El('b175Name').value.trim(); if (!name) { showToast('⚠️ 이름을 입력해주세요'); return; }
+  var sc=_b169.scope, days=[].slice.call(document.querySelectorAll('#b175Days button.on')).map(function(b){ return +b.getAttribute('data-d'); });
+  if (sc==='days'&&!days.length) { showToast('⚠️ 요일을 선택해주세요'); return; }
+  var ds=fmt(state.selectedDate), back=_b169.back, ex=_b169.id?(b182Find(_b169.id)||null):null;
+  var f={name:name,group:_b169.group,scope:sc,days:sc==='days'?days:[],nextSchool:!!_b169.nextSchool};
+  var done=function(msg){ if (back) b175OpenList(); else b169Close(); render(); showToast(msg); };
+  if (!ex) {   /* 새 루틴: 선택한 날짜부터 */
+    var it=Object.assign({},f,{id:'r'+Date.now(),childId:activeChildId(),order:Date.now(),from:ds});
+    b173Upsert(state.routines,it); done('🔁 루틴이 저장됐어요'); fsSet('routines',it.id,it).catch(b173Fail); return;
+  }
+  var changed=['name','group','scope'].some(function(k){ return (ex[k]||'')!==f[k]; })||!!ex.nextSchool!==f.nextSchool||JSON.stringify((ex.days||[]).map(Number))!==JSON.stringify(f.days);
+  if (!changed) { done('변경된 내용이 없어요'); return; }
+  if (_b169.rscope==='all'||(ex.from&&ex.from>=ds)) {   /* 전체 기간 변경, 또는 아직 시작 전/시작일 이전 날짜에서 수정 */
+    var up=Object.assign({},ex,f); b173Upsert(state.routines,up); done('✏️ 수정됐어요'); fsSet('routines',up.id,up).catch(b173Fail); return;
+  }
+  /* 이 날부터 적용: 기존 루틴은 전날까지로 끝내고 새 내용으로 이어 붙입니다 */
+  var key=b175Key(ds), dn=b182Split(ex.done,key), sk=b182Split(ex.skip,key);
+  var old=Object.assign({},ex,{until:b182Prev(ds),done:dn.before,skip:sk.before});
+  var nw=Object.assign({},ex,f,{id:'r'+Date.now(),from:ds,done:dn.after,skip:sk.after}); delete nw.until;
+  b173Upsert(state.routines,old); b173Upsert(state.routines,nw);
+  done('✏️ '+koDateShort(ds)+'부터 바뀌어요');
+  fsSet('routines',old.id,old).catch(b173Fail); fsSet('routines',nw.id,nw).catch(b173Fail);
+}
+/* 삭제 = 선택한 날부터 끝내기 (지난 기록은 보관). 필요하면 완전 삭제도 가능 */
+function b175DelRoutine(){
+  var id=_b169.id, back=_b169.back, r=id?b182Find(id):null; if (!r) return;
+  var ds=fmt(state.selectedDate), sd=koDateShort(ds);
+  if (r.from&&r.from>=ds) { b182FullDel(); return; }   /* 지난 기록이 없으면 그냥 삭제 */
+  openConfirmSheet(sd+'부터 이 루틴을 끝낼까요? 지난 기록은 그대로 남아요','🗓️','이 날부터 끝낼게요','아니요',function(ok){
+    if (!ok) return;
+    var key=b175Key(ds), dn=b182Split(r.done,key), sk=b182Split(r.skip,key);
+    var up=Object.assign({},r,{until:b182Prev(ds),done:dn.before,skip:sk.before}); b173Upsert(state.routines,up);
+    if (back) b175OpenList(); else b169Close(); render(); showToast('🗓 '+sd+'부터 끝났어요');
+    fsSet('routines',up.id,up).catch(b173Fail);
+  });
+}
+function b182FullDel(){
+  var id=_b169.id, back=_b169.back; if (!id) return;
+  openConfirmSheet('과거 기록까지 이 루틴을 완전히 삭제할까요?','🗑️','삭제할게요','아니요',function(ok){
+    if (!ok) return;
+    var i=state.routines.findIndex(function(x){ return String(x.id)===String(id); }); if (i>=0) state.routines.splice(i,1);
+    if (back) b175OpenList(); else b169Close(); render(); showToast('🗑 삭제됐어요');
+    fsDel('routines',id).catch(b173Fail);
+  });
+}
+function b182Restart(){
+  var id=_b169.id, back=_b169.back, r=id?b182Find(id):null; if (!r) return;
+  var ds=fmt(state.selectedDate), nw=Object.assign({},r,{id:'r'+Date.now(),from:ds,done:{},skip:{}}); delete nw.until;
+  b173Upsert(state.routines,nw);
+  if (back) b175OpenList(); else b169Close(); render(); showToast('🔁 '+koDateShort(ds)+'부터 다시 시작해요');
+  fsSet('routines',nw.id,nw).catch(b173Fail);
+}
+/* 루틴 목록: 진행 중인 것과 종료된 것을 나눠서 */
+function b175OpenList(){
+  if (state.mode!=='parent') return;
+  var cid=activeChildId(); if (!cid) { showToast('⚠️ 자녀를 먼저 선택해주세요'); return; }
+  b169Ensure(); _b169={type:'rlist',list:true};
+  var ds=fmt(state.selectedDate), c=state.children.find(function(x){ return String(x.id)===String(cid); })||{name:''};
+  var rs=(state.routines||[]).filter(function(r){ return String(r.childId)===String(cid); }).sort(function(a,b){ return (a.order||0)-(b.order||0); });
+  var act=rs.filter(function(r){ return !(r.until&&r.until<ds); }), end=rs.filter(function(r){ return r.until&&r.until<ds; });
+  var row=function(r){ return '<button type="button" class="b172-pc" onclick="b175OpenEditor(\''+r.id+'\',true)"><b>'+esc(r.name)+'</b><span>'+esc(b175ScopeText(r))+'</span></button>'; };
+  var html='';
+  B175_G.forEach(function(g){ var l=act.filter(function(r){ return (r.group||'before')===g[0]; }); if (l.length) html+='<div class="m-label">'+g[1]+'</div>'+l.map(row).join(''); });
+  if (end.length) html+='<div class="m-label" style="margin-top:14px">종료된 루틴 <span class="s">('+end.length+'개 · 지난 기록 보관)</span></div>'+end.map(row).join('');
+  b169El('b169H').textContent=c.name+'의 생활 루틴';
+  b169El('b169Body').innerHTML=(html||'<div class="s" style="margin:8px 2px 12px;line-height:1.5">아직 루틴이 없어요. 아침 양치, 안약 넣기처럼 매일 하는 습관을 등록해 보세요.</div>')
+    +'<button type="button" class="b162-all" onclick="b175OpenEditor(null,true)">+ 새 루틴 추가</button>';
+  b172Foot('list'); b169El('b169Modal').classList.add('open'); b169El('b169Body').scrollTop=0;
+}
 setTimeout(function(){ try { render(); } catch(e) {} },0);
 </script>
 </body>
